@@ -1,0 +1,2153 @@
+<?php 
+$pageTitle = 'Dashboard - ' . getSiteName();
+require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/../../includes/functions.php';
+require_once __DIR__ . '/../../includes/system-settings.php';
+
+// Get user info
+$userFullName = $user['full_name'] ?? 'User';
+$userInitials = strtoupper(substr($userFullName, 0, 1));
+$currentBalance = $summary['total_balance'] ?? 0;
+$accountNumber = $primaryAccount['account_number'] ?? 'N/A';
+$userCurrency = $user['currency'] ?? 'USD';
+
+// Get greeting based on time
+$hour = (int)date('H');
+if ($hour < 12) {
+    $greeting = 'Good Morning';
+} elseif ($hour < 17) {
+    $greeting = 'Good Afternoon';
+} else {
+    $greeting = 'Good Evening';
+}
+
+// Prepare expense chart data
+$expenseChartData = [];
+$expenseChartLabels = [];
+$expenseChartColors = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+$colorIndex = 0;
+foreach ($expenseCategories as $cat) {
+    $expenseChartData[] = (float)$cat['total'];
+    $expenseChartLabels[] = ucfirst($cat['expense_category'] ?? 'other');
+    $colorIndex++;
+}
+
+// Fill empty categories if needed
+$defaultCategories = ['investment', 'shopping', 'other', 'insurance', 'food'];
+foreach ($defaultCategories as $defCat) {
+    $found = false;
+    foreach ($expenseCategories as $cat) {
+        if (strtolower($cat['expense_category'] ?? '') === $defCat) {
+            $found = true;
+            break;
+        }
+    }
+    if (!$found) {
+        $expenseChartData[] = 0;
+        $expenseChartLabels[] = ucfirst($defCat);
+    }
+}
+
+// Include head
+include __DIR__ . '/../../includes/head.php';
+
+// Include sidebar and main structure
+include __DIR__ . '/../../includes/sidebar.php';
+?>
+
+<!-- ===== DASHBOARD PAGE CONTENT ===== -->
+
+<style>
+<?php
+// Inject Chart.js if not already loaded
+if (!isset($chartJsLoaded)) {
+    echo '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>';
+    $chartJsLoaded = true;
+}
+?>
+        /* RESET: Remove all inherited constraints from parent layout */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        body {
+            background: #f5f7fa;
+            overflow-x: hidden !important;
+        }
+
+        /* FORCE content-area to be full width without padding */
+        .main-content-area .content-area {
+            flex: 1 1 auto !important;
+            padding: 15px !important;
+            width: 100% !important;
+            max-width: none !important;
+            background: #f5f7fa !important;
+            min-height: 100vh;
+            color: #333;
+            overflow-x: hidden !important;
+            margin: 0 !important;
+            box-sizing: border-box !important;
+        }
+
+        .octobank-dashboard {
+            max-width: 100%;
+            margin: 0;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .octobank-dashboard > * {
+            min-width: 0;
+        }
+
+        /* ===== PAGE HEADER STANDARD =====
+         * This is the site-wide standard for page titles
+         * Use this exact positioning on ALL pages for consistency
+         * Acts like breadcrumb text - left-aligned, modest spacing
+         */
+        .header {
+            grid-column: 1 / -1;
+            margin-top: 0;
+            margin-bottom: 0;
+            padding: 0;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: #2d3748;
+            padding-top: 20px;
+            margin: 0 0 8px 0;
+            font-weight: 600;
+            word-wrap: break-word;
+            text-align: left;
+        }
+        
+        .header p {
+            font-size: 15px;
+            color: #6c757d;
+            margin: 0;
+            padding-bottom: 20px;
+            text-align: left;
+        }
+        
+        /* Mobile - maintain left alignment for consistency */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 22px;
+                padding-top: 15px;
+                margin-bottom: 6px;
+                text-align: left;
+            }
+            
+            .header p {
+                font-size: 14px;
+                padding-bottom: 18px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 20px;
+                padding-top: 12px;
+                margin-bottom: 5px;
+                text-align: left;
+            }
+            
+            .header p {
+                font-size: 13px;
+                padding-bottom: 15px;
+            }
+        }
+
+        /* Main Content */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+        }
+
+        /* Card Styles */
+        .dashboard-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        /* Expenses Section */
+        .expenses-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .month-filter {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .month-filter select {
+            padding: 8px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: white;
+            color: #2d3748;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .expenses-container {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .expenses-chart {
+            flex: 1;
+            position: relative;
+        }
+
+        .chart-wrapper {
+            width: 180px;
+            height: 180px;
+            margin: 0 auto;
+        }
+
+        .chart-center-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .chart-total {
+            font-size: 22px;
+            font-weight: 700;
+            color: #2d3748;
+        }
+
+        .chart-label {
+            font-size: 13px;
+            color: #6c757d;
+        }
+
+        .expenses-legend {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .expenses-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .expense-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            min-width: 0;
+        }
+
+        .expense-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .category-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .category-1 { background: #4f46e5; }
+        .category-2 { background: #10b981; }
+        .category-3 { background: #f59e0b; }
+        .category-4 { background: #ef4444; }
+        .category-5 { background: #8b5cf6; }
+
+        .category-name {
+            font-weight: 500;
+            color: #2d3748;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+        }
+
+        .category-percentage {
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 14px;
+            flex-shrink: 0;
+            margin-left: 10px;
+        }
+
+        /* Transactions Section */
+        .transactions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .transactions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .transaction-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .transaction-item:hover {
+            background: #f8f9fa;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: white;
+            font-size: 14px;
+        }
+
+        .avatar-1 { background: #4f46e5; }
+        .avatar-2 { background: #10b981; }
+        .avatar-3 { background: #f59e0b; }
+
+        .transaction-details {
+            flex: 1;
+        }
+
+        .transaction-title {
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+
+        .transaction-date {
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .transaction-amount {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .amount-positive {
+            color: #28a745;
+        }
+
+        .amount-negative {
+            color: #dc3545;
+        }
+
+        /* Transaction Status & Arrow */
+        .transaction-status-amount {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-left: auto;
+        }
+
+        .transaction-status-badge {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            flex-shrink: 0;
+        }
+
+        .transaction-status-dot {
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        .transaction-status-text {
+            font-size: 9px;
+            font-weight: 600;
+            line-height: 1;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .status-success {
+            color: #10b981;
+        }
+
+        .status-pending {
+            color: #f59e0b;
+        }
+
+        .status-failed {
+            color: #ef4444;
+        }
+
+        .transaction-arrow {
+            font-size: 20px;
+            color: #94a3b8;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .transaction-item:hover .transaction-arrow {
+            color: #3b82f6;
+            transform: translateX(4px);
+        }
+
+        /* Analytics Chart Section */
+        .analytics-chart-container {
+            grid-column: 1 / -1;
+            margin-top: 10px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chart-controls button {
+            padding: 8px 16px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .chart-controls button.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .chart-container {
+            height: 250px;
+            position: relative;
+        }
+
+        .chart-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding: 0 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2d3748;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        /* RIGHT COLUMN STYLES */
+        .right-column {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            width: 100%;
+        }
+
+        /* Enhanced Credit Card Styles */
+        .credit-card-container {
+            width: 100%;
+            max-width: 100%;
+            margin: 10px 0;
+            perspective: 1000px;
+        }
+
+        .credit-card {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 63%;
+            transform-style: preserve-3d;
+            transition: transform 0.8s ease-in-out;
+            cursor: pointer;
+            border-radius: 12px;
+        }
+
+        .credit-card.is-flipped {
+            transform: rotateY(180deg);
+        }
+
+        .credit-card.initial-spin {
+            animation: cardSpin 1.2s ease-in-out;
+        }
+
+        @keyframes cardSpin {
+            0% {
+                transform: rotateY(0deg);
+            }
+            50% {
+                transform: rotateY(360deg);
+            }
+            100% {
+                transform: rotateY(720deg);
+            }
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            backface-visibility: hidden;
+            overflow: hidden;
+            box-sizing: border-box;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        /* Card Color Themes */
+        .card-checking {
+            background: linear-gradient(135deg, #0a2a43, #114678);
+        }
+
+        .card-savings {
+            background: linear-gradient(135deg, #dc2626, #f59e0b);
+        }
+
+        .card-business {
+            background: linear-gradient(135deg, #059669, #0d9488);
+        }
+
+        .front-face {
+            color: white;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card-top-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .account-info {
+            flex: 1;
+        }
+
+        .account-balance {
+            margin-bottom: 10px;
+        }
+
+        .balance-label {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 8px;
+        }
+
+        .balance-amount {
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        .account-number {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-top: 15px;
+        }
+
+        .card-info-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+        }
+
+        .current-time {
+            text-align: left;
+        }
+
+        .time-date {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 4px;
+        }
+
+        .time-clock {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .country-flag {
+            width: 40px;
+            height: 30px;
+            border-radius: 4px;
+            background-image: url('https://flagcdn.com/w320/us.png');
+            background-size: cover;
+            background-position: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* BACK CARD - SIMPLIFIED AND CLEAN */
+        .back-face {
+            background: #232323;
+            color: white;
+            transform: rotateY(180deg);
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+        }
+
+        .back-content {
+            padding: 20px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .customer-service {
+            font-size: 12px;
+            text-align: center;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 20px;
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+        }
+
+        .magnetic-strip {
+            height: 40px;
+            background: #000;
+            width: 100%;
+            margin: 15px 0;
+        }
+
+        .signature-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+        }
+
+        .signature-strip {
+            background: #e5e5e5;
+            height: 35px;
+            flex: 1;
+            border-radius: 4px;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+        }
+
+        .signature-label {
+            color: #666;
+            font-size: 10px;
+            font-style: italic;
+        }
+
+        .cvv-strip {
+            background: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            min-width: 70px;
+            text-align: center;
+        }
+
+        .cvv-label {
+            font-size: 9px;
+            color: #666;
+            margin-bottom: 2px;
+        }
+
+        .cvv-value {
+            font-size: 12px;
+            color: #333;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .customer-info-section {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+        }
+
+        .customer-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: white;
+        }
+
+        .customer-contact {
+            font-size: 11px;
+            line-height: 1.4;
+            color: rgba(255,255,255,0.8);
+        }
+
+        .contact-item {
+            margin-bottom: 3px;
+        }
+
+        .legal-text {
+            font-size: 9px;
+            text-align: center;
+            color: rgba(255,255,255,0.6);
+            margin-top: auto;
+            padding-top: 15px;
+        }
+
+        .card-balance-info {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 20px;
+        }
+
+        .balance-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .balance-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .balance-row span {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .balance-row strong {
+            color: #032B44;
+            font-weight: 600;
+        }
+
+        .info-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .info-item span:first-child {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .info-item span:last-child {
+            color: #032B44;
+            font-weight: 600;
+        }
+
+        .status-active {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #10b981;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+        }
+
+        .new-transaction-btn {
+            width: 100%;
+            background: #032B44;
+            color: white;
+            border: none;
+            border-radius: 16px;
+            padding: 20px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 8px 20px rgba(3, 43, 68, 0.3);
+            margin-top: 10px;
+        }
+
+        .new-transaction-btn:hover {
+            background: #024a6b;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(3, 43, 68, 0.4);
+        }
+
+        /* Responsive grid adjustments */
+        @media (max-width: 1200px) {
+            .octobank-dashboard {
+                grid-template-columns: 1fr 350px;
+                gap: 15px;
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .octobank-dashboard {
+                grid-template-columns: 1fr 320px;
+                gap: 15px;
+            }
+        }
+
+        /* ===== MOBILE RESPONSIVE ONLY ===== */
+        @media (max-width: 768px) {
+            .main-content-area .content-area {
+                padding: 10px !important;
+            }
+            
+            .octobank-dashboard {
+                grid-template-columns: 1fr;
+                gap: 15px;
+                display: flex;
+                flex-direction: column;
+            }
+            
+            /* Mobile Reordering - Card at top, then Transactions, Information, Expenses, Analytics */
+            .right-column {
+                order: 1;
+                width: 100%;
+                gap: 15px;
+            }
+            
+            .main-content {
+                order: 2;
+                grid-template-columns: 1fr;
+                gap: 15px;
+                display: flex;
+                flex-direction: column;
+            }
+            
+            /* Reorder sections for mobile */
+            .right-column .dashboard-card:nth-child(1) { /* My Account Card */
+                order: 1;
+            }
+            
+            .main-content > .dashboard-card:nth-child(2) { /* Transactions */
+                order: 2;
+            }
+            
+            .right-column .dashboard-card:nth-child(2) { /* Information */
+                order: 3;
+            }
+            
+            .main-content > .dashboard-card:nth-child(1) { /* Expenses by category */
+                order: 4;
+            }
+            
+            .main-content > .analytics-chart-container { /* Analytics */
+                order: 5;
+            }
+            
+            .right-column .new-transaction-btn { /* New Transaction Button */
+                order: 6;
+            }
+            
+            .dashboard-card {
+                padding: 20px;
+            }
+            
+            /* Improved Expenses Section for Mobile */
+            .expenses-container {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            
+            .expenses-legend {
+                order: 1;
+                width: 100%;
+            }
+            
+            .expenses-chart {
+                order: 2;
+            }
+            
+            .expenses-list {
+                width: 100%;
+                max-width: 280px;
+                margin: 0 auto;
+            }
+            
+            .chart-wrapper {
+                width: 160px;
+                height: 160px;
+            }
+            
+            .chart-total {
+                font-size: 18px;
+            }
+            
+            .transaction-item {
+                padding: 10px;
+                gap: 12px;
+            }
+            
+            .avatar {
+                width: 35px;
+                height: 35px;
+                font-size: 13px;
+            }
+            
+            .chart-container {
+                height: 200px;
+            }
+            
+            .chart-stats {
+                gap: 10px;
+            }
+            
+            .stat-item {
+                min-width: 80px;
+            }
+            
+            .stat-value {
+                font-size: 18px;
+            }
+            
+            .card-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .expenses-header,
+            .transactions-header,
+            .chart-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .chart-controls {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .month-filter {
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            /* Mobile card adjustments */
+            .front-face,
+            .back-content {
+                padding: 20px;
+            }
+            
+            .balance-amount {
+                font-size: 28px;
+            }
+            
+            .account-number {
+                font-size: 14px;
+            }
+            
+            .country-flag {
+                width: 35px;
+                height: 26px;
+            }
+
+            .customer-name {
+                font-size: 14px;
+            }
+
+            .customer-contact {
+                font-size: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .main-content-area .content-area {
+                padding: 5px !important;
+            }
+            
+            .dashboard-card {
+                padding: 15px;
+            }
+            
+            .chart-wrapper {
+                width: 140px;
+                height: 140px;
+            }
+            
+            .transaction-item {
+                padding: 8px;
+                gap: 10px;
+            }
+            
+            .avatar {
+                width: 32px;
+                height: 32px;
+                font-size: 12px;
+            }
+            
+            .new-transaction-btn {
+                padding: 16px;
+                font-size: 15px;
+            }
+            
+            /* Mobile card adjustments */
+            .front-face,
+            .back-content {
+                padding: 15px;
+            }
+            
+            .balance-amount {
+                font-size: 24px;
+            }
+        }
+
+        /* Tablet and larger screen adjustments */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .balance-amount {
+                font-size: 36px;
+            }
+            
+            .account-number {
+                font-size: 18px;
+            }
+            
+            .time-date,
+            .time-clock {
+                font-size: 15px;
+            }
+            
+            .country-flag {
+                width: 45px;
+                height: 34px;
+            }
+        }
+
+        @media (min-width: 1025px) {
+            .balance-amount {
+                font-size: 38px;
+            }
+            
+            .account-number {
+                font-size: 18px;
+            }
+            
+            .time-date,
+            .time-clock {
+                font-size: 16px;
+            }
+            
+            .country-flag {
+                width: 50px;
+                height: 38px;
+            }
+        }
+</style>
+
+<!-- Dashboard Content Container -->
+<div class="octobank-dashboard">
+    <!-- Header -->
+    <div class="header">
+        <h1>Dashboard</h1>
+        <p>Overview of your account activity and finances</p>
+    </div>
+
+    <!-- Left Column - Main Content -->
+    <div class="main-content">
+        <!-- Expenses by Category -->
+        <div class="dashboard-card">
+            <div class="expenses-header">
+                <h3 class="card-title">Expenses by category</h3>
+                <div class="month-filter">
+                    <select id="monthSelect" onchange="loadExpenseData()">
+                        <option value="1" <?php echo $currentMonth == 1 ? 'selected' : ''; ?>>January</option>
+                        <option value="2" <?php echo $currentMonth == 2 ? 'selected' : ''; ?>>February</option>
+                        <option value="3" <?php echo $currentMonth == 3 ? 'selected' : ''; ?>>March</option>
+                        <option value="4" <?php echo $currentMonth == 4 ? 'selected' : ''; ?>>April</option>
+                        <option value="5" <?php echo $currentMonth == 5 ? 'selected' : ''; ?>>May</option>
+                        <option value="6" <?php echo $currentMonth == 6 ? 'selected' : ''; ?>>June</option>
+                        <option value="7" <?php echo $currentMonth == 7 ? 'selected' : ''; ?>>July</option>
+                        <option value="8" <?php echo $currentMonth == 8 ? 'selected' : ''; ?>>August</option>
+                        <option value="9" <?php echo $currentMonth == 9 ? 'selected' : ''; ?>>September</option>
+                        <option value="10" <?php echo $currentMonth == 10 ? 'selected' : ''; ?>>October</option>
+                        <option value="11" <?php echo $currentMonth == 11 ? 'selected' : ''; ?>>November</option>
+                        <option value="12" <?php echo $currentMonth == 12 ? 'selected' : ''; ?>>December</option>
+                    </select>
+                </div>
+            </div>
+            <div class="expenses-container">
+                <div class="expenses-chart">
+                    <div class="chart-wrapper">
+                        <canvas id="expensesChart"></canvas>
+                    </div>
+                    <div class="chart-center-text">
+                        <div class="chart-total" id="expenseTotal">$0</div>
+                        <div class="chart-label">Total</div>
+                    </div>
+                </div>
+                <div class="expenses-legend">
+                    <div class="expenses-list" id="expensesList">
+                        <!-- Dynamic content will be loaded here -->
+                        <div class="expense-item">
+                            <div class="expense-info">
+                                <div class="category-dot" style="background: #e2e8f0;"></div>
+                                <div class="category-name">No expenses this month</div>
+                            </div>
+                            <div class="category-percentage">0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transactions Section -->
+        <div class="dashboard-card">
+            <div class="transactions-header">
+                <h3 class="card-title">Transactions</h3>
+                <a href="<?php echo SITE_URL; ?>/transaction" style="color: #667eea; text-decoration: none; font-size: 14px; font-weight: 500;">View all</a>
+            </div>
+            <div class="transactions-list">
+                <?php 
+                if (!empty($recentTransactions)) {
+                    $avatarColors = ['avatar-1', 'avatar-2', 'avatar-3'];
+                    $colorIndex = 0;
+                    foreach ($recentTransactions as $transaction) {
+                        // Convert amount if user has different currency
+                        $displayAmount = $transaction['amount'];
+                        if ($needsConversion) {
+                            $displayAmount = $currencyHelper->convert($transaction['amount'], $systemCurrency, $userCurrency);
+                        }
+                        
+                        $amount = $displayAmount;
+                        $isNegative = ($transaction['transaction_type'] === 'debit');
+                        $amountClass = $isNegative ? 'amount-negative' : 'amount-positive';
+                        $amountSign = $isNegative ? '-' : '+';
+                        
+                        // Get initials from description
+                        $words = explode(' ', $transaction['description']);
+                        $initials = '';
+                        foreach ($words as $word) {
+                            if (!empty($word)) {
+                                $initials .= strtoupper(substr($word, 0, 1));
+                                if (strlen($initials) >= 2) break;
+                            }
+                        }
+                        if (strlen($initials) < 2) $initials = strtoupper(substr($transaction['description'], 0, 2));
+                        
+                        $avatarClass = $avatarColors[$colorIndex % 3];
+                        $colorIndex++;
+                        
+                        $date = date('M d Y', strtotime($transaction['created_at']));
+                ?>
+                <div class="transaction-item" onclick="window.location.href='<?php echo SITE_URL; ?>/transaction?id=<?php echo $transaction['id']; ?>'" style="cursor: pointer;">
+                    <div class="avatar <?php echo $avatarClass; ?>"><?php echo htmlspecialchars($initials); ?></div>
+                    <div class="transaction-details">
+                        <div class="transaction-title"><?php echo htmlspecialchars($transaction['description']); ?></div>
+                        <div class="transaction-date"><?php echo $date; ?></div>
+                    </div>
+                    <div class="transaction-status-amount">
+                        <?php 
+                        $status = $transaction['status'] ?? 'completed';
+                        $statusClass = '';
+                        $statusLabel = '';
+                        switch($status) {
+                            case 'failed':
+                                $statusClass = 'status-failed';
+                                $statusLabel = 'Failed';
+                                break;
+                            case 'pending':
+                                $statusClass = 'status-pending';
+                                $statusLabel = 'Pending';
+                                break;
+                            case 'processing':
+                                $statusClass = 'status-pending';
+                                $statusLabel = 'Processing';
+                                break;
+                            default:
+                                $statusClass = 'status-success';
+                                $statusLabel = 'Completed';
+                        }
+                        ?>
+                        <div class="transaction-status-badge">
+                            <span class="transaction-status-dot <?php echo $statusClass; ?>">●</span>
+                            <span class="transaction-status-text <?php echo $statusClass; ?>"><?php echo $statusLabel; ?></span>
+                        </div>
+                        <div class="transaction-amount <?php echo $amountClass; ?>"><?php echo $amountSign; ?><?php echo $currencyHelper->format(abs($amount), $userCurrency); ?></div>
+                        <div class="transaction-arrow">»</div>
+                    </div>
+                </div>
+                <?php 
+                    }
+                } else {
+                ?>
+                <div class="transaction-item">
+                    <div class="avatar avatar-1">NT</div>
+                    <div class="transaction-details">
+                        <div class="transaction-title">No transactions yet</div>
+                        <div class="transaction-date"><?php echo date('M d Y'); ?></div>
+                    </div>
+                    <div class="transaction-amount amount-positive">$0</div>
+                </div>
+                <?php } ?>
+            </div>
+        </div>
+
+        <!-- Analytics Chart -->
+        <div class="dashboard-card analytics-chart-container">
+            <div class="chart-header">
+                <h3 class="chart-title">Analytics</h3>
+                <div class="chart-controls">
+                    <button class="active" onclick="changeChartType('week')">Week</button>
+                    <button onclick="changeChartType('month')">Month</button>
+                    <button onclick="changeChartType('year')">Year</button>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="analyticsChart"></canvas>
+            </div>
+            <div class="chart-stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalIncome">$0</div>
+                    <div class="stat-label">Total Income</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalExpense">$0</div>
+                    <div class="stat-label">Total Expense</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="netProfit">$0</div>
+                    <div class="stat-label">Net Profit</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column -->
+    <div class="right-column">
+        <!-- My Account Section -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3 class="card-title">My Account</h3>
+                <select id="accountSelect" style="background: #f8f9fa; border: none; padding: 8px 12px; border-radius: 6px; color: #666; cursor: pointer;">
+                    <?php 
+                    if (!empty($userAccounts)) {
+                        foreach ($userAccounts as $index => $account) {
+                            $accountTypeName = ucfirst($account['account_type']) . ' Account';
+                            $selected = ($index === 0) ? 'selected' : '';
+                            echo '<option value="' . htmlspecialchars($account['id']) . '" data-type="' . htmlspecialchars($account['account_type']) . '" ' . $selected . '>' . htmlspecialchars($accountTypeName) . '</option>';
+                        }
+                    } else {
+                        echo '<option value="0">No Account</option>';
+                    }
+                    ?>
+                </select>
+            </div>
+            
+            <div class="credit-card-container">
+                <?php 
+                // Determine the card class based on first account type
+                $firstAccount = !empty($userAccounts) ? $userAccounts[0] : null;
+                $cardClass = 'card-checking';
+                if ($firstAccount) {
+                    if ($firstAccount['account_type'] === 'savings') {
+                        $cardClass = 'card-savings';
+                    } elseif ($firstAccount['account_type'] === 'business') {
+                        $cardClass = 'card-business';
+                    }
+                }
+                ?>
+                <div class="credit-card initial-spin <?php echo $cardClass; ?>" id="accountCard">
+                    <!-- Front Side -->
+                    <div class="card-face front-face">
+                        <div class="card-top-section">
+                            <div class="account-info">
+                                <div class="account-balance">
+                                    <div class="balance-label">Account Balance</div>
+                                    <div class="balance-amount" id="accountBalance">
+                                        <?php echo $firstAccount ? '$' . number_format($firstAccount['balance'], 2) : '$0.00'; ?>
+                                    </div>
+                                </div>
+                                <div class="account-number" id="accountNumber">
+                                    <?php echo $firstAccount ? 'ACC: ' . htmlspecialchars($firstAccount['account_number']) : 'ACC: N/A'; ?>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card-info-section">
+                            <div class="current-time">
+                                <div class="time-date" id="currentDate"><?php echo date('M d, Y'); ?></div>
+                                <div class="time-clock" id="currentTime"><?php echo date('H:i:s'); ?></div>
+                            </div>
+                            <div class="country-flag" title="United States"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Back Side - Clean and Professional -->
+                    <div class="card-face back-face">
+                        <div class="back-content">
+                            <div class="customer-service">Customer Service: 1-800-OCTOBANK</div>
+                            
+                            <div class="magnetic-strip"></div>
+                            
+                            <div class="signature-area">
+                                <div class="signature-strip">
+                                    <span class="signature-label">Authorized Signature</span>
+                                </div>
+                                <div class="cvv-strip">
+                                    <div class="cvv-label">CVV</div>
+                                    <div class="cvv-value">***</div>
+                                </div>
+                            </div>
+                            
+                            <div class="customer-info-section">
+                                <div class="customer-name"><?php echo htmlspecialchars($userInfo['full_name'] ?? 'Demo User'); ?></div>
+                                <div class="customer-contact">
+                                    <div class="contact-item"><?php echo htmlspecialchars($userInfo['email'] ?? 'user@octobank.com'); ?></div>
+                                    <div class="contact-item"><?php echo htmlspecialchars($userInfo['phone'] ?? '+1 (555) 123-4567'); ?></div>
+                                    <div class="contact-item"><?php echo htmlspecialchars($userInfo['address'] ?? '123 Main Street, New York, NY'); ?></div>
+                                </div>
+                            </div>
+                            
+                            <div class="legal-text">This card is property of Octobank. If found, please return to any branch.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-balance-info">
+                <div class="balance-row">
+                    <span>Credit limit</span>
+                    <strong id="creditLimit">
+                        <?php echo $firstAccount ? '$' . number_format(($firstAccount['balance'] * 2), 0) : '$0'; ?>
+                    </strong>
+                </div>
+                <div class="balance-row">
+                    <span>Daily limit</span>
+                    <strong id="dailyLimit">
+                        <?php echo $firstAccount ? '$' . number_format(min($firstAccount['balance'] * 0.1, 5000), 0) : '$0'; ?>
+                    </strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Information Card -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3 class="card-title">Information</h3>
+                <a href="<?php echo SITE_URL; ?>/profile" style="color: #667eea; text-decoration: none; font-size: 14px; font-weight: 500;">More details ></a>
+            </div>
+            <div class="info-list">
+                <div class="info-item">
+                    <span>Status:</span>
+                    <div class="status-active">
+                        <span class="status-dot"></span>
+                        <?php echo ucfirst($userInfo['status'] ?? 'active'); ?>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <span>Account type:</span>
+                    <span id="accountType"><?php echo $firstAccount ? ucfirst($firstAccount['account_type']) : 'N/A'; ?></span>
+                </div>
+                <div class="info-item">
+                    <span>Currency:</span>
+                    <span>USD</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Transaction Button -->
+        <button class="new-transaction-btn" onclick="window.location.href='<?php echo SITE_URL; ?>/transfer'">
+            <i class="fas fa-plus"></i>
+            New transaction
+        </button>
+    </div>
+</div>
+
+<script src="<?php echo SITE_URL; ?>/assets/js/chart.umd.min.js"></script>
+<script>
+    let analyticsChart;
+    let expensesChart;
+
+    // Account data from PHP
+    <?php 
+    $accountsDataJS = [];
+    if (!empty($userAccounts)) {
+        foreach ($userAccounts as $account) {
+            $accountId = $account['id'];
+            
+            // Convert balance if user has different currency
+            $displayBalance = $account['balance'];
+            if ($needsConversion) {
+                $displayBalance = $currencyHelper->convert($account['balance'], $systemCurrency, $userCurrency);
+            }
+            
+            $balance = $currencyHelper->format($displayBalance, $userCurrency);
+            $number = 'ACC: ' . htmlspecialchars($account['account_number']);
+            $creditLimit = $currencyHelper->format($displayBalance * 2, $userCurrency);
+            $dailyLimit = $currencyHelper->format(min($displayBalance * 0.1, 5000), $userCurrency);
+            $accountType = ucfirst($account['account_type']);
+            
+            $colorClass = 'card-checking';
+            if ($account['account_type'] === 'savings') {
+                $colorClass = 'card-savings';
+            } elseif ($account['account_type'] === 'business') {
+                $colorClass = 'card-business';
+            }
+            
+            $accountsDataJS[$accountId] = [
+                'balance' => $balance,
+                'number' => $number,
+                'creditLimit' => $creditLimit,
+                'dailyLimit' => $dailyLimit,
+                'accountType' => $accountType,
+                'colorClass' => $colorClass
+            ];
+        }
+    } else {
+        $accountsDataJS['0'] = [
+            'balance' => '$0.00',
+            'number' => 'ACC: N/A',
+            'creditLimit' => '$0',
+            'dailyLimit' => '$0',
+            'accountType' => 'N/A',
+            'colorClass' => 'card-checking'
+        ];
+    }
+    ?>
+    const accountData = <?php echo json_encode($accountsDataJS); ?>;
+
+    // Credit card functionality
+    document.addEventListener("DOMContentLoaded", function() {
+        const card = document.querySelector(".credit-card");
+        const accountSelect = document.getElementById('accountSelect');
+        
+        // Remove initial spin animation after it completes
+        setTimeout(() => {
+            if(card) {
+                card.classList.remove('initial-spin');
+                
+                // Add click flip functionality after initial animation
+                card.addEventListener("click", function() {
+                    this.classList.toggle("is-flipped");
+                });
+            }
+        }, 1200);
+
+        // Account selection handler
+        accountSelect.addEventListener('change', function() {
+            const selectedAccountId = this.value;
+            updateAccountDisplay(selectedAccountId);
+        });
+
+        // Update real-time clock
+        function updateClock() {
+            const now = new Date();
+            const dateElement = document.getElementById('currentDate');
+            const timeElement = document.getElementById('currentTime');
+            
+            if(dateElement && timeElement) {
+                const options = { month: 'short', day: 'numeric', year: 'numeric' };
+                dateElement.textContent = now.toLocaleDateString('en-US', options);
+                timeElement.textContent = now.toLocaleTimeString('en-US');
+            }
+        }
+
+        // Update account display
+        function updateAccountDisplay(accountId) {
+            const data = accountData[accountId];
+            if (!data) return;
+            
+            const card = document.getElementById('accountCard');
+            
+            // Remove all color classes
+            card.classList.remove('card-checking', 'card-savings', 'card-business');
+            // Add new color class
+            card.classList.add(data.colorClass);
+            
+            // Update card content
+            document.getElementById('accountBalance').textContent = data.balance;
+            document.getElementById('accountNumber').textContent = data.number;
+            document.getElementById('creditLimit').textContent = data.creditLimit;
+            document.getElementById('dailyLimit').textContent = data.dailyLimit;
+            document.getElementById('accountType').textContent = data.accountType;
+        }
+
+        // Update clock immediately and then every second
+        updateClock();
+        setInterval(updateClock, 1000);
+
+        // Initialize charts
+        initializeExpensesChart();
+        initializeAnalyticsChart('week');
+    });
+
+    // Load expense data dynamically
+    function loadExpenseData() {
+        const month = document.getElementById('monthSelect').value;
+        
+        fetch(`<?php echo SITE_URL; ?>/api/get-expense-data.php?month=${month}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateExpenseChart(data.data, data.total);
+                } else {
+                    console.error('Failed to load expense data:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading expense data:', error);
+            });
+    }
+    
+    // Update expense chart with new data
+    function updateExpenseChart(expenseData, total) {
+        // Update total
+        document.getElementById('expenseTotal').textContent = '$' + total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        
+        // Update legend
+        const expensesList = document.getElementById('expensesList');
+        expensesList.innerHTML = '';
+        
+        if (expenseData.length === 0) {
+            expensesList.innerHTML = `
+                <div class="expense-item">
+                    <div class="expense-info">
+                        <div class="category-dot" style="background: #e2e8f0;"></div>
+                        <div class="category-name">No expenses this month</div>
+                    </div>
+                    <div class="category-percentage">0%</div>
+                </div>
+            `;
+        } else {
+            expenseData.forEach((expense, index) => {
+                const expenseItem = document.createElement('div');
+                expenseItem.className = 'expense-item';
+                expenseItem.innerHTML = `
+                    <div class="expense-info">
+                        <div class="category-dot" style="background: ${expense.color};"></div>
+                        <div class="category-name">${expense.category}</div>
+                    </div>
+                    <div class="category-percentage">${expense.percentage}%</div>
+                `;
+                expensesList.appendChild(expenseItem);
+            });
+        }
+        
+        // Update chart
+        if (expensesChart) {
+            expensesChart.destroy();
+        }
+        
+        const ctx = document.getElementById('expensesChart').getContext('2d');
+        const chartData = expenseData.length > 0 ? expenseData.map(e => e.amount) : [1];
+        const chartLabels = expenseData.length > 0 ? expenseData.map(e => e.category) : ['No Data'];
+        const chartColors = expenseData.length > 0 ? expenseData.map(e => e.color) : ['#e2e8f0'];
+        
+        expensesChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: chartLabels,
+                datasets: [{
+                    data: chartData,
+                    backgroundColor: chartColors,
+                    borderWidth: 0,
+                    cutout: '70%'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                elements: {
+                    arc: {
+                        borderWidth: 0
+                    }
+                }
+            }
+        });
+    }
+
+    function initializeExpensesChart() {
+        // Load initial data
+        loadExpenseData();
+        
+    }
+
+    function initializeAnalyticsChart(type) {
+        // Load real analytics data
+        loadAnalyticsData(type);
+    }
+
+    function loadAnalyticsData(type) {
+        fetch(`<?php echo SITE_URL; ?>/api/get-analytics-data.php?type=${type}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateAnalyticsChart(data, type);
+                    updateAnalyticsStats(data);
+                } else {
+                    console.error('Failed to load analytics data:', data.message);
+                    // Fallback to empty chart
+                    updateAnalyticsChart({
+                        labels: [],
+                        income_data: [],
+                        expense_data: []
+                    }, type);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading analytics data:', error);
+                // Fallback to empty chart
+                updateAnalyticsChart({
+                    labels: [],
+                    income_data: [],
+                    expense_data: []
+                }, type);
+            });
+    }
+
+    function updateAnalyticsChart(data, type) {
+        const ctx = document.getElementById('analyticsChart').getContext('2d');
+        
+        if (analyticsChart) {
+            analyticsChart.destroy();
+        }
+
+        // Create combined data for balance trend
+        const balanceData = [];
+        let runningBalance = 0;
+        
+        for (let i = 0; i < data.labels.length; i++) {
+            runningBalance += (data.income_data[i] || 0) - (data.expense_data[i] || 0);
+            balanceData.push(runningBalance);
+        }
+
+        analyticsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Balance Trend',
+                    data: balanceData,
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#667eea',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    pointHoverRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        titleFont: { size: 14 },
+                        bodyFont: { size: 13 },
+                        padding: 12,
+                        callbacks: {
+                            label: function(context) {
+                                const index = context.dataIndex;
+                                const income = data.income_data[index] || 0;
+                                const expense = data.expense_data[index] || 0;
+                                const balance = balanceData[index];
+                                return [
+                                    `Balance: $${balance.toLocaleString()}`,
+                                    `Income: $${income.toLocaleString()}`,
+                                    `Expense: $${expense.toLocaleString()}`
+                                ];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.05)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                }
+            }
+        });
+    }
+
+    function updateAnalyticsStats(data) {
+        document.getElementById('totalIncome').textContent = '$' + data.total_income.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+        document.getElementById('totalExpense').textContent = '$' + data.total_expense.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+        document.getElementById('netProfit').textContent = '$' + data.net_profit.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    function changeChartType(type) {
+        // Update active button
+        document.querySelectorAll('.chart-controls button').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
+        
+        // Update chart
+        initializeAnalyticsChart(type);
+    }
+
+    // Handle window resize for better mobile experience
+    window.addEventListener('resize', function() {
+        if (expensesChart) {
+            expensesChart.resize();
+        }
+        if (analyticsChart) {
+            analyticsChart.resize();
+        }
+    });
+    
+    // Check if user needs onboarding (new users who haven't completed setup)
+    <?php
+    // Check if user needs onboarding
+    $userModel = new User();
+    $currentUser = $userModel->findById($userId);
+    $needsOnboarding = !$currentUser['onboarding_completed'];
+    
+    if ($needsOnboarding) {
+        echo "const needsOnboarding = true;";
+        echo "const hasTransferPin = " . (empty($currentUser['transfer_pin']) ? 'false' : 'true') . ";";
+        echo "const hasSecurityPin = " . (empty($currentUser['security_pin']) ? 'false' : 'true') . ";";
+        echo "const kycStatus = '" . ($currentUser['kyc_status'] ?? 'pending') . "';";
+    } else {
+        echo "const needsOnboarding = false;";
+    }
+    ?>
+    
+    // Show onboarding modal if needed
+    if (needsOnboarding) {
+        setTimeout(function() {
+            showOnboardingModal();
+        }, 1000); // Show after 1 second delay
+    }
+    
+    function showOnboardingModal() {
+        document.getElementById('onboardingModal').style.display = 'flex';
+    }
+    
+    function hideOnboardingModal() {
+        document.getElementById('onboardingModal').style.display = 'none';
+    }
+    
+    function completeOnboarding() {
+        // Mark onboarding as completed
+        fetch('<?php echo SITE_URL; ?>/api/complete-onboarding.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                hideOnboardingModal();
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+</script>
+
+<!-- Onboarding Modal -->
+<div id="onboardingModal" class="onboarding-modal-overlay" style="display: none;">
+    <div class="onboarding-modal">
+        <div class="onboarding-header">
+            <div class="onboarding-icon">
+                <i class="fas fa-rocket" style="font-size: 48px; color: #1e3a8a;"></i>
+            </div>
+            <h2>Welcome to <?php echo getSiteName(); ?>!</h2>
+            <p>Let's get your account set up for a secure banking experience</p>
+        </div>
+        
+        <div class="onboarding-content">
+            <div class="onboarding-checklist">
+                <?php if ($needsOnboarding): ?>
+                    
+                    <!-- KYC Verification -->
+                    <div class="checklist-item <?php echo ($currentUser['kyc_status'] === 'verified') ? 'completed' : ''; ?>">
+                        <div class="checklist-icon">
+                            <?php if ($currentUser['kyc_status'] === 'verified'): ?>
+                                <i class="fas fa-check-circle" style="color: #4caf50;"></i>
+                            <?php else: ?>
+                                <i class="fas fa-circle" style="color: #ddd;"></i>
+                            <?php endif; ?>
+                        </div>
+                        <div class="checklist-details">
+                            <h4>Submit KYC Verification</h4>
+                            <p>Verify your identity to unlock all features</p>
+                            <?php if ($currentUser['kyc_status'] !== 'verified'): ?>
+                                <a href="<?php echo SITE_URL; ?>/profile#kyc" class="checklist-action">Submit Documents</a>
+                            <?php else: ?>
+                                <span class="status-badge success">Verified</span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    
+                    <!-- Transfer PIN -->
+                    <div class="checklist-item <?php echo (!empty($currentUser['transfer_pin'])) ? 'completed' : ''; ?>">
+                        <div class="checklist-icon">
+                            <?php if (!empty($currentUser['transfer_pin'])): ?>
+                                <i class="fas fa-check-circle" style="color: #4caf50;"></i>
+                            <?php else: ?>
+                                <i class="fas fa-circle" style="color: #ddd;"></i>
+                            <?php endif; ?>
+                        </div>
+                        <div class="checklist-details">
+                            <h4>Set Transfer PIN</h4>
+                            <p>Secure your transfers with a 4-digit PIN</p>
+                            <?php if (empty($currentUser['transfer_pin'])): ?>
+                                <a href="<?php echo SITE_URL; ?>/profile#security" class="checklist-action">Set PIN</a>
+                            <?php else: ?>
+                                <span class="status-badge success">Configured</span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    
+                    <!-- Security PIN -->
+                    <div class="checklist-item <?php echo (!empty($currentUser['security_pin'])) ? 'completed' : ''; ?>">
+                        <div class="checklist-icon">
+                            <?php if (!empty($currentUser['security_pin'])): ?>
+                                <i class="fas fa-check-circle" style="color: #4caf50;"></i>
+                            <?php else: ?>
+                                <i class="fas fa-circle" style="color: #ddd;"></i>
+                            <?php endif; ?>
+                        </div>
+                        <div class="checklist-details">
+                            <h4>Set Security PIN</h4>
+                            <p>Add an extra layer of account security</p>
+                            <?php if (empty($currentUser['security_pin'])): ?>
+                                <a href="<?php echo SITE_URL; ?>/profile#security" class="checklist-action">Set PIN</a>
+                            <?php else: ?>
+                                <span class="status-badge success">Configured</span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    
+                <?php endif; ?>
+            </div>
+        </div>
+        
+        <div class="onboarding-footer">
+            <button class="btn-secondary" onclick="hideOnboardingModal()">I'll Do This Later</button>
+            <button class="btn-primary" onclick="completeOnboarding()">
+                <i class="fas fa-check"></i> Mark as Complete
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+.onboarding-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.onboarding-modal {
+    background: white;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    animation: slideUp 0.4s ease-out;
+}
+
+.onboarding-header {
+    text-align: center;
+    padding: 40px 30px 30px;
+    background: linear-gradient(135deg, #f8fafc 0%, #e8f0ff 100%);
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.onboarding-icon {
+    margin-bottom: 20px;
+}
+
+.onboarding-header h2 {
+    font-size: 28px;
+    color: #202124;
+    margin: 0 0 10px 0;
+    font-weight: 700;
+}
+
+.onboarding-header p {
+    color: #666;
+    font-size: 15px;
+    margin: 0;
+}
+
+.onboarding-content {
+    padding: 30px;
+}
+
+.onboarding-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.checklist-item {
+    display: flex;
+    gap: 16px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 2px solid #e0e0e0;
+    transition: all 0.3s;
+}
+
+.checklist-item:hover {
+    border-color: #1e3a8a;
+    box-shadow: 0 4px 12px rgba(30, 58, 138, 0.1);
+}
+
+.checklist-item.completed {
+    background: #f0f9ff;
+    border-color: #4caf50;
+}
+
+.checklist-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.checklist-details h4 {
+    margin: 0 0 8px 0;
+    font-size: 18px;
+    color: #202124;
+    font-weight: 600;
+}
+
+.checklist-details p {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: #666;
+}
+
+.checklist-action {
+    display: inline-block;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.checklist-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-badge.success {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.onboarding-footer {
+    display: flex;
+    gap: 12px;
+    padding: 20px 30px;
+    border-top: 1px solid #e0e0e0;
+    justify-content: flex-end;
+}
+
+.onboarding-footer .btn-secondary {
+    padding: 12px 24px;
+    background: #f5f5f5;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    color: #666;
+    transition: all 0.2s;
+}
+
+.onboarding-footer .btn-secondary:hover {
+    background: #e0e0e0;
+}
+
+.onboarding-footer .btn-primary {
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    color: white;
+    transition: all 0.2s;
+}
+
+.onboarding-footer .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(30, 58, 138, 0.3);
+}
+
+@media (max-width: 768px) {
+    .onboarding-modal {
+        width: 95%;
+        margin: 20px;
+    }
+    
+    .onboarding-header {
+        padding: 30px 20px 20px;
+    }
+    
+    .onboarding-header h2 {
+        font-size: 24px;
+    }
+    
+    .onboarding-content {
+        padding: 20px;
+    }
+    
+    .checklist-item {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .onboarding-footer {
+        flex-direction: column;
+    }
+    
+    .onboarding-footer button {
+        width: 100%;
+    }
+}
+</style>
+
+<?php
+// Include mobile navigation and closing tags
+include __DIR__ . '/../../includes/mobile-nav.php';
+?>

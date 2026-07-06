@@ -1,45 +1,5 @@
-# Environment variables
-.env
-.env.local
-.env.*.local
+# Site-specific configuration (credentials, SMTP, encryption keys)
+config/config.php
 
-# Logs
-logs/
-*.log
-php-errors.log
-
-# Sensitive configuration
-config/config.local.php
-config/database.local.php
-
-# Uploaded files
-uploads/*
-!uploads/.htaccess
-
-# Cache
-cache/
-tmp/
-temp/
-
-# IDE files
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Backups
-*.bak
-*.backup
-*.sql
-cosmos backup/
-
-# Node modules (if any)
-node_modules/
-
-# Composer
-vendor/
+# Live chat widget script (Smartsupp, Tawk.to, etc. — per-site API keys)
+includes/livechat.php
