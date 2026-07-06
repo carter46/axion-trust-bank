@@ -3,3 +3,17 @@ config/config.php
 
 # Live chat widget script (Smartsupp, Tawk.to, etc. — per-site API keys)
 includes/livechat.php
+
+# User/server uploads — live files stay on the server; git pull must not overwrite them
+# (uploads/images/ is NOT ignored — static marketing assets for the public site stay in git)
+uploads/kyc/*
+!uploads/kyc/.htaccess
+uploads/profile-pictures/*
+!uploads/profile-pictures/index.php
+uploads/profile-photos/*
+!uploads/profile-photos/index.php
+uploads/loans/*
+!uploads/loans/.htaccess
+!uploads/loans/index.php
+uploads/documents/*
+!uploads/documents/index.php
