@@ -2,6 +2,7 @@
 $pageTitle = 'User Transactions - Admin';
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../includes/functions.php';
+require_once __DIR__ . '/../../includes/transaction-categories.php';
 
 requireAdmin();
 
@@ -41,6 +42,14 @@ $userCurrency = getUserDisplayCurrency($user);
 
 $expenseCategoryOptions = getExpenseCategoryOptions();
 $structuralCategories = getValidStructuralCategories();
+$expenseCategoryOptionsJson = json_encode($expenseCategoryOptions, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS);
+if ($expenseCategoryOptionsJson === false) {
+    $expenseCategoryOptionsJson = '[]';
+}
+$structuralCategoriesJson = json_encode($structuralCategories, JSON_HEX_TAG | JSON_HEX_APOS);
+if ($structuralCategoriesJson === false) {
+    $structuralCategoriesJson = '[]';
+}
 
 include __DIR__ . '/../../includes/head.php';
 include __DIR__ . '/../../includes/admin-sidebar.php';
@@ -1040,8 +1049,8 @@ include __DIR__ . '/../../includes/admin-modals.php';
 
 <script>
 const ADMIN_USER_ID = <?php echo (int)$userId; ?>;
-const EXPENSE_CATEGORY_OPTIONS = <?php echo json_encode($expenseCategoryOptions, JSON_UNESCAPED_UNICODE); ?>;
-const STRUCTURAL_CATEGORIES = <?php echo json_encode($structuralCategories); ?>;
+const EXPENSE_CATEGORY_OPTIONS = <?php echo $expenseCategoryOptionsJson; ?>;
+const STRUCTURAL_CATEGORIES = <?php echo $structuralCategoriesJson; ?>;
 
 function getSelectedTransactionIds() {
     const ids = Array.from(document.querySelectorAll('.tx-select:checked'))

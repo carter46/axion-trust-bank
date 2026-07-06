@@ -1500,7 +1500,7 @@ class AdminController {
         $stmt = $db->query($sql, [$id]);
         $transactions = $stmt ? $stmt->fetchAll() : [];
         
-        include 'views/admin/user-transactions.php';
+        include __DIR__ . '/../views/admin/user-transactions.php';
     }
     
     public function userSecurity($id) {
