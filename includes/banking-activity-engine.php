@@ -45,7 +45,7 @@ class BankingActivityEngine
         }
 
         $merchantTags = $persona['merchant_tags'] ?? [];
-        $salaryRange = $persona['salary_range'] ?? $this->defaultSalaryRange($style);
+        $salaryRange = resolvePersonaSalaryRange($persona, $style, $operatingCountry);
         $behaviourMult = $this->behaviourAmountMultiplier($behaviour);
 
         $banks = $this->loadBanks($operatingCountry);
@@ -201,7 +201,7 @@ class BankingActivityEngine
         $historyImpact = round((float)($params['history_impact'] ?? 0), 2);
         $events = $this->balancePlanToImpact($events, $historyImpact, $style, $rng, $domesticBanks, $countryIso, $operatingCountry);
 
-        $summary = $this->summarizePlan($events, $persona, $style, $behaviour, $volume);
+        $summary = $this->summarizePlan($events, $persona, $style, $behaviour, $volume, $operatingCountry);
 
         return [
             'events' => $events,
@@ -370,7 +370,7 @@ class BankingActivityEngine
         return $events;
     }
 
-    private function summarizePlan(array $events, ?array $persona, string $style, string $behaviour, string $volume): array
+    private function summarizePlan(array $events, ?array $persona, string $style, string $behaviour, string $volume, string $operatingCountry = ''): array
     {
         $counts = [
             'domestic_transfers' => 0,
@@ -404,6 +404,7 @@ class BankingActivityEngine
         $counts['financial_behaviour'] = $behaviour;
         $counts['volume'] = $volume;
         $counts['persona_label'] = $persona['label'] ?? null;
+        $counts['operating_country'] = $operatingCountry;
         return $counts;
     }
 

@@ -274,13 +274,6 @@ class TransactionHistoryGenerator
         }
 
         $persona = getGeneratorPersonaById($params['persona_id'] ?? null);
-        if ($persona && !empty($persona['country_hint'])) {
-            $opRow = $this->db->query("SELECT setting_value FROM system_settings WHERE setting_key = 'bank_operating_country' LIMIT 1")->fetch();
-            $operatingCountry = $opRow['setting_value'] ?? '';
-            if ($operatingCountry && strcasecmp(trim($persona['country_hint']), trim($operatingCountry)) !== 0) {
-                $warnings[] = 'Persona country (' . $persona['country_hint'] . ') differs from bank operating country (' . $operatingCountry . ').';
-            }
-        }
 
         return [
             'success' => true,
@@ -303,6 +296,7 @@ class TransactionHistoryGenerator
             'params_hash' => $paramsHash,
             'engine_params' => $built['engine_params'] ?? null,
             'persona_label' => $planSummary['persona_label'] ?? ($persona['label'] ?? null),
+            'operating_country' => $built['operating_country'] ?? ($planSummary['operating_country'] ?? null),
         ];
     }
 
@@ -723,6 +717,7 @@ class TransactionHistoryGenerator
             'chained' => $chained,
             'plan_summary' => $plan['summary'],
             'engine_params' => $plan['engine_params'] ?? null,
+            'operating_country' => $plan['operating_country'] ?? null,
         ];
     }
 

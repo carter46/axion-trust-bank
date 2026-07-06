@@ -117,9 +117,9 @@ $generatorPresets = $generatorPresets ?? [];
                 </select>
             </div>
             <div class="form-group">
-                <label for="personaSelect">Demo persona (optional)</label>
+                <label for="personaSelect">Demo persona template (optional)</label>
                 <select id="personaSelect" class="form-control">
-                    <option value="">Custom</option>
+                    <option value="">Custom — set style &amp; behaviour manually</option>
                     <?php foreach ($generatorPersonas as $persona): ?>
                         <option value="<?php echo htmlspecialchars($persona['id']); ?>"
                             data-style="<?php echo htmlspecialchars($persona['account_style']); ?>"
@@ -414,7 +414,11 @@ function renderPlanSummary(data) {
         `<p>Date range: ${escapeHtml(document.getElementById('startDate').value)} → ${escapeHtml(document.getElementById('endDate').value)}</p>`,
         `<p>Opening: ${formatMoney(data.gen_opening_balance)} → Closing: ${formatMoney(data.new_account_balance)}</p>`,
     ];
-    if (data.persona_label) lines.push(`<p>Persona: ${escapeHtml(data.persona_label)}</p>`);
+    if (data.persona_label) lines.push(`<p>Persona template: ${escapeHtml(data.persona_label)}</p>`);
+    const market = ps.operating_country || data.operating_country;
+    if (market) {
+        lines.push(`<p>Local market (banks &amp; merchants): ${escapeHtml(market)}</p>`);
+    }
     if (ps.domestic_transfers !== undefined) {
         lines.push(`<ul style="margin:8px 0;padding-left:20px;">
             <li>Domestic transfers: ${ps.domestic_transfers}</li>

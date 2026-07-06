@@ -51,3 +51,60 @@ function getSeasonalTagBoosts(int $month): array
     $seasonality = getGeneratorSeasonality();
     return $seasonality[$month] ?? ['boost' => [], 'reduce' => []];
 }
+
+/** Base monthly salary range by account style (US-normalized reference). */
+function getGeneratorStyleSalaryBase(string $style): array
+{
+    $map = [
+        'personal' => [2500, 6500],
+        'business' => [8000, 25000],
+        'investor' => [5000, 18000],
+        'student' => [600, 1500],
+    ];
+    return $map[$style] ?? $map['personal'];
+}
+
+/** Scale salary amounts for the bank's operating country. */
+function getGeneratorCountrySalaryMultiplier(string $operatingCountry): float
+{
+    $iso = generatorCountryIsoFromOperating($operatingCountry);
+    $map = [
+        'US' => 1.0,
+        'GB' => 0.92,
+        'DE' => 0.95,
+        'AE' => 1.3,
+        'NG' => 0.4,
+    ];
+    return $map[$iso] ?? 1.0;
+}
+
+/** Persona salary band multiplier relative to style baseline. */
+function getGeneratorSalaryBandMultiplier(?string $band): float
+{
+    if ($band === null || $band === '') {
+        return 1.0;
+    }
+    $map = [
+        'minimal' => 0.45,
+        'entry' => 0.75,
+        'standard' => 1.0,
+        'executive' => 1.55,
+        'premium' => 2.1,
+    ];
+    return $map[$band] ?? 1.0;
+}
+
+/**
+ * Salary range scaled to operating country + optional persona band.
+ */
+function resolvePersonaSalaryRange(?array $persona, string $style, string $operatingCountry): array
+{
+    $base = getGeneratorStyleSalaryBase($style);
+    $countryMult = getGeneratorCountrySalaryMultiplier($operatingCountry);
+    $bandMult = getGeneratorSalaryBandMultiplier($persona['salary_band'] ?? null);
+
+    return [
+        round($base[0] * $countryMult * $bandMult, 2),
+        round($base[1] * $countryMult * $bandMult, 2),
+    ];
+}
