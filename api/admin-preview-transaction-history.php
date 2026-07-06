@@ -7,6 +7,7 @@ try {
     require_once __DIR__ . '/../config/config.php';
     require_once __DIR__ . '/../includes/functions.php';
     require_once __DIR__ . '/../includes/security.php';
+    require_once __DIR__ . '/../includes/generator-data/generator-helpers.php';
     require_once __DIR__ . '/../includes/transaction-history-generator.php';
     ob_get_clean();
     header('Content-Type: application/json; charset=UTF-8');
@@ -49,7 +50,7 @@ try {
         'replace_previous' => !empty($input['replace_previous']),
     ];
 
-    if (!empty($params['preset_id']) && function_exists('getGeneratorPresets')) {
+    if (!empty($params['preset_id'])) {
         require_once __DIR__ . '/../includes/generator-data/generator-helpers.php';
         foreach (getGeneratorPresets() as $preset) {
             if ($preset['id'] === $params['preset_id']) {

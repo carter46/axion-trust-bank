@@ -1,9 +1,17 @@
 <?php
 
 require_once __DIR__ . '/transfer-rails.php';
+require_once __DIR__ . '/transaction-categories.php';
 require_once __DIR__ . '/generator-data/generator-helpers.php';
 require_once __DIR__ . '/generator-data/personal-names.php';
 require_once __DIR__ . '/generator-data/merchant-selector.php';
+
+if (!function_exists('str_contains')) {
+    function str_contains(string $haystack, string $needle): bool
+    {
+        return $needle === '' || strpos($haystack, $needle) !== false;
+    }
+}
 
 class BankingActivityEngine
 {
@@ -500,9 +508,13 @@ class BankingActivityEngine
 
     private function getOperatingCountry(): string
     {
-        $row = $this->db->query(
+        $stmt = $this->db->query(
             "SELECT setting_value FROM system_settings WHERE setting_key = 'bank_operating_country' LIMIT 1"
-        )->fetch();
+        );
+        if (!$stmt) {
+            return 'United States';
+        }
+        $row = $stmt->fetch();
         return $row['setting_value'] ?? 'United States';
     }
 

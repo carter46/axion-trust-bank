@@ -441,9 +441,17 @@ document.getElementById('previewBtn').addEventListener('click', async () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        const data = await res.json();
-        if (!data.success) {
-            showToast(data.message || 'Preview failed.', 'error');
+        const raw = await res.text();
+        let data;
+        try {
+            data = JSON.parse(raw);
+        } catch (parseErr) {
+            console.error('Preview non-JSON response:', raw);
+            showToast('Preview failed: server returned an invalid response. Check error logs.', 'error');
+            return;
+        }
+        if (!res.ok || !data.success) {
+            showToast(data.message || ('Preview failed (HTTP ' + res.status + ').'), 'error');
             return;
         }
 
