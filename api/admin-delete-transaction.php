@@ -61,17 +61,24 @@ try {
     $db->beginTransaction();
     
     try {
+        $pairDeltas = adminResolveInternalTransferPairOnDelete($db, $transaction);
         $balanceDeltas = adminComputeDeletionBalanceDeltas($db, [$transaction]);
+        foreach ($pairDeltas as $accountId => $delta) {
+            $balanceDeltas[(int)$accountId] = ($balanceDeltas[(int)$accountId] ?? 0) + $delta;
+        }
         $balanceChange = $balanceDeltas[(int)$transaction['account_id']] ?? 0.0;
         $batchId = adminParseGeneratorBatchId($transaction);
 
-        if (abs($balanceChange) >= 0.01) {
+        foreach ($balanceDeltas as $accountId => $delta) {
+            if (abs($delta) < 0.01) {
+                continue;
+            }
             $sql = "SELECT balance FROM accounts WHERE id = ? FOR UPDATE";
-            $stmt = $db->query($sql, [$transaction['account_id']]);
+            $stmt = $db->query($sql, [$accountId]);
             $account = $stmt->fetch();
 
             if ($account) {
-                $newBalance = round((float)$account['balance'] + $balanceChange, 2);
+                $newBalance = round((float)$account['balance'] + $delta, 2);
                 if ($newBalance < 0) {
                     throw new Exception('Cannot delete transaction: reversal would result in negative balance');
                 }
@@ -82,7 +89,7 @@ try {
                     available_balance = available_balance + ?,
                     updated_at = NOW()
                     WHERE id = ?";
-            $db->query($sql, [$balanceChange, $balanceChange, $transaction['account_id']]);
+            $db->query($sql, [$delta, $delta, $accountId]);
         }
 
         // Delete the transaction

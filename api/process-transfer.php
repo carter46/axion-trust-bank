@@ -81,7 +81,7 @@ $bankEntryCurrency = getBankTransferEntryCurrency();
 if ($amountCurrency === '' || !preg_match('/^[A-Z]{3}$/', $amountCurrency)) {
     $amountCurrency = $bankEntryCurrency;
 }
-$expenseCategory = Security::sanitize($input['expense_category'] ?? 'other');
+$expenseCategory = normalizeExpenseCategory(Security::sanitize($input['expense_category'] ?? 'other'));
 $transferPin = $input['transfer_pin'] ?? '';
 
 // Validate amount

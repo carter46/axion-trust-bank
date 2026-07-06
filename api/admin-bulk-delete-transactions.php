@@ -72,6 +72,30 @@ try {
     }
 
     $balanceDeltas = adminComputeDeletionBalanceDeltas($db, $rows);
+    $deleteIdSet = array_flip($transactionIds);
+    $pairRowsToDelete = [];
+    $processedPairIds = [];
+    foreach ($rows as $row) {
+        if (($row['transaction_type'] ?? '') !== 'debit' || ($row['category'] ?? '') !== 'transfer') {
+            continue;
+        }
+        $meta = json_decode($row['metadata'] ?? '{}', true);
+        if (!is_array($meta)) {
+            $meta = [];
+        }
+        if (($meta['transfer_scope'] ?? $meta['transfer_type'] ?? '') !== 'internal') {
+            continue;
+        }
+        $pair = adminFindInternalTransferPair($db->getConnection(), $row);
+        $pairId = (int)($pair['id'] ?? 0);
+        if (!$pair || isset($deleteIdSet[$pairId]) || isset($processedPairIds[$pairId])) {
+            continue;
+        }
+        $processedPairIds[$pairId] = true;
+        $pairRowsToDelete[] = $pair;
+        $accountId = (int)$pair['account_id'];
+        $balanceDeltas[$accountId] = ($balanceDeltas[$accountId] ?? 0) + adminBalanceChangeOnDelete($pair);
+    }
     $affectedBatchIds = [];
     foreach ($rows as $row) {
         $batchId = adminParseGeneratorBatchId($row);
@@ -107,8 +131,11 @@ try {
     $deletePlaceholders = implode(',', array_fill(0, count($transactionIds), '?'));
     $db->query("DELETE FROM transactions WHERE id IN ($deletePlaceholders)", $transactionIds);
 
-    adminMarkEmptyGeneratorBatchesUndone($db, $affectedBatchIds);
+    foreach ($pairRowsToDelete as $pairRow) {
+        $db->query("DELETE FROM transactions WHERE id = ?", [(int)$pairRow['id']]);
+    }
 
+    adminMarkEmptyGeneratorBatchesUndone($db, $affectedBatchIds);
     $db->commit();
 
     $totalBalanceAdjusted = round(array_sum($balanceDeltas), 2);

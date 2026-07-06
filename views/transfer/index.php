@@ -54,6 +54,7 @@ $sql = "SELECT setting_value FROM system_settings WHERE setting_key = 'bank_oper
 $stmt = $db->query($sql);
 $operatingCountry = $stmt->fetch();
 $bankCountry = $operatingCountry['setting_value'] ?? 'United States';
+$expenseCategoryOptionsHtml = renderExpenseCategorySelectOptions();
 $domesticRails = getDomesticRailFields($bankCountry);
 $siteDefaultCurrency = getSiteDefaultCurrency();
 
@@ -591,28 +592,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                     <div class="form-group">
                         <label class="form-label" for="internalExpenseCategory">Transaction Category *</label>
                         <select id="internalExpenseCategory" class="form-input" required>
-                            <option value="">Select Category</option>
-                            <option value="salary">💰 Salary</option>
-                            <option value="bonus">🎁 Bonus</option>
-                            <option value="transfer">🔄 Transfer</option>
-                            <option value="deposit">📥 Deposit</option>
-                            <option value="withdrawal">📤 Withdrawal</option>
-                            <option value="payment">💳 Payment</option>
-                            <option value="refund">↩️ Refund</option>
-                            <option value="fee">💸 Fee</option>
-                            <option value="interest">📈 Interest</option>
-                            <option value="investment">💼 Investment</option>
-                            <option value="loan">🏦 Loan</option>
-                            <option value="insurance">🛡️ Insurance</option>
-                            <option value="utility">💡 Utility Bill</option>
-                            <option value="shopping">🛍️ Shopping</option>
-                            <option value="entertainment">🎬 Entertainment</option>
-                            <option value="food">🍽️ Food & Dining</option>
-                            <option value="transportation">🚗 Transportation</option>
-                            <option value="healthcare">🏥 Healthcare</option>
-                            <option value="education">📚 Education</option>
-                            <option value="travel">✈️ Travel</option>
-                            <option value="other">📝 Other</option>
+                            <?php echo $expenseCategoryOptionsHtml; ?>
                         </select>
                         <div class="form-help">This helps track your spending on the dashboard</div>
                     </div>
@@ -668,28 +648,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                     <div class="form-group">
                         <label class="form-label" for="domesticExpenseCategory">Transaction Category *</label>
                         <select id="domesticExpenseCategory" class="form-input" required>
-                            <option value="">Select Category</option>
-                            <option value="salary">💰 Salary</option>
-                            <option value="bonus">🎁 Bonus</option>
-                            <option value="transfer">🔄 Transfer</option>
-                            <option value="deposit">📥 Deposit</option>
-                            <option value="withdrawal">📤 Withdrawal</option>
-                            <option value="payment">💳 Payment</option>
-                            <option value="refund">↩️ Refund</option>
-                            <option value="fee">💸 Fee</option>
-                            <option value="interest">📈 Interest</option>
-                            <option value="investment">💼 Investment</option>
-                            <option value="loan">🏦 Loan</option>
-                            <option value="insurance">🛡️ Insurance</option>
-                            <option value="utility">💡 Utility Bill</option>
-                            <option value="shopping">🛍️ Shopping</option>
-                            <option value="entertainment">🎬 Entertainment</option>
-                            <option value="food">🍽️ Food & Dining</option>
-                            <option value="transportation">🚗 Transportation</option>
-                            <option value="healthcare">🏥 Healthcare</option>
-                            <option value="education">📚 Education</option>
-                            <option value="travel">✈️ Travel</option>
-                            <option value="other">📝 Other</option>
+                            <?php echo $expenseCategoryOptionsHtml; ?>
                         </select>
                         <div class="form-help">This helps track your spending on the dashboard</div>
                     </div>
@@ -750,28 +709,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                     <div class="form-group">
                         <label class="form-label" for="internationalExpenseCategory">Transaction Category *</label>
                         <select id="internationalExpenseCategory" class="form-input" required>
-                            <option value="">Select Category</option>
-                            <option value="salary">💰 Salary</option>
-                            <option value="bonus">🎁 Bonus</option>
-                            <option value="transfer">🔄 Transfer</option>
-                            <option value="deposit">📥 Deposit</option>
-                            <option value="withdrawal">📤 Withdrawal</option>
-                            <option value="payment">💳 Payment</option>
-                            <option value="refund">↩️ Refund</option>
-                            <option value="fee">💸 Fee</option>
-                            <option value="interest">📈 Interest</option>
-                            <option value="investment">💼 Investment</option>
-                            <option value="loan">🏦 Loan</option>
-                            <option value="insurance">🛡️ Insurance</option>
-                            <option value="utility">💡 Utility Bill</option>
-                            <option value="shopping">🛍️ Shopping</option>
-                            <option value="entertainment">🎬 Entertainment</option>
-                            <option value="food">🍽️ Food & Dining</option>
-                            <option value="transportation">🚗 Transportation</option>
-                            <option value="healthcare">🏥 Healthcare</option>
-                            <option value="education">📚 Education</option>
-                            <option value="travel">✈️ Travel</option>
-                            <option value="other">📝 Other</option>
+                            <?php echo $expenseCategoryOptionsHtml; ?>
                         </select>
                         <div class="form-help">This helps track your spending on the dashboard</div>
                     </div>

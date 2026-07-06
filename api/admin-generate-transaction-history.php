@@ -37,13 +37,33 @@ try {
         'account_id' => intval($input['account_id'] ?? 0),
         'start_date' => Security::sanitize($input['start_date'] ?? ''),
         'end_date' => Security::sanitize($input['end_date'] ?? ''),
+        'volume' => Security::sanitize($input['volume'] ?? ''),
         'density' => Security::sanitize($input['density'] ?? 'normal'),
+        'target_balance' => isset($input['target_balance']) ? floatval($input['target_balance']) : null,
         'history_impact' => floatval($input['history_impact'] ?? 0),
-        'template_id' => intval($input['template_id'] ?? 0) ?: null,
+        'account_style' => Security::sanitize($input['account_style'] ?? 'personal'),
+        'financial_behaviour' => Security::sanitize($input['financial_behaviour'] ?? 'average'),
+        'persona_id' => Security::sanitize($input['persona_id'] ?? ''),
+        'preset_id' => Security::sanitize($input['preset_id'] ?? ''),
         'preview_seed' => Security::sanitize($input['preview_seed'] ?? ''),
         'idempotency_key' => Security::sanitize($input['idempotency_key'] ?? ''),
         'replace_previous' => !empty($input['replace_previous']),
     ];
+
+    if (!empty($params['preset_id'])) {
+        require_once __DIR__ . '/../includes/generator-data/generator-helpers.php';
+        foreach (getGeneratorPresets() as $preset) {
+            if ($preset['id'] === $params['preset_id']) {
+                if (!empty($preset['persona_id'])) {
+                    $params['persona_id'] = $preset['persona_id'];
+                }
+                $params['account_style'] = $preset['account_style'];
+                $params['financial_behaviour'] = $preset['financial_behaviour'];
+                $params['volume'] = $preset['volume'];
+                break;
+            }
+        }
+    }
 
     if (!$params['idempotency_key']) {
         throw new InvalidArgumentException('Idempotency key is required.');

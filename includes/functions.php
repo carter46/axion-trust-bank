@@ -1162,6 +1162,115 @@ function adminMarkEmptyGeneratorBatchesUndone(Database $db, array $batchIds): vo
     }
 }
 
+/**
+ * Net balance effect of a transaction row when it counts against the account.
+ */
+function adminTransactionBalanceEffect(array $transaction): float
+{
+    if (!adminShouldReverseBalanceOnDelete($transaction)) {
+        return 0.0;
+    }
+    $amount = (float)($transaction['amount'] ?? 0);
+    $fee = (float)($transaction['fee'] ?? 0);
+    if (($transaction['transaction_type'] ?? '') === 'credit') {
+        return $amount;
+    }
+    return -($amount + $fee);
+}
+
+/**
+ * Delta to apply when admin edits a transaction (amount, fee, status).
+ */
+function adminComputeEditBalanceDelta(array $oldTxn, array $newTxn): float
+{
+    $oldEffect = adminTransactionBalanceEffect($oldTxn);
+    $newEffect = adminTransactionBalanceEffect($newTxn);
+    return round($newEffect - $oldEffect, 2);
+}
+
+/**
+ * Find paired internal transfer credit for a sender debit.
+ */
+function adminFindInternalTransferPair(PDO $conn, array $senderTxn): ?array
+{
+    if (($senderTxn['transaction_type'] ?? '') !== 'debit' || ($senderTxn['category'] ?? '') !== 'transfer') {
+        return null;
+    }
+    $meta = json_decode($senderTxn['metadata'] ?? '{}', true);
+    if (!is_array($meta)) {
+        $meta = [];
+    }
+    if (($meta['transfer_scope'] ?? $meta['transfer_type'] ?? '') !== 'internal') {
+        return null;
+    }
+    $recipientAccountNumber = $senderTxn['recipient_account'] ?? null;
+    if (!$recipientAccountNumber) {
+        return null;
+    }
+    $stmt = $conn->prepare("SELECT account_number FROM accounts WHERE id = ?");
+    $stmt->execute([(int)$senderTxn['account_id']]);
+    $senderAccount = $stmt->fetch(PDO::FETCH_ASSOC);
+    $senderAccountNumber = $senderAccount['account_number'] ?? null;
+    if (!$senderAccountNumber) {
+        return null;
+    }
+    $createdAt = $senderTxn['created_at'];
+    $sql = "SELECT t.* FROM transactions t
+            JOIN accounts a ON t.account_id = a.id
+            WHERE a.account_number = ?
+              AND t.transaction_type = 'credit'
+              AND t.category = 'transfer'
+              AND t.status IN ('completed', 'pending', 'processing', 'on_hold')
+              AND t.recipient_account = ?
+              AND t.created_at BETWEEN DATE_SUB(?, INTERVAL 5 MINUTE) AND DATE_ADD(?, INTERVAL 5 MINUTE)
+              AND ABS(t.amount - ?) < 0.01
+            ORDER BY t.created_at DESC LIMIT 1";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute([
+        $recipientAccountNumber,
+        $senderAccountNumber,
+        $createdAt,
+        $createdAt,
+        (float)$senderTxn['amount'],
+    ]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
+/**
+ * Reverse recipient side of internal transfer when sender is deleted or failed.
+ */
+function adminReverseInternalTransferPair(PDO $conn, array $senderTxn): void
+{
+    $recipientTxn = adminFindInternalTransferPair($conn, $senderTxn);
+    if (!$recipientTxn) {
+        return;
+    }
+    $recipientAccountId = (int)$recipientTxn['account_id'];
+    $change = -((float)$recipientTxn['amount']);
+    $conn->prepare(
+        "UPDATE accounts SET balance = balance + ?, available_balance = available_balance + ?, updated_at = NOW() WHERE id = ?"
+    )->execute([$change, $change, $recipientAccountId]);
+    $conn->prepare("UPDATE transactions SET status = 'failed', completed_at = NULL WHERE id = ?")
+        ->execute([(int)$recipientTxn['id']]);
+}
+
+/**
+ * When deleting an internal transfer sender debit, remove paired recipient credit and return balance deltas.
+ */
+function adminResolveInternalTransferPairOnDelete(Database $db, array $senderTxn): array
+{
+    $conn = $db->getConnection();
+    $pair = adminFindInternalTransferPair($conn, $senderTxn);
+    if (!$pair) {
+        return [];
+    }
+    $accountId = (int)$pair['account_id'];
+    $delta = adminBalanceChangeOnDelete($pair);
+    $db->query("DELETE FROM transactions WHERE id = ?", [(int)$pair['id']]);
+    return [$accountId => $delta];
+}
+
 function logActivity($userId, $action, $details = null) {
     $db = Database::getInstance();
     $sql = "INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent, created_at) 

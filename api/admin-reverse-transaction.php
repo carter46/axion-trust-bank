@@ -79,16 +79,16 @@ try {
         // Create reversal transaction
         $reversalRef = 'REV' . $transaction['transaction_ref'];
         $sql = "INSERT INTO transactions (
-                    transaction_ref, user_id, account_id, transaction_type, category, 
+                    transaction_ref, user_id, account_id, transaction_type, category, expense_category,
                     amount, currency, balance_before, balance_after, description, 
                     status, fee, metadata, ip_address, created_at, completed_at
-                ) VALUES (?, ?, ?, ?, 'reversal', ?, ?, ?, ?, ?, 'completed', 0, ?, ?, NOW(), NOW())";
+                ) VALUES (?, ?, ?, ?, 'other', 'refund', ?, ?, ?, ?, ?, 'completed', 0, ?, ?, NOW(), NOW())";
         
         $metadata = json_encode([
             'admin_action' => true,
             'admin_id' => $_SESSION['user_id'],
             'original_transaction_id' => $transactionId,
-            'reversal_reason' => 'Admin reversal'
+            'reversal_reason' => 'Admin reversal',
         ]);
         
         $db->query($sql, [

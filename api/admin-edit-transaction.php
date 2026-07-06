@@ -30,7 +30,14 @@ $transactionId = intval($input['transaction_id'] ?? 0);
 $newAmount = floatval($input['amount'] ?? 0);
 $newDescription = trim($input['description'] ?? '');
 $newStatus = trim($input['status'] ?? '');
-$newDate = $input['date'] ?? null; // Format: 'YYYY-MM-DD HH:mm:ss'
+$newDate = $input['date'] ?? null;
+$newCategory = trim($input['category'] ?? '');
+$newExpenseCategory = isset($input['expense_category']) ? normalizeExpenseCategory($input['expense_category']) : null;
+$newFee = isset($input['fee']) ? floatval($input['fee']) : null;
+$newRecipientName = isset($input['recipient_name']) ? trim($input['recipient_name']) : null;
+$newRecipientAccount = isset($input['recipient_account']) ? trim($input['recipient_account']) : null;
+$newRecipientBank = isset($input['recipient_bank']) ? trim($input['recipient_bank']) : null;
+$transferScope = isset($input['transfer_scope']) ? trim($input['transfer_scope']) : null;
 
 // Validate
 if (!$transactionId) {
@@ -107,7 +114,6 @@ try {
         
         // Update created_at if date is provided
         if ($newDate) {
-            // Validate date format
             $dateTime = DateTime::createFromFormat('Y-m-d H:i:s', $newDate);
             if (!$dateTime) {
                 throw new Exception('Invalid date format. Expected: YYYY-MM-DD HH:mm:ss. Received: ' . $newDate);
@@ -116,6 +122,44 @@ try {
             $updateFields[] = "created_at = ?";
             $updateValues[] = $formattedDate;
         }
+
+        if ($newCategory !== '' && in_array($newCategory, getValidStructuralCategories(), true)) {
+            $updateFields[] = "category = ?";
+            $updateValues[] = $newCategory;
+        }
+        if ($newExpenseCategory !== null) {
+            $updateFields[] = "expense_category = ?";
+            $updateValues[] = $newExpenseCategory;
+        }
+        if ($newFee !== null && $newFee >= 0) {
+            $updateFields[] = "fee = ?";
+            $updateValues[] = $newFee;
+        }
+        if ($newRecipientName !== null) {
+            $updateFields[] = "recipient_name = ?";
+            $updateValues[] = $newRecipientName;
+        }
+        if ($newRecipientAccount !== null) {
+            $updateFields[] = "recipient_account = ?";
+            $updateValues[] = $newRecipientAccount;
+        }
+        if ($newRecipientBank !== null) {
+            $updateFields[] = "recipient_bank = ?";
+            $updateValues[] = $newRecipientBank;
+        }
+
+        $existingMeta = json_decode($transaction['metadata'] ?? '{}', true);
+        if (!is_array($existingMeta)) {
+            $existingMeta = [];
+        }
+        if ($transferScope !== null && $transferScope !== '') {
+            $existingMeta['transfer_scope'] = $transferScope;
+        }
+        if (!empty($input['metadata']) && is_array($input['metadata'])) {
+            $existingMeta = array_merge($existingMeta, $input['metadata']);
+        }
+        $updateFields[] = "metadata = ?";
+        $updateValues[] = json_encode($existingMeta, JSON_UNESCAPED_SLASHES);
         
         // Build and execute UPDATE query
         $sql = "UPDATE transactions SET " . implode(', ', $updateFields) . " WHERE id = ?";
@@ -204,8 +248,14 @@ try {
                 }
                 // If amount changed and transaction was/is completed or pending
                 elseif ($amountDifference != 0 && (($wasCompleted || $wasPending || $isNowCompleted || $currentStatus === 'pending') && !$isNowFailed)) {
-                    // Adjust balance for the amount difference
-                    $balanceChange = ($transactionType === 'credit') ? $amountDifference : -$amountDifference;
+                    $oldFee = (float)($transaction['fee'] ?? 0);
+                    $newFeeVal = $newFee !== null ? $newFee : $oldFee;
+                    $feeDiff = $newFeeVal - $oldFee;
+                    if ($transactionType === 'credit') {
+                        $balanceChange = $amountDifference;
+                    } else {
+                        $balanceChange = -($amountDifference + $feeDiff);
+                    }
                 }
                 
                 // Apply balance changes
@@ -216,100 +266,8 @@ try {
                         throw new Exception('Cannot process: would result in negative balance (Current: ' . number_format($accountCheck['balance'], 2) . ', Change: ' . number_format($balanceChange, 2) . ', Result: ' . number_format($newBalanceAfterChange, 2) . ')');
                     }
                     
-                    // Handle internal transfer recipient reversal (if sender's transaction is being marked as failed)
-                    // When a sender's debit transaction is marked as failed, the recipient's credit transaction should also be reversed
                     if ($transactionType === 'debit' && $transactionCategory === 'transfer' && ($wasCompleted || $wasPending) && $isNowFailed) {
-                        // Try to find the corresponding recipient credit transaction
-                        $recipientAccountNumber = $transaction['recipient_account'] ?? null;
-                        if ($recipientAccountNumber) {
-                            // Get sender's account number for matching
-                            $sqlSenderAccount = "SELECT account_number FROM accounts WHERE id = ?";
-                            $stmtSenderAccount = $conn->prepare($sqlSenderAccount);
-                            $stmtSenderAccount->execute([$transaction['account_id']]);
-                            $senderAccount = $stmtSenderAccount->fetch(PDO::FETCH_ASSOC);
-                            $senderAccountNumber = $senderAccount['account_number'] ?? null;
-                            
-                            if ($senderAccountNumber) {
-                                // Find recipient's credit transaction that matches this transfer
-                                // Recipient transaction has: account_number = recipient's account, recipient_account = sender's account number
-                                $sqlRecipient = "SELECT t.* 
-                                               FROM transactions t 
-                                               JOIN accounts a ON t.account_id = a.id 
-                                               WHERE a.account_number = ? 
-                                               AND t.transaction_type = 'credit' 
-                                               AND t.category = 'transfer' 
-                                               AND t.status IN ('completed', 'pending', 'processing', 'on_hold')
-                                               AND t.recipient_account = ? 
-                                               AND t.created_at BETWEEN DATE_SUB(?, INTERVAL 5 MINUTE) AND DATE_ADD(?, INTERVAL 5 MINUTE)
-                                               AND ABS(t.amount - ?) < 0.01
-                                               ORDER BY t.created_at DESC 
-                                               LIMIT 1";
-                                // Use transaction created_at as reference point for matching
-                                $createdAt = $transaction['created_at'];
-                                
-                                $stmtRecipient = $conn->prepare($sqlRecipient);
-                                $stmtRecipient->execute([
-                                    $recipientAccountNumber, // Recipient's account number
-                                    $senderAccountNumber,    // Sender's account number (stored in recipient transaction's recipient_account field)
-                                    $createdAt,
-                                    $createdAt,
-                                    $oldAmount
-                                ]);
-                                $recipientTransaction = $stmtRecipient->fetch(PDO::FETCH_ASSOC);
-                                
-                                if ($recipientTransaction) {
-                                    // Reverse the recipient's credit transaction
-                                    $recipientAccountId = $recipientTransaction['account_id'];
-                                    $recipientBalanceChange = -$recipientTransaction['amount']; // Negative because it was a credit
-                                    
-                                    // Check current recipient account balance
-                                    $sqlRecipientAccount = "SELECT balance FROM accounts WHERE id = ?";
-                                    $stmtRecipientAccount = $conn->prepare($sqlRecipientAccount);
-                                    $stmtRecipientAccount->execute([$recipientAccountId]);
-                                    $recipientAccountInfo = $stmtRecipientAccount->fetch(PDO::FETCH_ASSOC);
-                                    
-                                    if ($recipientAccountInfo) {
-                                        $recipientCurrentBalance = floatval($recipientAccountInfo['balance']);
-                                        $recipientNewBalance = $recipientCurrentBalance + $recipientBalanceChange;
-                                        
-                                        if ($recipientNewBalance < 0) {
-                                            // Log warning but don't block - recipient might have spent the money
-                                            error_log("Warning: Reversing recipient transaction would result in negative balance. Recipient Transaction ID: {$recipientTransaction['id']}, Current Balance: {$recipientCurrentBalance}, Change: {$recipientBalanceChange}");
-                                        }
-                                        
-                                        // Update recipient account balance
-                                        $sqlRecipientUpdate = "UPDATE accounts SET 
-                                                              balance = balance + ?, 
-                                                              available_balance = available_balance + ?,
-                                                              updated_at = NOW()
-                                                              WHERE id = ?";
-                                        $recipientBalanceStmt = $conn->prepare($sqlRecipientUpdate);
-                                        $recipientBalanceStmt->execute([$recipientBalanceChange, $recipientBalanceChange, $recipientAccountId]);
-                                        
-                                        // Mark recipient transaction as failed
-                                        $sqlRecipientStatus = "UPDATE transactions SET status = 'failed', completed_at = NULL WHERE id = ?";
-                                        $recipientStatusStmt = $conn->prepare($sqlRecipientStatus);
-                                        $recipientStatusStmt->execute([$recipientTransaction['id']]);
-                                        
-                                        // Update recipient transaction balance_after
-                                        $sqlRecipientBalance = "SELECT balance FROM accounts WHERE id = ?";
-                                        $stmtRecipientBalance = $conn->prepare($sqlRecipientBalance);
-                                        $stmtRecipientBalance->execute([$recipientAccountId]);
-                                        $recipientAccountData = $stmtRecipientBalance->fetch(PDO::FETCH_ASSOC);
-                                        if ($recipientAccountData) {
-                                            $sqlRecipientBalanceAfter = "UPDATE transactions SET balance_after = ? WHERE id = ?";
-                                            $recipientBalanceAfterStmt = $conn->prepare($sqlRecipientBalanceAfter);
-                                            $recipientBalanceAfterStmt->execute([$recipientAccountData['balance'], $recipientTransaction['id']]);
-                                        }
-                                        
-                                        error_log("Admin Edit Transaction: Reversed recipient transaction ID {$recipientTransaction['id']} for internal transfer reversal");
-                                    }
-                                } else {
-                                    // Log but don't fail - recipient transaction might not exist or might have been deleted
-                                    error_log("Admin Edit Transaction: Could not find matching recipient transaction for internal transfer. Sender Transaction ID: {$transactionId}, Recipient Account: {$recipientAccountNumber}");
-                                }
-                            }
-                        }
+                        adminReverseInternalTransferPair($conn, $transaction);
                     }
                     
                     // Update account balance

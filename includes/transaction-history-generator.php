@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/banking-activity-engine.php';
+
 class TransactionHistoryGenerator
 {
     public const DENSITY_COUNTS = [
@@ -38,9 +40,11 @@ class TransactionHistoryGenerator
             'account_id' => (int)($params['account_id'] ?? 0),
             'start_date' => $params['start_date'] ?? '',
             'end_date' => $params['end_date'] ?? '',
-            'density' => $params['density'] ?? 'normal',
+            'volume' => $params['volume'] ?? ($params['density'] ?? 'medium'),
             'history_impact' => round((float)($params['history_impact'] ?? 0), 2),
-            'template_id' => (int)($params['template_id'] ?? 0),
+            'account_style' => $params['account_style'] ?? 'personal',
+            'financial_behaviour' => $params['financial_behaviour'] ?? 'average',
+            'persona_id' => $params['persona_id'] ?? '',
         ];
 
         return hash('sha256', json_encode($payload, JSON_UNESCAPED_SLASHES));
@@ -241,42 +245,20 @@ class TransactionHistoryGenerator
 
         $account = $this->getAccount((int)$params['account_id'], (int)$params['user_id']);
         $previousBalance = round((float)$account['balance'], 2);
-        $historyImpact = round((float)$params['history_impact'], 2);
         $replacePrevious = !empty($params['replace_previous']);
+        $historyImpact = $this->resolveHistoryImpact($params, $previousBalance, $replacePrevious, (int)$params['account_id']);
+        $params['history_impact'] = $historyImpact;
+
         $anchors = $this->resolveAnchorBalances($previousBalance, $historyImpact, $replacePrevious, (int)$params['account_id']);
         $targetFinal = $anchors['target_final_balance'];
         $genOpening = $anchors['gen_opening_balance'];
 
-        $templateId = (int)($params['template_id'] ?? 0);
-        if (!$templateId) {
-            $template = $this->getDefaultTemplate();
-            $templateId = $template ? (int)$template['id'] : 0;
-        }
-        if (!$templateId) {
-            throw new RuntimeException('No active transaction template found.');
-        }
-
-        $templateItems = $this->loadTemplateItems($templateId);
         $seed = (string)($params['preview_seed'] ?? $params['idempotency_key'] ?? uniqid('preview_', true));
-        $sampled = $this->sampleAndSchedule(
-            $templateItems,
-            $params['density'],
-            $params['start_date'],
-            $params['end_date'],
-            $seed
-        );
+        $built = $this->buildFromEngine($params, $seed, $account['currency'] ?? DEFAULT_CURRENCY, $genOpening);
+        $chained = $built['chained'];
+        $planSummary = $built['plan_summary'];
 
-        foreach ($sampled as &$row) {
-            $row['amount'] = round((float)$row['base_amount'], 2);
-        }
-        unset($row);
-
-        $scaled = $this->scaleToHistoryImpact($sampled, $historyImpact);
-        $chained = $this->buildBalanceChain($scaled, $genOpening);
-        $paramsHash = $this->computeParamsHash(array_merge($params, [
-            'template_id' => $templateId,
-            'history_impact' => $historyImpact,
-        ]));
+        $paramsHash = $this->computeParamsHash(array_merge($params, ['history_impact' => $historyImpact]));
         $duplicate = $this->findDuplicateBatch((int)$params['account_id'], $paramsHash);
 
         $warnings = $this->buildWarnings((int)$params['account_id'], $params['start_date'], $params['end_date']);
@@ -291,15 +273,26 @@ class TransactionHistoryGenerator
             );
         }
 
+        $persona = getGeneratorPersonaById($params['persona_id'] ?? null);
+        if ($persona && !empty($persona['country_hint'])) {
+            $opRow = $this->db->query("SELECT setting_value FROM system_settings WHERE setting_key = 'bank_operating_country' LIMIT 1")->fetch();
+            $operatingCountry = $opRow['setting_value'] ?? '';
+            if ($operatingCountry && strcasecmp(trim($persona['country_hint']), trim($operatingCountry)) !== 0) {
+                $warnings[] = 'Persona country (' . $persona['country_hint'] . ') differs from bank operating country (' . $operatingCountry . ').';
+            }
+        }
+
         return [
             'success' => true,
             'transaction_count' => count($chained),
             'previous_balance' => $previousBalance,
             'history_impact' => $historyImpact,
+            'target_balance' => $targetFinal,
             'new_account_balance' => $targetFinal,
             'gen_opening_balance' => $genOpening,
             'anchor_after' => $anchors['anchor_after'],
             'replaced_impact_sum' => $anchors['replaced_impact_sum'],
+            'plan_summary' => $planSummary,
             'sample_transactions' => $this->formatSampleTransactions(array_slice($chained, 0, 5), $account['currency'] ?? DEFAULT_CURRENCY),
             'warnings' => $warnings,
             'duplicate_batch_warning' => $duplicate ? [
@@ -308,7 +301,8 @@ class TransactionHistoryGenerator
             ] : null,
             'preview_seed' => $seed,
             'params_hash' => $paramsHash,
-            'template_id' => $templateId,
+            'engine_params' => $built['engine_params'] ?? null,
+            'persona_label' => $planSummary['persona_label'] ?? ($persona['label'] ?? null),
         ];
     }
 
@@ -333,24 +327,9 @@ class TransactionHistoryGenerator
         $adminId = (int)$params['admin_id'];
         $historyImpact = (float)$preview['history_impact'];
         $previousBalance = (float)$preview['previous_balance'];
-        $templateId = (int)$preview['template_id'];
         $seed = (string)($params['preview_seed'] ?? $params['idempotency_key']);
         $replacePrevious = !empty($params['replace_previous']);
-
-        $templateItems = $this->loadTemplateItems($templateId);
-        $sampled = $this->sampleAndSchedule(
-            $templateItems,
-            $params['density'],
-            $params['start_date'],
-            $params['end_date'],
-            $seed
-        );
-        foreach ($sampled as &$row) {
-            $row['amount'] = round((float)$row['base_amount'], 2);
-        }
-        unset($row);
-
-        $scaled = $this->scaleToHistoryImpact($sampled, $historyImpact);
+        $params['history_impact'] = $historyImpact;
 
         $batchId = $this->makeBatchId($accountId);
 
@@ -398,50 +377,65 @@ class TransactionHistoryGenerator
             $anchors = $this->resolveAnchorBalances($lockedPrevious, $historyImpact, false, $accountId);
             $targetFinal = $anchors['target_final_balance'];
             $genOpening = $anchors['gen_opening_balance'];
-            $chained = $this->buildBalanceChain($scaled, $genOpening);
+            $built = $this->buildFromEngine($params, $seed, $account['currency'] ?? DEFAULT_CURRENCY, $genOpening);
+            $chained = $built['chained'];
 
             $currency = $account['currency'] ?? DEFAULT_CURRENCY;
+            $hasPaymentMethod = function_exists('transactionsHasPaymentMethodColumn') && transactionsHasPaymentMethodColumn();
             $seq = 1;
             foreach ($chained as $row) {
                 $ref = sprintf('GEN-ACC%d-%s-%03d', $accountId, $batchId, $seq);
-                $metadata = json_encode([
-                    'generator' => true,
-                    'generator_batch_id' => $batchId,
-                    'admin_id' => $adminId,
-                    'template_id' => $templateId,
-                ], JSON_UNESCAPED_SLASHES);
+                $meta = is_array($row['metadata'] ?? null) ? $row['metadata'] : json_decode($row['metadata'] ?? '{}', true);
+                if (!is_array($meta)) {
+                    $meta = [];
+                }
+                $meta['generator'] = true;
+                $meta['generator_batch_id'] = $batchId;
+                $meta['admin_id'] = $adminId;
+                $metadata = json_encode($meta, JSON_UNESCAPED_SLASHES);
 
-                $completedAt = ($row['status'] ?? 'completed') === 'completed' ? $row['scheduled_at'] : null;
-                $this->db->query(
-                    "INSERT INTO transactions (
-                        transaction_ref, user_id, account_id, transaction_type, category, expense_category,
-                        amount, currency, balance_before, balance_after, description,
-                        recipient_account, recipient_name, recipient_bank,
-                        status, payment_method, fee, exchange_rate, metadata, ip_address, created_at, completed_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, NULL, ?, ?, ?, ?)",
-                    [
-                        $ref,
-                        $userId,
-                        $accountId,
-                        $row['transaction_type'],
-                        $row['category'],
-                        $row['expense_category'] ?? null,
-                        $row['amount'],
-                        $currency,
-                        $row['balance_before'],
-                        $row['balance_after'],
-                        $row['description'],
-                        $row['recipient_account'] ?? null,
-                        $row['recipient_name'] ?? null,
-                        $row['recipient_bank'] ?? null,
-                        $row['status'] ?? 'completed',
-                        $row['fee'] ?? 0,
-                        $metadata,
-                        $_SERVER['REMOTE_ADDR'] ?? null,
-                        $row['scheduled_at'],
-                        $completedAt,
-                    ]
-                );
+                $completedAt = ($row['status'] ?? 'completed') === 'completed' ? ($row['scheduled_at'] ?? null) : null;
+                $paymentMethod = $row['payment_method'] ?? null;
+
+                if ($hasPaymentMethod) {
+                    $this->db->query(
+                        "INSERT INTO transactions (
+                            transaction_ref, user_id, account_id, transaction_type, category, expense_category,
+                            amount, currency, balance_before, balance_after, description,
+                            recipient_account, recipient_name, recipient_bank,
+                            status, payment_method, fee, exchange_rate, metadata, ip_address, created_at, completed_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?)",
+                        [
+                            $ref, $userId, $accountId,
+                            $row['transaction_type'], $row['category'], $row['expense_category'] ?? null,
+                            $row['amount'], $currency, $row['balance_before'], $row['balance_after'],
+                            $row['description'],
+                            $row['recipient_account'] ?? null, $row['recipient_name'] ?? null, $row['recipient_bank'] ?? null,
+                            $row['status'] ?? 'completed', $paymentMethod, $row['fee'] ?? 0,
+                            $metadata, $_SERVER['REMOTE_ADDR'] ?? null,
+                            $row['scheduled_at'], $completedAt,
+                        ]
+                    );
+                } else {
+                    $this->db->query(
+                        "INSERT INTO transactions (
+                            transaction_ref, user_id, account_id, transaction_type, category, expense_category,
+                            amount, currency, balance_before, balance_after, description,
+                            recipient_account, recipient_name, recipient_bank,
+                            status, payment_method, fee, exchange_rate, metadata, ip_address, created_at, completed_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, NULL, ?, ?, ?, ?)",
+                        [
+                            $ref, $userId, $accountId,
+                            $row['transaction_type'], $row['category'], $row['expense_category'] ?? null,
+                            $row['amount'], $currency, $row['balance_before'], $row['balance_after'],
+                            $row['description'],
+                            $row['recipient_account'] ?? null, $row['recipient_name'] ?? null, $row['recipient_bank'] ?? null,
+                            $row['status'] ?? 'completed', $row['fee'] ?? 0,
+                            $metadata, $_SERVER['REMOTE_ADDR'] ?? null,
+                            $row['scheduled_at'], $completedAt,
+                        ]
+                    );
+                }
                 $seq++;
             }
 
@@ -450,12 +444,18 @@ class TransactionHistoryGenerator
                 [$targetFinal, $targetFinal, $accountId]
             );
 
+            $densityStore = ['low' => 'light', 'medium' => 'normal', 'high' => 'heavy'][$params['volume'] ?? ''] ?? ($params['density'] ?? 'normal');
+            $templateId = 0;
+            $engineParamsJson = json_encode($preview['engine_params'] ?? $built['engine_params'] ?? null);
+            $planSummaryJson = json_encode($preview['plan_summary'] ?? $built['plan_summary'] ?? null);
+
             $this->db->query(
                 "INSERT INTO transaction_generation_batches (
                     batch_id, idempotency_key, params_hash, admin_id, user_id, account_id,
                     template_id, density, start_date, end_date, previous_balance, history_impact,
-                    target_final_balance, opening_balance, transaction_count, replaced_previous, status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed')",
+                    target_final_balance, opening_balance, transaction_count, replaced_previous,
+                    engine_params, plan_summary, status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed')",
                 [
                     $batchId,
                     $idempotencyKey,
@@ -464,7 +464,7 @@ class TransactionHistoryGenerator
                     $userId,
                     $accountId,
                     $templateId,
-                    $params['density'],
+                    $densityStore,
                     $params['start_date'],
                     $params['end_date'],
                     $previousBalance,
@@ -473,6 +473,8 @@ class TransactionHistoryGenerator
                     $genOpening,
                     count($chained),
                     $replacedPrevious ? 1 : 0,
+                    $engineParamsJson,
+                    $planSummaryJson,
                 ]
             );
 
@@ -661,7 +663,7 @@ class TransactionHistoryGenerator
 
     private function validateParams(array $params, bool $requireIdempotency): void
     {
-        $required = ['user_id', 'account_id', 'start_date', 'end_date', 'density', 'history_impact'];
+        $required = ['user_id', 'account_id', 'start_date', 'end_date'];
         if ($requireIdempotency) {
             $required[] = 'idempotency_key';
         }
@@ -672,13 +674,19 @@ class TransactionHistoryGenerator
             }
         }
 
-        if (!in_array($params['density'], array_keys(self::DENSITY_COUNTS), true)) {
-            throw new InvalidArgumentException('Invalid density.');
+        $hasImpact = isset($params['history_impact']) && abs((float)$params['history_impact']) >= 0.01;
+        $hasTarget = isset($params['target_balance']) && $params['target_balance'] !== '';
+        if (!$hasImpact && !$hasTarget) {
+            throw new InvalidArgumentException('Target balance or history impact is required.');
         }
 
-        $historyImpact = round((float)$params['history_impact'], 2);
-        if (abs($historyImpact) < 0.01) {
-            throw new InvalidArgumentException('History impact must be non-zero.');
+        $volume = $params['volume'] ?? null;
+        $density = $params['density'] ?? null;
+        if ($volume && !in_array($volume, ['low', 'medium', 'high'], true)) {
+            throw new InvalidArgumentException('Invalid volume.');
+        }
+        if (!$volume && $density && !in_array($density, array_keys(self::DENSITY_COUNTS), true)) {
+            throw new InvalidArgumentException('Invalid density.');
         }
 
         if (strtotime($params['start_date']) === false || strtotime($params['end_date']) === false) {
@@ -688,6 +696,34 @@ class TransactionHistoryGenerator
         if ($params['start_date'] > $params['end_date']) {
             throw new InvalidArgumentException('Start date must be on or before end date.');
         }
+    }
+
+    private function resolveHistoryImpact(array $params, float $previousBalance, bool $replacePrevious, int $accountId): float
+    {
+        if (isset($params['target_balance']) && $params['target_balance'] !== '') {
+            $target = round((float)$params['target_balance'], 2);
+            $anchors = $this->resolveAnchorBalances($previousBalance, 0, $replacePrevious, $accountId);
+            $anchorAfter = $anchors['anchor_after'];
+            return round($target - $anchorAfter, 2);
+        }
+        $historyImpact = round((float)$params['history_impact'], 2);
+        if (abs($historyImpact) < 0.01) {
+            throw new InvalidArgumentException('History impact must be non-zero.');
+        }
+        return $historyImpact;
+    }
+
+    private function buildFromEngine(array $params, string $seed, string $currency, float $genOpening): array
+    {
+        $engine = new BankingActivityEngine($this->db);
+        $plan = $engine->buildPlan(array_merge($params, ['preview_seed' => $seed]));
+        $materialized = $engine->materializeEvents($plan['events'], $currency);
+        $chained = $this->buildBalanceChain($materialized, $genOpening);
+        return [
+            'chained' => $chained,
+            'plan_summary' => $plan['summary'],
+            'engine_params' => $plan['engine_params'] ?? null,
+        ];
     }
 
     private function getAccount(int $accountId, int $userId): array

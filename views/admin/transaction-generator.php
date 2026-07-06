@@ -10,7 +10,9 @@ include __DIR__ . '/../../includes/admin-sidebar.php';
 include __DIR__ . '/../../includes/admin-modals.php';
 
 $defaultCurrency = getSiteDefaultCurrency();
-$templateReady = !empty($template);
+$templateReady = $templateReady ?? true;
+$generatorPersonas = $generatorPersonas ?? [];
+$generatorPresets = $generatorPresets ?? [];
 ?>
 
 <style>
@@ -101,12 +103,53 @@ $templateReady = !empty($template);
                 <div id="currentBalanceDisplay" class="computed-balance neutral">—</div>
             </div>
             <div class="form-group">
-                <label for="historyImpact">History impact</label>
-                <div class="impact-row">
-                    <button type="button" id="impactSignBtn" class="impact-sign" title="Toggle increase/decrease">+</button>
-                    <input type="number" id="historyImpact" class="form-control" step="0.01" min="0.01" placeholder="200.00" value="200">
-                </div>
-                <div class="help">Net change applied to the account from generated history (+ increases, − decreases).</div>
+                <label for="targetBalance">Target balance</label>
+                <input type="number" id="targetBalance" class="form-control" step="0.01" min="0" placeholder="Enter desired final balance">
+                <div class="help">Account balance after generated history is applied (replace mode uses anchor math).</div>
+            </div>
+            <div class="form-group">
+                <label for="presetSelect">Generation preset (optional)</label>
+                <select id="presetSelect" class="form-control">
+                    <option value="">Custom settings</option>
+                    <?php foreach ($generatorPresets as $preset): ?>
+                        <option value="<?php echo htmlspecialchars($preset['id']); ?>"><?php echo htmlspecialchars($preset['label']); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="personaSelect">Demo persona (optional)</label>
+                <select id="personaSelect" class="form-control">
+                    <option value="">Custom</option>
+                    <?php foreach ($generatorPersonas as $persona): ?>
+                        <option value="<?php echo htmlspecialchars($persona['id']); ?>"
+                            data-style="<?php echo htmlspecialchars($persona['account_style']); ?>"
+                            data-behaviour="<?php echo htmlspecialchars($persona['financial_behaviour']); ?>"
+                            data-volume="<?php echo htmlspecialchars($persona['volume']); ?>">
+                            <?php echo htmlspecialchars($persona['label']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="accountStyle">Account style</label>
+                <select id="accountStyle" class="form-control">
+                    <option value="personal">Personal</option>
+                    <option value="business">Business</option>
+                    <option value="investor">Investor</option>
+                    <option value="student">Student</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="financialBehaviour">Financial behaviour</label>
+                <select id="financialBehaviour" class="form-control">
+                    <option value="conservative">Conservative</option>
+                    <option value="average" selected>Average</option>
+                    <option value="active_spender">Active spender</option>
+                    <option value="luxury">Luxury lifestyle</option>
+                    <option value="intl_traveller">International traveller</option>
+                    <option value="cash_heavy">Cash heavy</option>
+                    <option value="digital_first">Digital first</option>
+                </select>
             </div>
             <div class="form-group">
                 <label for="startDate">Start date</label>
@@ -117,17 +160,24 @@ $templateReady = !empty($template);
                 <input type="date" id="endDate" class="form-control" value="<?php echo date('Y-m-d', strtotime('-1 day')); ?>">
             </div>
             <div class="form-group">
-                <label for="density">Density</label>
-                <select id="density" class="form-control">
-                    <option value="light">Light (25 transactions)</option>
-                    <option value="normal" selected>Normal (70 transactions)</option>
-                    <option value="heavy">Heavy (150 transactions)</option>
+                <label for="volume">Volume</label>
+                <select id="volume" class="form-control">
+                    <option value="low">Low — minimal activity</option>
+                    <option value="medium" selected>Medium — typical account</option>
+                    <option value="high">High — active account</option>
                 </select>
             </div>
             <div class="form-group">
-                <label>New account balance</label>
+                <label>History impact (computed)</label>
+                <div id="historyImpactDisplay" class="computed-balance neutral">—</div>
+            </div>
+            <div class="form-group">
+                <label>Opening balance (simulated)</label>
+                <div id="openingBalanceDisplay" class="computed-balance neutral">—</div>
+            </div>
+            <div class="form-group">
+                <label>Closing balance</label>
                 <div id="newBalanceDisplay" class="computed-balance">—</div>
-                <div class="help" id="balanceEstimateNote">Estimate only until preview is run (replace mode needs preview for exact value).</div>
             </div>
         </div>
         <div class="form-group checkbox-row">
@@ -190,18 +240,21 @@ $templateReady = !empty($template);
 const SITE_URL = <?php echo json_encode(SITE_URL); ?>;
 const DEFAULT_CURRENCY = <?php echo json_encode($defaultCurrency); ?>;
 
+const GENERATOR_PERSONAS = <?php echo json_encode($generatorPersonas); ?>;
+const GENERATOR_PRESETS = <?php echo json_encode($generatorPresets); ?>;
+
 let previewSeed = '';
 let idempotencyKey = '';
-let impactSign = 1;
 let lastPreview = null;
 let pendingUndoBatchId = null;
 
 const userSelect = document.getElementById('userSelect');
 const accountSelect = document.getElementById('accountSelect');
-const historyImpactInput = document.getElementById('historyImpact');
-const impactSignBtn = document.getElementById('impactSignBtn');
+const targetBalanceInput = document.getElementById('targetBalance');
 const currentBalanceDisplay = document.getElementById('currentBalanceDisplay');
 const newBalanceDisplay = document.getElementById('newBalanceDisplay');
+const historyImpactDisplay = document.getElementById('historyImpactDisplay');
+const openingBalanceDisplay = document.getElementById('openingBalanceDisplay');
 
 function escapeHtml(value) {
     return String(value ?? '')
@@ -216,10 +269,43 @@ function formatMoney(amount) {
     return sign + new Intl.NumberFormat('en-US', { style: 'currency', currency: DEFAULT_CURRENCY }).format(Math.abs(amount));
 }
 
-function getSignedImpact() {
-    const raw = parseFloat(historyImpactInput.value || '0');
-    if (!raw || raw <= 0) return 0;
-    return impactSign * raw;
+function updateTargetBalanceHint() {
+    const current = parseFloat(currentBalanceDisplay.dataset.value || '0');
+    const target = parseFloat(targetBalanceInput.value || '');
+    if (!targetBalanceInput.value || isNaN(target)) {
+        historyImpactDisplay.textContent = '—';
+        openingBalanceDisplay.textContent = '—';
+        newBalanceDisplay.textContent = currentBalanceDisplay.dataset.value ? formatMoney(current) : '—';
+        return;
+    }
+    const impact = target - current;
+    historyImpactDisplay.textContent = (impact >= 0 ? '+' : '') + formatMoney(impact);
+    openingBalanceDisplay.textContent = 'Preview for exact opening';
+    newBalanceDisplay.textContent = formatMoney(target);
+}
+
+function applyPersonaFromSelect() {
+    const opt = document.getElementById('personaSelect').selectedOptions[0];
+    if (!opt || !opt.value) return;
+    document.getElementById('accountStyle').value = opt.dataset.style || 'personal';
+    document.getElementById('financialBehaviour').value = opt.dataset.behaviour || 'average';
+    document.getElementById('volume').value = opt.dataset.volume || 'medium';
+}
+
+function applyPresetFromSelect() {
+    const presetId = document.getElementById('presetSelect').value;
+    if (!presetId) return;
+    const preset = GENERATOR_PRESETS.find(p => p.id === presetId);
+    if (!preset) return;
+    if (preset.persona_id) {
+        document.getElementById('personaSelect').value = preset.persona_id;
+        applyPersonaFromSelect();
+    } else {
+        document.getElementById('personaSelect').value = '';
+    }
+    document.getElementById('accountStyle').value = preset.account_style;
+    document.getElementById('financialBehaviour').value = preset.financial_behaviour;
+    document.getElementById('volume').value = preset.volume;
 }
 
 function invalidatePreview() {
@@ -230,37 +316,24 @@ function invalidatePreview() {
     document.getElementById('previewCard').style.display = 'none';
 }
 
-function updateNewBalance() {
-    const currentText = currentBalanceDisplay.dataset.value;
-    if (currentText === undefined) {
-        newBalanceDisplay.textContent = '—';
-        return;
-    }
-    const current = parseFloat(currentBalanceDisplay.dataset.value || '0');
-    const impact = getSignedImpact();
-    if (!impact) {
-        newBalanceDisplay.textContent = '—';
-        return;
-    }
-    newBalanceDisplay.textContent = formatMoney(current + impact);
-}
-
-impactSignBtn.addEventListener('click', () => {
-    impactSign = impactSign === 1 ? -1 : 1;
-    impactSignBtn.textContent = impactSign === 1 ? '+' : '−';
+document.getElementById('personaSelect').addEventListener('change', () => {
+    applyPersonaFromSelect();
     invalidatePreview();
-    updateNewBalance();
+});
+document.getElementById('presetSelect').addEventListener('change', () => {
+    applyPresetFromSelect();
+    invalidatePreview();
 });
 
-['historyImpact', 'startDate', 'endDate', 'density', 'replacePrevious'].forEach(id => {
+['targetBalance', 'startDate', 'endDate', 'volume', 'accountStyle', 'financialBehaviour', 'replacePrevious'].forEach(id => {
     document.getElementById(id).addEventListener('change', () => {
         invalidatePreview();
-        updateNewBalance();
+        updateTargetBalanceHint();
     });
 });
-historyImpactInput.addEventListener('input', () => {
+targetBalanceInput.addEventListener('input', () => {
     invalidatePreview();
-    updateNewBalance();
+    updateTargetBalanceHint();
 });
 
 userSelect.addEventListener('change', async () => {
@@ -269,7 +342,7 @@ userSelect.addEventListener('change', async () => {
     accountSelect.disabled = true;
     currentBalanceDisplay.textContent = '—';
     delete currentBalanceDisplay.dataset.value;
-    updateNewBalance();
+    updateTargetBalanceHint();
 
     const userId = parseInt(userSelect.value, 10);
     if (!userId) {
@@ -313,7 +386,7 @@ accountSelect.addEventListener('change', () => {
         currentBalanceDisplay.textContent = formatMoney(bal);
         currentBalanceDisplay.dataset.value = String(bal);
     }
-    updateNewBalance();
+    updateTargetBalanceHint();
 });
 
 function buildPayload() {
@@ -322,18 +395,43 @@ function buildPayload() {
         account_id: parseInt(accountSelect.value, 10),
         start_date: document.getElementById('startDate').value,
         end_date: document.getElementById('endDate').value,
-        density: document.getElementById('density').value,
-        history_impact: getSignedImpact(),
+        volume: document.getElementById('volume').value,
+        target_balance: parseFloat(targetBalanceInput.value || '0'),
+        account_style: document.getElementById('accountStyle').value,
+        financial_behaviour: document.getElementById('financialBehaviour').value,
+        persona_id: document.getElementById('personaSelect').value || '',
+        preset_id: document.getElementById('presetSelect').value || '',
         preview_seed: previewSeed || undefined,
         idempotency_key: idempotencyKey || undefined,
         replace_previous: document.getElementById('replacePrevious').checked
     };
 }
 
+function renderPlanSummary(data) {
+    const ps = data.plan_summary || {};
+    const lines = [
+        `<p><strong>${data.transaction_count}</strong> estimated transactions</p>`,
+        `<p>Date range: ${escapeHtml(document.getElementById('startDate').value)} → ${escapeHtml(document.getElementById('endDate').value)}</p>`,
+        `<p>Opening: ${formatMoney(data.gen_opening_balance)} → Closing: ${formatMoney(data.new_account_balance)}</p>`,
+    ];
+    if (data.persona_label) lines.push(`<p>Persona: ${escapeHtml(data.persona_label)}</p>`);
+    if (ps.domestic_transfers !== undefined) {
+        lines.push(`<ul style="margin:8px 0;padding-left:20px;">
+            <li>Domestic transfers: ${ps.domestic_transfers}</li>
+            <li>International transfers: ${ps.international_transfers}</li>
+            <li>Card payments: ${ps.card_payments}</li>
+            <li>Bills: ${ps.bills}</li>
+            <li>Salary/credits: ${ps.salary_credits}</li>
+        </ul>`);
+    }
+    lines.push(`<p>History impact: ${data.history_impact >= 0 ? '+' : ''}${formatMoney(data.history_impact)}</p>`);
+    return lines.join('');
+}
+
 document.getElementById('previewBtn').addEventListener('click', async () => {
     const payload = buildPayload();
-    if (!payload.user_id || !payload.account_id || !payload.history_impact) {
-        showToast('Select user, account, and enter a non-zero history impact.', 'error');
+    if (!payload.user_id || !payload.account_id || !payload.target_balance) {
+        showToast('Select user, account, and enter a target balance.', 'error');
         return;
     }
 
@@ -354,11 +452,10 @@ document.getElementById('previewBtn').addEventListener('click', async () => {
         idempotencyKey = 'gen-' + payload.account_id + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
 
         document.getElementById('previewCard').style.display = 'block';
-        document.getElementById('previewSummary').innerHTML =
-            `<p><strong>${data.transaction_count}</strong> transactions |
-            Current ${formatMoney(data.previous_balance)} → New ${formatMoney(data.new_account_balance)}
-            (impact ${data.history_impact >= 0 ? '+' : ''}${formatMoney(data.history_impact)})</p>`;
+        document.getElementById('previewSummary').innerHTML = renderPlanSummary(data);
         newBalanceDisplay.textContent = formatMoney(data.new_account_balance);
+        openingBalanceDisplay.textContent = formatMoney(data.gen_opening_balance);
+        historyImpactDisplay.textContent = (data.history_impact >= 0 ? '+' : '') + formatMoney(data.history_impact);
 
         const warningsEl = document.getElementById('previewWarnings');
         let warnHtml = '';

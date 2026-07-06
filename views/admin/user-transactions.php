@@ -39,6 +39,9 @@ $totalUserBalance = getUserTotalBalanceForDisplay($user, $accounts);
 // Get user currency
 $userCurrency = getUserDisplayCurrency($user);
 
+$expenseCategoryOptions = getExpenseCategoryOptions();
+$structuralCategories = getValidStructuralCategories();
+
 include __DIR__ . '/../../includes/head.php';
 include __DIR__ . '/../../includes/admin-sidebar.php';
 include __DIR__ . '/../../includes/admin-modals.php';
@@ -258,8 +261,25 @@ include __DIR__ . '/../../includes/admin-modals.php';
 
 .transaction-ref {
     font-family: monospace;
+    font-size: 11px;
+    color: #9ca3af;
+}
+
+.category-primary {
+    font-weight: 600;
+    color: #2d3748;
     font-size: 14px;
+}
+
+.category-structural {
+    display: inline-block;
+    font-size: 11px;
     color: #6b7280;
+    background: #f3f4f6;
+    padding: 2px 8px;
+    border-radius: 6px;
+    margin-top: 4px;
+    text-transform: capitalize;
 }
 
 .transaction-type {
@@ -823,7 +843,7 @@ include __DIR__ . '/../../includes/admin-modals.php';
                         <th class="tx-select-cell">
                             <input type="checkbox" id="selectAllTransactionsHeader" aria-label="Select all" title="Select all">
                         </th>
-                        <th>Transaction Ref</th>
+                        <th>Category</th>
                         <th>Type</th>
                         <th>Amount</th>
                         <th>Account</th>
@@ -840,7 +860,11 @@ include __DIR__ . '/../../includes/admin-modals.php';
                                 <input type="checkbox" class="tx-select" value="<?php echo (int)$transaction['id']; ?>" aria-label="Select transaction">
                             </td>
                             <td>
-                                <span class="transaction-ref"><?php echo htmlspecialchars($transaction['transaction_ref']); ?></span>
+                                <div class="category-primary" title="Ref: <?php echo htmlspecialchars($transaction['transaction_ref']); ?>">
+                                    <?php echo htmlspecialchars(formatExpenseCategoryLabel($transaction['expense_category'] ?? null)); ?>
+                                </div>
+                                <span class="category-structural"><?php echo htmlspecialchars(formatStructuralCategoryLabel($transaction['category'] ?? null)); ?></span>
+                                <div class="transaction-ref"><?php echo htmlspecialchars($transaction['transaction_ref']); ?></div>
                             </td>
                             <td>
                                 <span class="transaction-type type-<?php echo $transaction['transaction_type']; ?>">
@@ -916,6 +940,10 @@ include __DIR__ . '/../../includes/admin-modals.php';
                             </div>
                             <div class="transaction-item-left">
                                 <div class="transaction-item-title"><?php echo htmlspecialchars($transaction['description'] ?? 'Transaction'); ?></div>
+                                <div class="category-primary" style="font-size:13px;margin-top:4px;">
+                                    <?php echo htmlspecialchars(formatExpenseCategoryLabel($transaction['expense_category'] ?? null)); ?>
+                                    <span class="category-structural"><?php echo htmlspecialchars(formatStructuralCategoryLabel($transaction['category'] ?? null)); ?></span>
+                                </div>
                                 <div class="transaction-item-ref"><?php echo htmlspecialchars($transaction['transaction_ref']); ?></div>
                             </div>
                         </div>
@@ -1012,6 +1040,8 @@ include __DIR__ . '/../../includes/admin-modals.php';
 
 <script>
 const ADMIN_USER_ID = <?php echo (int)$userId; ?>;
+const EXPENSE_CATEGORY_OPTIONS = <?php echo json_encode($expenseCategoryOptions, JSON_UNESCAPED_UNICODE); ?>;
+const STRUCTURAL_CATEGORIES = <?php echo json_encode($structuralCategories); ?>;
 
 function getSelectedTransactionIds() {
     const ids = Array.from(document.querySelectorAll('.tx-select:checked'))
@@ -1168,26 +1198,58 @@ function editTransaction(transactionId) {
 }
 
 function showEditTransactionModal(transaction, dateValue, timeValue) {
-    // Escape HTML to prevent XSS
     const escapeHtml = (text) => {
         const div = document.createElement('div');
-        div.textContent = text;
+        div.textContent = text ?? '';
         return div.innerHTML;
     };
-    
+
+    let meta = {};
+    try {
+        meta = typeof transaction.metadata === 'string'
+            ? JSON.parse(transaction.metadata || '{}')
+            : (transaction.metadata || {});
+    } catch (e) {
+        meta = {};
+    }
+
     const safeAmount = parseFloat(transaction.amount) || 0;
+    const safeFee = parseFloat(transaction.fee) || 0;
     const safeDate = escapeHtml(dateValue || '');
     const safeTime = escapeHtml(timeValue || '');
-    const safeDescription = escapeHtml((transaction.description || '').replace(/"/g, '&quot;'));
+    const safeDescription = escapeHtml(transaction.description || '');
     const safeStatus = escapeHtml(transaction.status || 'completed');
     const safeId = parseInt(transaction.id) || 0;
-    
+    const safeCategory = escapeHtml(transaction.category || 'other');
+    const safeExpenseCategory = escapeHtml(transaction.expense_category || '');
+    const safeTxnType = escapeHtml(transaction.transaction_type || 'debit');
+    const safeRecipientName = escapeHtml(transaction.recipient_name || '');
+    const safeRecipientAccount = escapeHtml(transaction.recipient_account || '');
+    const safeRecipientBank = escapeHtml(transaction.recipient_bank || '');
+    const transferScope = escapeHtml(meta.transfer_scope || meta.transfer_type || 'domestic');
+    const transferCountry = escapeHtml(meta.country || meta.recipient_country || '');
+    const showTransferFields = transaction.category === 'transfer'
+        || (transaction.category === 'deposit' && !!meta.transfer_scope)
+        || ['domestic', 'international', 'internal'].includes(meta.transfer_scope || meta.transfer_type || '');
+
+    const expenseOptionsHtml = EXPENSE_CATEGORY_OPTIONS.map(opt => {
+        const selected = safeExpenseCategory === opt.value ? ' selected' : '';
+        return `<option value="${escapeHtml(opt.value)}"${selected}>${opt.icon} ${escapeHtml(opt.label)}</option>`;
+    }).join('');
+
+    const structuralOptionsHtml = STRUCTURAL_CATEGORIES.map(cat => {
+        const selected = safeCategory === cat ? ' selected' : '';
+        return `<option value="${escapeHtml(cat)}"${selected}>${escapeHtml(cat.charAt(0).toUpperCase() + cat.slice(1))}</option>`;
+    }).join('');
+
+    const transferSectionStyle = showTransferFields ? '' : 'display:none;';
+
     const modal = document.createElement('div');
     modal.id = 'editTransactionModal';
     modal.className = 'modal-overlay';
     modal.style.display = 'flex';
     modal.innerHTML = `
-        <div class="modal-container" style="max-width: 600px;">
+        <div class="modal-container" style="max-width: 640px; max-height: 90vh; overflow-y: auto;">
             <div class="modal-header">
                 <h3>Edit Transaction</h3>
                 <button class="modal-close" onclick="closeEditTransactionModal()">&times;</button>
@@ -1195,13 +1257,40 @@ function showEditTransactionModal(transaction, dateValue, timeValue) {
             <div class="modal-body">
                 <form id="editTransactionForm">
                     <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Amount *</label>
-                        <input type="number" id="editAmount" value="${safeAmount}" step="0.01" required 
-                               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Transaction Type</label>
+                        <input type="text" value="${safeTxnType}" readonly
+                               style="width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 5px; background: #f9fafb; text-transform: capitalize;">
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Structural Category</label>
+                            <select id="editCategory" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                                ${structuralOptionsHtml}
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Transaction Category</label>
+                            <select id="editExpenseCategory" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                                <option value="">General</option>
+                                ${expenseOptionsHtml}
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Amount *</label>
+                            <input type="number" id="editAmount" value="${safeAmount}" step="0.01" required
+                                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Fee</label>
+                            <input type="number" id="editFee" value="${safeFee}" step="0.01" min="0"
+                                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                        </div>
                     </div>
                     <div style="margin-bottom: 15px;">
                         <label style="display: block; margin-bottom: 5px; font-weight: 600;">Status *</label>
-                        <select id="editStatus" required 
+                        <select id="editStatus" required
                                 style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
                             <option value="completed" ${safeStatus === 'completed' ? 'selected' : ''}>✅ Completed</option>
                             <option value="pending" ${safeStatus === 'pending' ? 'selected' : ''}>⏳ Pending</option>
@@ -1210,20 +1299,53 @@ function showEditTransactionModal(transaction, dateValue, timeValue) {
                             <option value="processing" ${safeStatus === 'processing' ? 'selected' : ''}>🔄 Processing</option>
                         </select>
                     </div>
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Date *</label>
-                        <input type="date" id="editDate" value="${safeDate}" required 
-                               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Time *</label>
-                        <input type="time" id="editTime" value="${safeTime}" required 
-                               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Date *</label>
+                            <input type="date" id="editDate" value="${safeDate}" required
+                                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Time *</label>
+                            <input type="time" id="editTime" value="${safeTime}" required
+                                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                        </div>
                     </div>
                     <div style="margin-bottom: 15px;">
                         <label style="display: block; margin-bottom: 5px; font-weight: 600;">Description *</label>
-                        <textarea id="editDescription" required 
+                        <textarea id="editDescription" required
                                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; min-height: 80px; resize: vertical;">${safeDescription}</textarea>
+                    </div>
+                    <div id="editTransferSection" style="${transferSectionStyle} border-top: 1px solid #e5e7eb; padding-top: 15px; margin-top: 5px;">
+                        <h4 style="margin: 0 0 12px; font-size: 15px;">Transfer Details</h4>
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Transfer Scope</label>
+                            <select id="editTransferScope" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                                <option value="domestic" ${transferScope === 'domestic' ? 'selected' : ''}>Domestic</option>
+                                <option value="international" ${transferScope === 'international' ? 'selected' : ''}>International</option>
+                                <option value="internal" ${transferScope === 'internal' ? 'selected' : ''}>Internal</option>
+                            </select>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Recipient Name</label>
+                            <input type="text" id="editRecipientName" value="${safeRecipientName}"
+                                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Recipient Account</label>
+                            <input type="text" id="editRecipientAccount" value="${safeRecipientAccount}"
+                                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Recipient Bank</label>
+                            <input type="text" id="editRecipientBank" value="${safeRecipientBank}"
+                                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                        </div>
+                        <div id="editIntlFields" style="${transferScope === 'international' ? '' : 'display:none;'}">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Country (ISO)</label>
+                            <input type="text" id="editTransferCountry" value="${transferCountry}" maxlength="3"
+                                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                        </div>
                     </div>
                 </form>
             </div>
@@ -1235,6 +1357,21 @@ function showEditTransactionModal(transaction, dateValue, timeValue) {
     `;
     document.body.appendChild(modal);
     document.body.style.overflow = 'hidden';
+
+    const categoryEl = document.getElementById('editCategory');
+    const transferSection = document.getElementById('editTransferSection');
+    const scopeEl = document.getElementById('editTransferScope');
+    const intlFields = document.getElementById('editIntlFields');
+
+    function toggleTransferSection() {
+        const cat = categoryEl.value;
+        const show = cat === 'transfer' || cat === 'deposit';
+        transferSection.style.display = show ? '' : 'none';
+    }
+    categoryEl.addEventListener('change', toggleTransferSection);
+    scopeEl.addEventListener('change', function() {
+        intlFields.style.display = scopeEl.value === 'international' ? '' : 'none';
+    });
 }
 
 function closeEditTransactionModal() {
@@ -1247,10 +1384,15 @@ function closeEditTransactionModal() {
 
 function saveTransactionEdit(transactionId) {
     const amount = parseFloat(document.getElementById('editAmount').value);
+    const fee = parseFloat(document.getElementById('editFee').value) || 0;
     const status = document.getElementById('editStatus').value;
     const date = document.getElementById('editDate').value;
     const time = document.getElementById('editTime').value;
     const description = document.getElementById('editDescription').value.trim();
+    const category = document.getElementById('editCategory').value;
+    const expenseCategory = document.getElementById('editExpenseCategory').value;
+    const transferSection = document.getElementById('editTransferSection');
+    const showTransfer = transferSection && transferSection.style.display !== 'none';
     
     // Validate transaction ID
     if (!transactionId || isNaN(transactionId) || transactionId <= 0) {
@@ -1287,27 +1429,34 @@ function saveTransactionEdit(transactionId) {
         return;
     }
     
-    // Combine date and time (format: YYYY-MM-DD HH:mm:ss)
     const datetime = date + ' ' + time + ':00';
-    
-    console.log('Saving transaction:', {
+
+    const payload = {
         transaction_id: transactionId,
         amount: amount,
+        fee: fee,
         status: status,
         description: description,
-        date: datetime
-    });
-    
+        date: datetime,
+        category: category,
+        expense_category: expenseCategory || null
+    };
+
+    if (showTransfer) {
+        payload.recipient_name = document.getElementById('editRecipientName').value.trim();
+        payload.recipient_account = document.getElementById('editRecipientAccount').value.trim();
+        payload.recipient_bank = document.getElementById('editRecipientBank').value.trim();
+        payload.transfer_scope = document.getElementById('editTransferScope').value;
+        const country = document.getElementById('editTransferCountry');
+        if (country && country.value.trim()) {
+            payload.metadata = { country: country.value.trim().toUpperCase() };
+        }
+    }
+
     fetch('<?php echo SITE_URL; ?>/api/admin-edit-transaction.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            transaction_id: transactionId,
-            amount: amount,
-            status: status,
-            description: description,
-            date: datetime
-        })
+        body: JSON.stringify(payload)
     })
     .then(response => {
         console.log('Response status:', response.status);

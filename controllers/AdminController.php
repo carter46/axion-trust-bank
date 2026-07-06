@@ -1959,6 +1959,7 @@ class AdminController {
         requireAdmin();
 
         require_once __DIR__ . '/../includes/transaction-history-generator.php';
+        require_once __DIR__ . '/../includes/generator-data/generator-helpers.php';
         $db = Database::getInstance();
         $generator = new TransactionHistoryGenerator();
 
@@ -1968,6 +1969,9 @@ class AdminController {
         $allUsers = $usersStmt ? $usersStmt->fetchAll() : [];
 
         $template = $generator->getDefaultTemplate();
+        $templateReady = true;
+        $generatorPersonas = getGeneratorPersonas();
+        $generatorPresets = getGeneratorPresets();
         $selectedAccountId = isset($_GET['account_id']) ? intval($_GET['account_id']) : 0;
         $batches = [];
         try {
