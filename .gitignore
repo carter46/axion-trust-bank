@@ -17,3 +17,7 @@ uploads/loans/*
 !uploads/loans/index.php
 uploads/documents/*
 !uploads/documents/index.php
+uploads/investments/*
+!uploads/investments/.htaccess
+uploads/profiles/*
+!uploads/profiles/.htaccess
