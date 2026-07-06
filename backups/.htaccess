@@ -1,0 +1,8 @@
+# Protect backups directory
+# Deny all access via web
+Order Deny,Allow
+Deny from all
+
+# Prevent directory listing
+Options -Indexes
+

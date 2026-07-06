@@ -1,0 +1,45 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+php-errors.log
+
+# Sensitive configuration
+config/config.local.php
+config/database.local.php
+
+# Uploaded files
+uploads/*
+!uploads/.htaccess
+
+# Cache
+cache/
+tmp/
+temp/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backups
+*.bak
+*.backup
+*.sql
+cosmos backup/
+
+# Node modules (if any)
+node_modules/
+
+# Composer
+vendor/

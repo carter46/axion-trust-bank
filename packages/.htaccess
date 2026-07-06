@@ -1,0 +1,16 @@
+# Protect packages directory
+# Only allow access to ZIP files
+<FilesMatch "\.(zip)$">
+    Order Allow,Deny
+    Allow from all
+</FilesMatch>
+
+# Deny access to all other files
+<FilesMatch "^(?!.*\.zip$).*$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+# Prevent directory listing
+Options -Indexes
+

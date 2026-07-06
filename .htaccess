@@ -1,0 +1,137 @@
+RewriteEngine On
+RewriteBase /
+
+# Force HTTPS (uncomment when SSL is configured)
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Prevent access to sensitive files
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Prevent directory browsing
+Options -Indexes
+
+# Protect config and includes
+<Files "config.php">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Handle clean URLs - if URL without extension matches a .php file, serve it
+# Skip if request already has an extension or is for a protected directory
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !\.(php|css|js|jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot|html|htm)$ [NC]
+RewriteCond %{REQUEST_URI} !^/(api|assets|uploads|config|includes|controllers|views|models|database|cron)/ [NC]
+# Check if corresponding .php file exists in document root
+RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI}.php -f
+RewriteRule ^(.*)$ $1.php [L]
+
+# Route all other requests through index.php (except existing files and directories)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php?route=$1 [QSA,L]
+
+# Security Headers
+<IfModule mod_headers.c>
+    # Prevent clickjacking
+    Header always set X-Frame-Options "DENY"
+    
+    # Prevent MIME type sniffing
+    Header always set X-Content-Type-Options "nosniff"
+    
+    # Enable XSS filter
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    # Content Security Policy
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://www.google.com https://www.gstatic.com https://translate.google.com https://translate.googleapis.com https://*.googleapis.com https://*.smartsuppchat.com https://*.smartsuppcdn.com https://cdn.gtranslate.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.gstatic.com https://cdnjs.cloudflare.com https://*.smartsuppcdn.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com https://*.smartsuppcdn.com data:; img-src 'self' data: https: blob: https://*.smartsuppcdn.com; media-src 'self' https://assets.mixkit.co https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://*.smartsuppcdn.com blob:; connect-src 'self' https://api.exchangerate-api.com https://cdn.jsdelivr.net https://*.smartsupp.com https://*.smartsuppchat.com https://*.smartsuppcdn.com https://cdn77.org wss://*.smartsupp.com wss://*.smartsuppchat.com https://translate.google.com https://translate.googleapis.com https://*.googleapis.com; frame-src 'self' https://*.smartsupp.com https://*.smartsuppchat.com https://translate.google.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
+    
+    # HTTP Strict Transport Security (HSTS)
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" env=HTTPS
+    
+    # Referrer Policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    
+    # Permissions Policy
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    
+    # Remove server information
+    Header unset X-Powered-By
+    Header unset Server
+    
+    # Cache Control Headers - Prevent aggressive caching during development
+    # For PHP/HTML files - always revalidate
+    <FilesMatch "\.(php|html|htm)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
+    
+    # For CSS and JavaScript - cache but allow revalidation with version query parameter
+    <FilesMatch "\.(css|js)$">
+        Header set Cache-Control "public, max-age=31536000, must-revalidate"
+        # If you change ASSET_VERSION, browsers will fetch new versions
+    </FilesMatch>
+    
+    # For images and fonts - cache for longer but still allow revalidation
+    <FilesMatch "\.(jpg|jpeg|png|gif|ico|svg|webp|woff|woff2|ttf|eot)$">
+        Header set Cache-Control "public, max-age=2592000, must-revalidate"
+    </FilesMatch>
+</IfModule>
+
+# PHP Settings
+<IfModule mod_php7.c>
+    php_flag display_errors Off
+    php_flag log_errors On
+    php_value max_execution_time 300
+    php_value upload_max_filesize 5M
+    php_value post_max_size 10M
+</IfModule>
+
+# Prevent directory listing
+Options -Indexes
+
+# Protect sensitive files
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Protect config files
+<FilesMatch "(config\.php|database\.php|\.env|\.git)">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Protect log files
+<FilesMatch "\.(log|txt)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Prevent execution of PHP files in upload directories
+<DirectoryMatch "^/uploads/">
+    Options -ExecCGI
+    AddHandler cgi-script .php .pl .py .jsp .asp .sh .cgi
+    <FilesMatch "\.(php|pl|py|jsp|asp|sh|cgi)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</DirectoryMatch>
+
+# Disable PHP execution in specific directories (additional protection)
+<DirectoryMatch "^/(uploads|cache|logs|temp)/">
+    <FilesMatch "\.php$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</DirectoryMatch>
+
+# Prevent hotlinking of images (optional - uncomment if needed)
+# RewriteEngine On
+# RewriteCond %{HTTP_REFERER} !^$
+# RewriteCond %{HTTP_REFERER} !^https?://(www\.)?yourdomain\.com [NC]
+# RewriteRule \.(jpg|jpeg|png|gif|webp)$ - [F,L]

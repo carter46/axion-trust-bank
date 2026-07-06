@@ -1,0 +1,59 @@
+<?php
+@ini_set('display_errors', 0);
+@error_reporting(0);
+ob_start();
+
+try {
+    require_once __DIR__ . '/../config/config.php';
+    require_once __DIR__ . '/../includes/functions.php';
+    require_once __DIR__ . '/../includes/security.php';
+    require_once __DIR__ . '/../includes/transaction-history-generator.php';
+    ob_get_clean();
+    header('Content-Type: application/json; charset=UTF-8');
+    header('X-Content-Type-Options: nosniff');
+} catch (Throwable $e) {
+    ob_end_clean();
+    header('Content-Type: application/json; charset=UTF-8');
+    echo json_encode(['success' => false, 'message' => 'Setup error: ' . $e->getMessage()]);
+    exit;
+}
+
+if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    exit;
+}
+
+$input = json_decode(file_get_contents('php://input'), true);
+if (!is_array($input)) {
+    echo json_encode(['success' => false, 'message' => 'Invalid JSON input']);
+    exit;
+}
+
+try {
+    $generator = new TransactionHistoryGenerator();
+    $params = [
+        'user_id' => intval($input['user_id'] ?? 0),
+        'account_id' => intval($input['account_id'] ?? 0),
+        'start_date' => Security::sanitize($input['start_date'] ?? ''),
+        'end_date' => Security::sanitize($input['end_date'] ?? ''),
+        'density' => Security::sanitize($input['density'] ?? 'normal'),
+        'history_impact' => floatval($input['history_impact'] ?? 0),
+        'template_id' => intval($input['template_id'] ?? 0) ?: null,
+        'preview_seed' => Security::sanitize($input['preview_seed'] ?? ''),
+        'idempotency_key' => Security::sanitize($input['idempotency_key'] ?? ''),
+        'replace_previous' => !empty($input['replace_previous']),
+    ];
+
+    if (!$params['user_id'] || !$params['account_id']) {
+        throw new InvalidArgumentException('User and account are required.');
+    }
+
+    echo json_encode($generator->preview($params));
+} catch (InvalidArgumentException $e) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+} catch (Throwable $e) {
+    error_log('admin-preview-transaction-history: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+}

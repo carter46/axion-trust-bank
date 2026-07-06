@@ -1,0 +1,45 @@
+URGENT FIX FOR BROKEN CONFIG.PHP ON OLD SITE
+==============================================
+
+Your config.php file has a syntax error on line 62.
+
+STEP 1: Open your config.php file on the old site (blutechglobal.online)
+
+STEP 2: Find and REPLACE lines 44-62 with this corrected block:
+
+// Security Settings
+// ⚠️ CRITICAL: Encryption key MUST be set in environment variables in production
+// Never use default encryption key in production!
+$encryptionKey = $_ENV['ENCRYPTION_KEY'] ?? null;
+if (!$encryptionKey) {
+    // Only fail loudly in production if encryption key is not set
+    if (!DEVELOPMENT_MODE) {
+        // Log the error but don't die immediately - allow the system to handle user sessions first
+        error_log('CRITICAL SECURITY WARNING: ENCRYPTION_KEY is not set in environment variables!');
+        // Use a default fallback but log it as a critical security issue
+        // In production, this should be caught and fixed immediately
+        $encryptionKey = 'CHANGE_THIS_IN_PRODUCTION_' . md5(__FILE__ . time());
+    } else {
+        // Only allow default in development
+        $encryptionKey = 'CosmopolitanTrustBank2024SecureKey!@#';
+        error_log('DEVELOPMENT MODE: Using default encryption key. Change this in production!');
+    }
+}
+define('ENCRYPTION_KEY', $encryptionKey);
+
+WHAT TO LOOK FOR:
+===============
+
+BROKEN (current - line 62):
+define('ENCRYPTION_KEY', 'ENCRYPTION_KEY';
+
+FIXED (should be):
+define('ENCRYPTION_KEY', $encryptionKey);
+
+KEY CHANGES:
+1. Line 47: Change from 'ENCRYPTION_KEY' to $_ENV['ENCRYPTION_KEY'] ?? null;
+2. Line 62: Change from 'ENCRYPTION_KEY'; to $encryptionKey);
+3. Add missing closing parenthesis )
+
+After replacing, save the file and the syntax error should be fixed!
+

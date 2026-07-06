@@ -1,0 +1,151 @@
+═══════════════════════════════════════════════════════════════
+   SECUREBANK - QUICK START GUIDE FOR SHARED HOSTING
+═══════════════════════════════════════════════════════════════
+
+📁 FILES TO UPLOAD (All project files)
+═══════════════════════════════════════════════════════════════
+Upload ALL files and folders to your shared hosting's public_html directory using:
+- cPanel File Manager (recommended) OR
+- FTP/SFTP client (FileZilla, WinSCP, etc.)
+
+IMPORTANT: Make sure to upload the .htaccess file!
+
+═══════════════════════════════════════════════════════════════
+   STEP 1: CREATE DATABASE
+═══════════════════════════════════════════════════════════════
+1. Login to cPanel
+2. Go to "MySQL Databases"
+3. Create database: online_banking
+4. Create database user with strong password
+5. Add user to database with ALL PRIVILEGES
+6. SAVE YOUR DATABASE CREDENTIALS!
+
+═══════════════════════════════════════════════════════════════
+   STEP 2: IMPORT DATABASE
+═══════════════════════════════════════════════════════════════
+1. Open phpMyAdmin in cPanel
+2. Select your database
+3. Click "Import" tab
+4. Choose file: database/schema.sql
+5. Click "Go" and wait for success message
+
+═══════════════════════════════════════════════════════════════
+   STEP 3: CONFIGURE APPLICATION
+═══════════════════════════════════════════════════════════════
+Edit config/config.php and update:
+
+1. SITE INFORMATION:
+   define('SITE_URL', 'https://yourdomain.com');
+   define('SITE_NAME', 'Your Bank Name');
+
+2. DATABASE (use your actual credentials):
+   define('DB_HOST', 'localhost');
+   define('DB_NAME', 'username_online_banking');  // Full name with prefix
+   define('DB_USER', 'username_banking_user');    // Full username
+   define('DB_PASS', 'your_database_password');
+
+3. ENCRYPTION KEY (generate random 32-char string):
+   define('ENCRYPTION_KEY', 'your-32-character-key-here');
+   
+   To generate: Run this PHP code once:
+   <?php echo bin2hex(random_bytes(16)); ?>
+
+4. EMAIL (Gmail example):
+   define('SMTP_USER', 'your-email@gmail.com');
+   define('SMTP_PASS', 'your-gmail-app-password');
+   
+   Get Gmail App Password:
+   - Enable 2-Step Verification
+   - Go to: https://myaccount.google.com/apppasswords
+   - Generate app password for Mail
+
+5. SET PRODUCTION MODE (bottom of file):
+   error_reporting(0);
+   ini_set('display_errors', 0);
+
+═══════════════════════════════════════════════════════════════
+   STEP 4: CREATE UPLOAD DIRECTORIES
+═══════════════════════════════════════════════════════════════
+In File Manager, create these folders:
+- uploads/
+- uploads/documents/
+- uploads/profiles/
+- uploads/loans/
+
+Set permissions to 755 for all upload folders
+
+═══════════════════════════════════════════════════════════════
+   STEP 5: ENABLE SSL/HTTPS
+═══════════════════════════════════════════════════════════════
+1. In cPanel, install SSL certificate (Let's Encrypt)
+2. Edit .htaccess and uncomment lines 4-6 to force HTTPS:
+   RewriteCond %{HTTPS} off
+   RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+═══════════════════════════════════════════════════════════════
+   STEP 6: TEST YOUR INSTALLATION
+═══════════════════════════════════════════════════════════════
+1. Visit: https://yourdomain.com
+2. You should see the SecureBank homepage
+
+DEFAULT ADMIN LOGIN:
+   Email: admin@securebank.com
+   Password: Admin@123
+
+⚠️  CRITICAL: Change admin password immediately after first login!
+
+═══════════════════════════════════════════════════════════════
+   TROUBLESHOOTING
+═══════════════════════════════════════════════════════════════
+
+Issue: "Page Not Found" errors
+→ Contact host to enable mod_rewrite
+
+Issue: Database connection failed
+→ Double-check database credentials (include prefix)
+→ Verify user added to database with all privileges
+
+Issue: Internal Server Error (500)
+→ Check error log in cPanel
+→ Verify .htaccess file is uploaded
+→ Check file permissions (644 for files, 755 for folders)
+
+Issue: Emails not sending
+→ Verify SMTP credentials
+→ Use Gmail App Password (not regular password)
+→ Try port 465 if 587 doesn't work
+
+═══════════════════════════════════════════════════════════════
+   POST-DEPLOYMENT CHECKLIST
+═══════════════════════════════════════════════════════════════
+✓ Change default admin password
+✓ Update admin email address
+✓ Configure system settings in admin panel
+✓ Test user registration
+✓ Test email notifications
+✓ Test core features (accounts, transfers, cards)
+✓ Create database backup
+✓ Set up regular backup schedule
+
+═══════════════════════════════════════════════════════════════
+   SECURITY BEST PRACTICES
+═══════════════════════════════════════════════════════════════
+✓ Use strong, unique passwords
+✓ Enable SSL/HTTPS
+✓ Keep regular backups
+✓ Monitor error logs
+✓ Disable error display in production
+✓ Set strong encryption key
+✓ Secure SMTP credentials
+
+═══════════════════════════════════════════════════════════════
+   NEED HELP?
+═══════════════════════════════════════════════════════════════
+→ Read: README.md (comprehensive documentation)
+→ Read: DEPLOYMENT_GUIDE.md (detailed deployment guide)
+→ Check: Error logs in cPanel
+→ Contact: Your hosting provider for server issues
+
+═══════════════════════════════════════════════════════════════
+
+Good luck with your deployment! 🚀
