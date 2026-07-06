@@ -73,8 +73,7 @@ $generatorPresets = $generatorPresets ?? [];
     <?php if (!$templateReady): ?>
         <div class="alert-box error">
             Transaction template tables are not seeded yet. Run
-            <code>2026_03_19_safe_schema_upgrade.sql</code> (Section 7) and
-            <code>2026_06_12_seed_default_transaction_template.sql</code> before using this tool.
+            <code>2026_03_19_safe_schema_upgrade.sql</code> (Sections 7–8) before using this tool.
         </div>
     <?php endif; ?>
 

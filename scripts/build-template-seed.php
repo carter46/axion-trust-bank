@@ -1,6 +1,7 @@
 <?php
 /**
- * Build 2026_06_12_seed_default_transaction_template.sql from Andy seed file.
+ * Build Section 8 template seed snippet from Andy seed file.
+ * Output is a standalone snippet — copy into 2026_03_19_safe_schema_upgrade.sql Section 8 when updating.
  */
 $source = __DIR__ . '/../database/migrations/2026_03_19_seed_andy_transactions_from_online.sql';
 $content = file_get_contents($source);
@@ -100,6 +101,6 @@ foreach ($rows as $r) {
 $out .= "\n" . implode("\n  UNION ALL\n", $rowParts);
 $out .= "\n) src\nWHERE @tpl_exists = 0 AND @template_id IS NOT NULL;\n";
 
-$dest = __DIR__ . '/../database/migrations/2026_06_12_seed_default_transaction_template.sql';
+$dest = __DIR__ . '/../database/migrations/_snippet_section_8_template_seed.sql';
 file_put_contents($dest, $out);
 echo 'Wrote ' . count($rows) . " items to $dest\n";
