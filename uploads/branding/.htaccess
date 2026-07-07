@@ -1,0 +1,12 @@
+# Branding assets (logo, favicon) — served publicly, not tracked in git
+<Files "*.php">
+    Order Deny,Allow
+    Deny from all
+</Files>
+
+<FilesMatch "\.(jpg|jpeg|png|gif|webp|svg|ico)$">
+    Order Allow,Deny
+    Allow from all
+</FilesMatch>
+
+Options -Indexes

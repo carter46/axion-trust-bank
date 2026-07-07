@@ -15,14 +15,14 @@ $siteName = getSiteName() ?? 'SecureBank';
     
     <!-- Dynamic Favicon - Supports all formats -->
     <?php 
-    $faviconUrl = getSetting('site_favicon_url', SITE_URL . '/favicon.ico');
+    $faviconUrl = function_exists('getSiteFavicon') ? getSiteFavicon() : (SITE_URL . '/favicon.svg');
     if ($faviconUrl) {
         echo '<link rel="icon" type="image/x-icon" href="' . htmlspecialchars($faviconUrl) . '">';
         echo '<link rel="shortcut icon" type="image/x-icon" href="' . htmlspecialchars($faviconUrl) . '">';
         echo '<link rel="apple-touch-icon" href="' . htmlspecialchars($faviconUrl) . '">';
     } else {
-        echo '<link rel="icon" type="image/x-icon" href="' . SITE_URL . '/favicon.ico">';
-        echo '<link rel="shortcut icon" type="image/x-icon" href="' . SITE_URL . '/favicon.ico">';
+        echo '<link rel="icon" type="image/x-icon" href="' . SITE_URL . '/favicon.svg">';
+        echo '<link rel="shortcut icon" type="image/x-icon" href="' . SITE_URL . '/favicon.svg">';
     }
     ?>
     

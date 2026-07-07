@@ -21,3 +21,14 @@ uploads/investments/*
 !uploads/investments/.htaccess
 uploads/profiles/*
 !uploads/profiles/.htaccess
+
+# Site branding (logo/favicon) — per-server; must survive git pull/deploy
+uploads/branding/*
+!uploads/branding/.htaccess
+!uploads/branding/index.php
+
+# Legacy branding paths (older uploads wrote into tracked code dirs)
+assets/images/bank-logo.*
+/favicon.ico
+/favicon.png
+/favicon.webp

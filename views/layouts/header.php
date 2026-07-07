@@ -68,7 +68,7 @@
     <!-- Dynamic Favicon - Supports all formats -->
     <?php 
     try {
-    $faviconUrl = getSetting('site_favicon_url', SITE_URL . '/favicon.ico');
+    $faviconUrl = function_exists('getSiteFavicon') ? getSiteFavicon() : getSetting('site_favicon_url', SITE_URL . '/favicon.svg');
         if ($faviconUrl && !empty(trim($faviconUrl))) {
         echo '<link rel="icon" type="image/x-icon" href="' . htmlspecialchars($faviconUrl) . '">';
         echo '<link rel="shortcut icon" type="image/x-icon" href="' . htmlspecialchars($faviconUrl) . '">';

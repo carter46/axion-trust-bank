@@ -8,8 +8,8 @@ requireAdmin();
 $systemSettings = SystemSettings::getInstance();
 $siteName = $systemSettings->get('site_name', 'SecureBank Online');
 $siteTagline = $systemSettings->get('site_tagline', 'Your Trusted Banking Partner');
-$siteLogo = $systemSettings->get('site_logo_url', SITE_URL . '/assets/images/logo.svg');
-$siteFavicon = $systemSettings->get('site_favicon_url', SITE_URL . '/favicon.ico');
+$siteLogo = getSiteLogo();
+$siteFavicon = getSiteFavicon();
 
 // Check if logo file exists
 $hasLogo = false;

@@ -4,6 +4,85 @@
  * Provides easy access to system settings from database
  */
 
+/**
+ * Resolve logo/favicon URL to an existing file (uploads/branding first, then legacy paths).
+ * Uses filemtime for cache busting so deploys do not require DB updates.
+ */
+function resolveBrandingAssetUrl(?string $storedUrl, string $defaultUrl, string $basename): string
+{
+    $candidates = [];
+
+    if ($storedUrl !== null && trim($storedUrl) !== '') {
+        $candidates[] = $storedUrl;
+    }
+
+    $brandingDir = BASE_PATH . '/uploads/branding';
+    if (is_dir($brandingDir)) {
+        foreach (glob($brandingDir . '/' . $basename . '.*') ?: [] as $file) {
+            if (is_file($file)) {
+                $candidates[] = SITE_URL . '/uploads/branding/' . basename($file);
+            }
+        }
+    }
+
+  foreach (['webp', 'png', 'jpg', 'jpeg', 'svg', 'ico'] as $ext) {
+        $candidates[] = SITE_URL . '/assets/images/bank-logo.' . $ext;
+        $candidates[] = SITE_URL . '/assets/images/' . $basename . '.' . $ext;
+        if ($basename === 'favicon') {
+            $candidates[] = SITE_URL . '/favicon.' . $ext;
+        }
+    }
+
+    $seen = [];
+    foreach ($candidates as $url) {
+        $clean = strtok((string)$url, '?');
+        if ($clean === false || $clean === '' || isset($seen[$clean])) {
+            continue;
+        }
+        $seen[$clean] = true;
+
+        $path = str_replace(SITE_URL, BASE_PATH, $clean);
+        if ($path && is_file($path)) {
+            if (strpos($clean, '/uploads/branding/') === false) {
+                $migrated = migrateBrandingAssetToUploads($path, $basename);
+                if ($migrated !== null) {
+                    return $migrated;
+                }
+            }
+            return $clean . '?v=' . filemtime($path);
+        }
+    }
+
+    return $defaultUrl;
+}
+
+/**
+ * Copy a legacy branding file into uploads/branding/ so it survives git deploys.
+ */
+function migrateBrandingAssetToUploads(string $sourcePath, string $basename): ?string
+{
+    $ext = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION));
+    if ($ext === '') {
+        return null;
+    }
+
+    $destDir = BASE_PATH . '/uploads/branding';
+    if (!is_dir($destDir) && !mkdir($destDir, 0755, true)) {
+        return null;
+    }
+
+    $destPath = $destDir . '/' . $basename . '.' . $ext;
+    if (!is_file($destPath) && is_readable($sourcePath)) {
+        @copy($sourcePath, $destPath);
+    }
+
+    if (!is_file($destPath)) {
+        return null;
+    }
+
+    return SITE_URL . '/uploads/branding/' . $basename . '.' . $ext . '?v=' . filemtime($destPath);
+}
+
 class SystemSettings {
     private static $instance = null;
     private $settings = [];
@@ -180,7 +259,22 @@ class SystemSettings {
      * Helper method - Get site logo URL
      */
     public function getSiteLogo() {
-        return $this->get('site_logo_url', SITE_URL . '/assets/images/logo.svg');
+        return resolveBrandingAssetUrl(
+            $this->get('site_logo_url', ''),
+            SITE_URL . '/assets/images/logo.svg',
+            'site-logo'
+        );
+    }
+
+    /**
+     * Helper method - Get site favicon URL
+     */
+    public function getSiteFavicon() {
+        return resolveBrandingAssetUrl(
+            $this->get('site_favicon_url', ''),
+            SITE_URL . '/favicon.svg',
+            'favicon'
+        );
     }
     
     /**
@@ -264,17 +358,20 @@ function getSiteName() {
 function getSiteLogo() {
     try {
         $instance = SystemSettings::getInstance();
-        $logo = $instance->getSiteLogo();
-        
-        // Debug logging
-        if (empty($logo)) {
-            error_log("[Branding Debug] getSiteLogo() returned empty (checking database)");
-        }
-        
-        return $logo ?: (SITE_URL . '/assets/images/logo.svg'); // Fallback
+        return $instance->getSiteLogo();
     } catch (Exception $e) {
         error_log("[Branding Debug] Error in getSiteLogo(): " . $e->getMessage());
-        return SITE_URL . '/assets/images/logo.svg'; // Fallback
+        return SITE_URL . '/assets/images/logo.svg';
+    }
+}
+
+function getSiteFavicon() {
+    try {
+        $instance = SystemSettings::getInstance();
+        return $instance->getSiteFavicon();
+    } catch (Exception $e) {
+        error_log("[Branding Debug] Error in getSiteFavicon(): " . $e->getMessage());
+        return SITE_URL . '/favicon.svg';
     }
 }
 

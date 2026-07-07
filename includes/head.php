@@ -8,7 +8,7 @@
     <!-- Dynamic Favicon - Supports all formats -->
     <?php 
     try {
-        $faviconUrl = getSetting('site_favicon_url', SITE_URL . '/favicon.ico');
+        $faviconUrl = function_exists('getSiteFavicon') ? getSiteFavicon() : getSetting('site_favicon_url', SITE_URL . '/favicon.svg');
         if ($faviconUrl && !empty(trim($faviconUrl))) {
             echo '<link rel="icon" type="image/x-icon" href="' . htmlspecialchars($faviconUrl) . '">';
             echo '<link rel="shortcut icon" type="image/x-icon" href="' . htmlspecialchars($faviconUrl) . '">';
@@ -16,15 +16,15 @@
             echo '<link rel="apple-touch-icon" href="' . htmlspecialchars($faviconUrl) . '">';
         } else {
             // Fallback to default favicon
-            echo '<link rel="icon" type="image/x-icon" href="' . SITE_URL . '/favicon.ico">';
-            echo '<link rel="shortcut icon" type="image/x-icon" href="' . SITE_URL . '/favicon.ico">';
-            echo '<link rel="apple-touch-icon" href="' . SITE_URL . '/favicon.ico">';
+            echo '<link rel="icon" type="image/x-icon" href="' . SITE_URL . '/favicon.svg">';
+            echo '<link rel="shortcut icon" type="image/x-icon" href="' . SITE_URL . '/favicon.svg">';
+            echo '<link rel="apple-touch-icon" href="' . SITE_URL . '/favicon.svg">';
         }
     } catch (Exception $e) {
         // Fallback if getSetting fails
-        echo '<link rel="icon" type="image/x-icon" href="' . SITE_URL . '/favicon.ico">';
-        echo '<link rel="shortcut icon" type="image/x-icon" href="' . SITE_URL . '/favicon.ico">';
-        echo '<link rel="apple-touch-icon" href="' . SITE_URL . '/favicon.ico">';
+        echo '<link rel="icon" type="image/x-icon" href="' . SITE_URL . '/favicon.svg">';
+        echo '<link rel="shortcut icon" type="image/x-icon" href="' . SITE_URL . '/favicon.svg">';
+        echo '<link rel="apple-touch-icon" href="' . SITE_URL . '/favicon.svg">';
     }
     ?>
     
