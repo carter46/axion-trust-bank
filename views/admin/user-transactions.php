@@ -431,6 +431,57 @@ include __DIR__ . '/../../includes/admin-modals.php';
     background: #dc2626;
 }
 
+.clear-account-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 16px;
+    padding: 14px 16px;
+    background: #fff5f5;
+    border: 1px solid #fecaca;
+    border-radius: 12px;
+}
+
+.clear-account-bar label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #991b1b;
+}
+
+.clear-account-bar select {
+    min-width: 220px;
+    padding: 8px 12px;
+    border: 1px solid #fca5a5;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.clear-account-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #991b1b;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.clear-account-btn:hover {
+    background: #7f1d1d;
+}
+
+.clear-account-hint {
+    flex: 1 1 100%;
+    font-size: 13px;
+    color: #b91c1c;
+    margin: 0;
+}
+
 .tx-select-cell {
     width: 40px;
     text-align: center;
@@ -834,6 +885,27 @@ include __DIR__ . '/../../includes/admin-modals.php';
             </p>
         <?php endif; ?>
 
+        <?php if (!empty($accounts)): ?>
+            <div class="clear-account-bar">
+                <label for="clearAccountSelect">Clear account history</label>
+                <select id="clearAccountSelect" class="form-control">
+                    <option value="all">All accounts (full wipe)</option>
+                    <?php foreach ($accounts as $acct): ?>
+                        <option value="<?php echo (int)$acct['id']; ?>">
+                            <?php echo htmlspecialchars(ucfirst($acct['account_type'] ?? 'account') . ' #' . ($acct['account_number'] ?? '')); ?>
+                            — <?php echo formatCurrency((float)($acct['balance'] ?? 0), $userCurrency); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <button type="button" id="clearAccountBtn" class="clear-account-btn">
+                    <i class="fas fa-eraser"></i> Clear account
+                </button>
+                <p class="clear-account-hint">
+                    Permanently deletes all transactions for the selected scope and sets balance to $0.00. This cannot be undone.
+                </p>
+            </div>
+        <?php endif; ?>
+
         <?php if (!empty($transactions)): ?>
             <div class="bulk-actions-bar">
                 <label>
@@ -1128,8 +1200,61 @@ document.addEventListener('DOMContentLoaded', function() {
         bulkDeleteBtn.addEventListener('click', bulkDeleteTransactions);
     }
 
+    const clearAccountBtn = document.getElementById('clearAccountBtn');
+    if (clearAccountBtn) {
+        clearAccountBtn.addEventListener('click', clearAccountHistory);
+    }
+
     updateBulkSelectionUi();
 });
+
+function clearAccountHistory() {
+    const select = document.getElementById('clearAccountSelect');
+    const accountId = select ? select.value : 'all';
+    const isAll = accountId === 'all';
+    const label = isAll
+        ? 'ALL accounts for this user'
+        : select.options[select.selectedIndex].text;
+
+    showModal(
+        isAll ? 'Clear all accounts' : 'Clear account',
+        'This will permanently delete every transaction for ' + label + ' and set the balance to $0.00. This cannot be undone.',
+        'danger',
+        function(reason) {
+            if (!reason) {
+                showToast('Please provide a reason', 'error');
+                return;
+            }
+
+            fetch('<?php echo SITE_URL; ?>/api/admin-clear-account.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: ADMIN_USER_ID,
+                    account_id: isAll ? 0 : parseInt(accountId, 10),
+                    reason: reason
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message || 'Account cleared successfully', 'success');
+                    location.reload();
+                } else {
+                    showToast('Error: ' + (data.message || 'Clear failed'), 'error');
+                }
+            })
+            .catch(error => {
+                showToast('Error clearing account: ' + error, 'error');
+            });
+        },
+        {
+            textarea: {
+                placeholder: 'Enter reason for clearing account history...'
+            }
+        }
+    );
+}
 
 function bulkDeleteTransactions() {
     const ids = getSelectedTransactionIds();

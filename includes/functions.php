@@ -1271,6 +1271,236 @@ function adminResolveInternalTransferPairOnDelete(Database $db, array $senderTxn
     return [$accountId => $delta];
 }
 
+/**
+ * Find sender debit for an internal transfer credit (inverse of adminFindInternalTransferPair).
+ */
+function adminFindInternalTransferSenderDebit(PDO $conn, array $creditTxn): ?array
+{
+    if (($creditTxn['transaction_type'] ?? '') !== 'credit' || ($creditTxn['category'] ?? '') !== 'transfer') {
+        return null;
+    }
+    $meta = json_decode($creditTxn['metadata'] ?? '{}', true);
+    if (!is_array($meta)) {
+        $meta = [];
+    }
+    $scope = $meta['transfer_scope'] ?? $meta['transfer_type'] ?? '';
+    if ($scope !== 'internal') {
+        return null;
+    }
+    $senderAccountNumber = $creditTxn['recipient_account'] ?? null;
+    if (!$senderAccountNumber) {
+        return null;
+    }
+    $stmt = $conn->prepare('SELECT account_number FROM accounts WHERE id = ?');
+    $stmt->execute([(int)$creditTxn['account_id']]);
+    $recipientAccount = $stmt->fetch(PDO::FETCH_ASSOC);
+    $recipientAccountNumber = $recipientAccount['account_number'] ?? null;
+    if (!$recipientAccountNumber) {
+        return null;
+    }
+    $createdAt = $creditTxn['created_at'];
+    $sql = "SELECT t.* FROM transactions t
+            JOIN accounts a ON t.account_id = a.id
+            WHERE a.account_number = ?
+              AND t.transaction_type = 'debit'
+              AND t.category = 'transfer'
+              AND t.status IN ('completed', 'pending', 'processing', 'on_hold')
+              AND t.recipient_account = ?
+              AND t.created_at BETWEEN DATE_SUB(?, INTERVAL 5 MINUTE) AND DATE_ADD(?, INTERVAL 5 MINUTE)
+              AND ABS(t.amount - ?) < 0.01
+            ORDER BY t.created_at DESC LIMIT 1";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute([
+        $senderAccountNumber,
+        $recipientAccountNumber,
+        $createdAt,
+        $createdAt,
+        (float)$creditTxn['amount'],
+    ]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
+/**
+ * Wipe transaction history and zero balance for one account or all of a user's accounts.
+ */
+function adminClearUserAccountHistory(Database $db, int $userId, ?int $accountId, string $reason): array
+{
+    $userStmt = $db->query(
+        "SELECT id, email, role FROM users WHERE id = ? LIMIT 1",
+        [$userId]
+    );
+    $user = $userStmt ? $userStmt->fetch() : false;
+    if (!$user || ($user['role'] ?? '') === 'admin') {
+        throw new InvalidArgumentException('User not found or cannot be cleared');
+    }
+
+    $conn = $db->getConnection();
+    $db->beginTransaction();
+
+    try {
+        if ($accountId === null || $accountId <= 0) {
+            return adminClearAllUserAccountsHistory($db, $userId, $user, $reason);
+        }
+
+        $acctStmt = $db->query(
+            "SELECT id, account_number, balance FROM accounts WHERE id = ? AND user_id = ? FOR UPDATE",
+            [$accountId, $userId]
+        );
+        $account = $acctStmt ? $acctStmt->fetch() : false;
+        if (!$account) {
+            throw new InvalidArgumentException('Account not found for this user');
+        }
+
+        $txStmt = $db->query(
+            "SELECT * FROM transactions WHERE account_id = ?",
+            [$accountId]
+        );
+        $rows = $txStmt ? $txStmt->fetchAll() : [];
+        $deletedCount = count($rows);
+
+        $pairIds = [];
+        $pairDeltas = [];
+        foreach ($rows as $row) {
+            $pair = null;
+            if (($row['transaction_type'] ?? '') === 'debit') {
+                $pair = adminFindInternalTransferPair($conn, $row);
+            } elseif (($row['transaction_type'] ?? '') === 'credit') {
+                $pair = adminFindInternalTransferSenderDebit($conn, $row);
+            }
+            if (!$pair || (int)$pair['account_id'] === $accountId) {
+                continue;
+            }
+            $pid = (int)$pair['id'];
+            if (isset($pairIds[$pid])) {
+                continue;
+            }
+            $pairIds[$pid] = true;
+            $otherAccountId = (int)$pair['account_id'];
+            $pairDeltas[$otherAccountId] = ($pairDeltas[$otherAccountId] ?? 0) + adminBalanceChangeOnDelete($pair);
+        }
+
+        $db->query('DELETE FROM transactions WHERE account_id = ?', [$accountId]);
+        $deletedCount += count($pairIds);
+
+        if (!empty($pairIds)) {
+            $placeholders = implode(',', array_fill(0, count($pairIds), '?'));
+            $db->query("DELETE FROM transactions WHERE id IN ($placeholders)", array_keys($pairIds));
+        }
+
+        foreach ($pairDeltas as $otherAccountId => $delta) {
+            if (abs($delta) < 0.00001) {
+                continue;
+            }
+            $balStmt = $db->query(
+                'SELECT balance FROM accounts WHERE id = ? FOR UPDATE',
+                [$otherAccountId]
+            );
+            $other = $balStmt ? $balStmt->fetch() : false;
+            if (!$other) {
+                continue;
+            }
+            $newBalance = round((float)$other['balance'] + $delta, 2);
+            if ($newBalance < 0) {
+                throw new RuntimeException('Clear would cause negative balance on linked account #' . $otherAccountId);
+            }
+            $db->query(
+                'UPDATE accounts SET balance = ?, available_balance = ?, updated_at = NOW() WHERE id = ?',
+                [$newBalance, $newBalance, $otherAccountId]
+            );
+        }
+
+        $db->query(
+            'UPDATE accounts SET balance = 0, available_balance = 0, updated_at = NOW() WHERE id = ?',
+            [$accountId]
+        );
+
+        $db->query(
+            "UPDATE transaction_generation_batches SET status = 'undone', updated_at = NOW()
+             WHERE account_id = ? AND status = 'completed'",
+            [$accountId]
+        );
+
+        $db->commit();
+
+        logActivity(
+            $_SESSION['user_id'] ?? 0,
+            'ADMIN_CLEAR_ACCOUNT',
+            sprintf(
+                'Cleared account #%s (id %d) for user %s. Deleted %d transaction(s). Reason: %s',
+                $account['account_number'],
+                $accountId,
+                $user['email'],
+                $deletedCount,
+                $reason
+            )
+        );
+
+        return [
+            'scope' => 'account',
+            'account_id' => $accountId,
+            'account_number' => $account['account_number'],
+            'deleted_count' => $deletedCount,
+            'accounts_zeroed' => 1,
+        ];
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollback();
+        }
+        throw $e;
+    }
+}
+
+/**
+ * @param array<string, mixed> $user
+ * @return array<string, mixed>
+ */
+function adminClearAllUserAccountsHistory(Database $db, int $userId, array $user, string $reason): array
+{
+    $countStmt = $db->query(
+        'SELECT COUNT(*) AS cnt FROM transactions WHERE user_id = ?',
+        [$userId]
+    );
+    $deletedCount = (int)(($countStmt ? $countStmt->fetch() : [])['cnt'] ?? 0);
+
+    $acctStmt = $db->query(
+        'SELECT COUNT(*) AS cnt FROM accounts WHERE user_id = ?',
+        [$userId]
+    );
+    $accountsZeroed = (int)(($acctStmt ? $acctStmt->fetch() : [])['cnt'] ?? 0);
+
+    $db->query('DELETE FROM transactions WHERE user_id = ?', [$userId]);
+    $db->query(
+        'UPDATE accounts SET balance = 0, available_balance = 0, updated_at = NOW() WHERE user_id = ?',
+        [$userId]
+    );
+    $db->query(
+        "UPDATE transaction_generation_batches SET status = 'undone', updated_at = NOW()
+         WHERE user_id = ? AND status = 'completed'",
+        [$userId]
+    );
+
+    $db->commit();
+
+    logActivity(
+        $_SESSION['user_id'] ?? 0,
+        'ADMIN_CLEAR_ALL_ACCOUNTS',
+        sprintf(
+            'Cleared all accounts for user %s (id %d). Deleted %d transaction(s). Reason: %s',
+            $user['email'],
+            $userId,
+            $deletedCount,
+            $reason
+        )
+    );
+
+    return [
+        'scope' => 'all',
+        'deleted_count' => $deletedCount,
+        'accounts_zeroed' => $accountsZeroed,
+    ];
+}
+
 function logActivity($userId, $action, $details = null) {
     $db = Database::getInstance();
     $sql = "INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent, created_at) 
