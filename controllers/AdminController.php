@@ -26,7 +26,7 @@ class AdminController {
         // Variables are passed directly to the view
         // $stats, $transactionChart, $suspiciousTransactions, $audit_logs, $alerts
         
-        include 'views/admin/dashboard.php';
+        include __DIR__ . '/../views/admin/dashboard.php';
     }
     
     public function users() {
@@ -38,7 +38,7 @@ class AdminController {
         $stmt = $db->query($sql);
         $users = $stmt->fetchAll();
         
-        include 'views/admin/users.php';
+        include __DIR__ . '/../views/admin/users.php';
     }
     
     public function loginAs($userId) {
@@ -194,7 +194,7 @@ class AdminController {
         $stmt = $db->query($sql, [$id]);
         $activityLogs = $stmt->fetchAll();
         
-        include 'views/admin/user-view.php';
+        include __DIR__ . '/../views/admin/user-view.php';
     }
     
     public function userUpdate($id) {
@@ -275,7 +275,7 @@ class AdminController {
         $usersStmt = $db->query($usersSql);
         $allUsers = $usersStmt ? $usersStmt->fetchAll() : [];
         
-        include 'views/admin/transactions.php';
+        include __DIR__ . '/../views/admin/transactions.php';
     }
     
     public function loans() {
@@ -301,7 +301,7 @@ class AdminController {
         $stmt = $db->query($sql, $params);
         $loans = $stmt->fetchAll();
         
-        include 'views/admin/loans.php';
+        include __DIR__ . '/../views/admin/loans.php';
     }
     
     public function loanAction($id) {
@@ -335,12 +335,12 @@ class AdminController {
     
     public function branding() {
         requireAdmin();
-        include 'views/admin/branding.php';
+        include __DIR__ . '/../views/admin/branding.php';
     }
     
     public function systemSettings() {
         requireAdmin();
-        include 'views/admin/system-settings.php';
+        include __DIR__ . '/../views/admin/system-settings.php';
     }
     
     public function versionControl() {
@@ -509,7 +509,7 @@ class AdminController {
             // Continue with empty arrays - page will show that tables need to be initialized
         }
         
-        include 'views/admin/version-control.php';
+        include __DIR__ . '/../views/admin/version-control.php';
     }
     
     public function settings() {
@@ -532,7 +532,7 @@ class AdminController {
         $stmt = $db->query($sql);
         $settings = $stmt->fetchAll();
         
-        include 'views/admin/settings.php';
+        include __DIR__ . '/../views/admin/settings.php';
     }
     
     // ============ USER MANAGEMENT ACTIONS ============
@@ -636,7 +636,7 @@ class AdminController {
             }
         }
         
-        include 'views/admin/user-create.php';
+        include __DIR__ . '/../views/admin/user-create.php';
     }
     
     public function userEdit($id) {
@@ -645,7 +645,7 @@ class AdminController {
         // Set global ID for the view
         $GLOBALS['id'] = $id;
         
-        include 'views/admin/user-edit.php';
+        include __DIR__ . '/../views/admin/user-edit.php';
     }
     
     public function userDelete($id) {
@@ -969,7 +969,7 @@ class AdminController {
         $stmt = $db->query($sql);
         $banks = $stmt->fetchAll();
         
-        include 'views/admin/banks.php';
+        include __DIR__ . '/../views/admin/banks.php';
     }
     
     // ============ CURRENCY MANAGEMENT ============
@@ -1040,7 +1040,7 @@ class AdminController {
         $stmt = $db->query($sql);
         $currencies = $stmt->fetchAll();
         
-        include 'views/admin/currencies.php';
+        include __DIR__ . '/../views/admin/currencies.php';
     }
     
     // ============ CARD MANAGEMENT ACTIONS ============
@@ -1142,7 +1142,7 @@ class AdminController {
         $filters = ['status' => $status];
         $pending_kyc = $kycModel->getAll($filters);
         
-        include 'views/admin/kyc.php';
+        include __DIR__ . '/../views/admin/kyc.php';
     }
     
     public function kycView($id) {
@@ -1170,14 +1170,14 @@ class AdminController {
             $beneficialOwners = $kycModel->getBeneficialOwners($id);
         }
         
-        include 'views/admin/kyc-view.php';
+        include __DIR__ . '/../views/admin/kyc-view.php';
     }
     
     // ============ REPORTS & ANALYTICS ============
     
     public function reports() {
         requireAdmin();
-        include 'views/admin/reports.php';
+        include __DIR__ . '/../views/admin/reports.php';
     }
     
     public function auditLogs() {
@@ -1191,7 +1191,7 @@ class AdminController {
         
         $logs = $this->adminModel->getAuditLogs($filters, 200);
         
-        include 'views/admin/audit-logs.php';
+        include __DIR__ . '/../views/admin/audit-logs.php';
     }
     
     // ============ MAINTENANCE MODE ============
@@ -1221,7 +1221,7 @@ class AdminController {
         requireAdmin();
         
         // This view handles its own data fetching
-        include 'views/admin/cards.php';
+        include __DIR__ . '/../views/admin/cards.php';
     }
     
     // ============ ADMIN SETTINGS ============
@@ -1330,7 +1330,7 @@ class AdminController {
             }
         }
         
-        include 'views/admin/admin-settings.php';
+        include __DIR__ . '/../views/admin/admin-settings.php';
     }
     
     // ============ EMAIL TESTING ============
@@ -1346,7 +1346,7 @@ class AdminController {
             include __DIR__ . '/../includes/head.php';
             include __DIR__ . '/../includes/admin-sidebar.php';
             define('EMAIL_SUBPAGE', true);
-            include 'views/admin/email-send.php';
+            include __DIR__ . '/../views/admin/email-send.php';
             echo '</div></div></div>'; // Close content-area, main-content-area, dashboard-container
             echo '</body></html>';
             return;
@@ -1357,7 +1357,7 @@ class AdminController {
             include __DIR__ . '/../includes/head.php';
             include __DIR__ . '/../includes/admin-sidebar.php';
             define('EMAIL_SUBPAGE', true);
-            include 'views/admin/email-test.php';
+            include __DIR__ . '/../views/admin/email-test.php';
             echo '</div></div></div>'; // Close content-area, main-content-area, dashboard-container
             echo '</body></html>';
             return;
@@ -1368,7 +1368,7 @@ class AdminController {
             include __DIR__ . '/../includes/head.php';
             include __DIR__ . '/../includes/admin-sidebar.php';
             define('EMAIL_SUBPAGE', true);
-            include 'views/admin/email-simulation-settings.php';
+            include __DIR__ . '/../views/admin/email-simulation-settings.php';
             echo '</div></div></div>'; // Close content-area, main-content-area, dashboard-container
             echo '</body></html>';
             return;
@@ -1379,14 +1379,14 @@ class AdminController {
             include __DIR__ . '/../includes/head.php';
             include __DIR__ . '/../includes/admin-sidebar.php';
             define('EMAIL_SUBPAGE', true);
-            include 'views/admin/email-simulation-test.php';
+            include __DIR__ . '/../views/admin/email-simulation-test.php';
             echo '</div></div></div>'; // Close content-area, main-content-area, dashboard-container
             echo '</body></html>';
             return;
         }
         
         // Main email page (list)
-        include 'views/admin/email.php';
+        include __DIR__ . '/../views/admin/email.php';
     }
     
     public function emailSend() {
@@ -1398,7 +1398,7 @@ class AdminController {
         include __DIR__ . '/../includes/head.php';
         include __DIR__ . '/../includes/admin-sidebar.php';
         define('EMAIL_SUBPAGE', true);
-        include 'views/admin/email-send.php';
+        include __DIR__ . '/../views/admin/email-send.php';
         echo '</div></div></div>'; // Close content-area, main-content-area, dashboard-container
         echo '</body></html>';
     }
@@ -1412,7 +1412,7 @@ class AdminController {
         include __DIR__ . '/../includes/head.php';
         include __DIR__ . '/../includes/admin-sidebar.php';
         define('EMAIL_SUBPAGE', true);
-        include 'views/admin/email-test.php';
+        include __DIR__ . '/../views/admin/email-test.php';
         echo '</div></div></div>'; // Close content-area, main-content-area, dashboard-container
         echo '</body></html>';
     }
@@ -1451,7 +1451,7 @@ class AdminController {
         $stmt = $db->query($sql, [$id]);
         $activityLogs = $stmt->fetchAll();
         
-        include 'views/admin/user-profile.php';
+        include __DIR__ . '/../views/admin/user-profile.php';
     }
     
     public function userTransactions($id) {
@@ -1518,7 +1518,7 @@ class AdminController {
             redirect('/admin/users');
         }
         
-        include 'views/admin/user-security.php';
+        include __DIR__ . '/../views/admin/user-security.php';
     }
     
     public function userStatus($id) {
@@ -1536,7 +1536,7 @@ class AdminController {
             redirect('/admin/users');
         }
         
-        include 'views/admin/user-status.php';
+        include __DIR__ . '/../views/admin/user-status.php';
     }
     
     public function userBalance($id) {
@@ -1558,7 +1558,7 @@ class AdminController {
         $accountModel = new Account();
         $accounts = $accountModel->getUserAccounts($id);
         
-        include 'views/admin/user-balance.php';
+        include __DIR__ . '/../views/admin/user-balance.php';
     }
     
     // ============ INVESTMENT MANAGEMENT ============
@@ -1590,7 +1590,7 @@ class AdminController {
         $stats = $stmt ? $stmt->fetch() : [];
         
         // Variables are available directly in view
-        include 'views/admin/investments.php';
+        include __DIR__ . '/../views/admin/investments.php';
     }
     
     public function investmentCreate() {
@@ -1676,7 +1676,7 @@ class AdminController {
             }
         }
         
-        include 'views/admin/investment-create.php';
+        include __DIR__ . '/../views/admin/investment-create.php';
     }
     
     public function investmentEdit($id) {
@@ -1762,7 +1762,7 @@ class AdminController {
         $roiConfig = json_decode($product['roi_config'], true);
         
         // Variables are available directly in view
-        include 'views/admin/investment-edit.php';
+        include __DIR__ . '/../views/admin/investment-edit.php';
     }
     
     public function investmentInvestors($id) {
@@ -1787,7 +1787,7 @@ class AdminController {
         $investments = $stmt ? $stmt->fetchAll() : [];
         
         // Variables are available directly in view
-        include 'views/admin/investment-investors.php';
+        include __DIR__ . '/../views/admin/investment-investors.php';
     }
     
     public function runAccrual() {
@@ -1884,7 +1884,7 @@ class AdminController {
         $wallets = $cryptoWalletModel->getAll(false);
         
         // Variables available in view
-        include 'views/admin/crypto-wallets.php';
+        include __DIR__ . '/../views/admin/crypto-wallets.php';
     }
     
     public function investmentFunding() {
@@ -1952,7 +1952,7 @@ class AdminController {
             error_log("Sample all funding: " . json_encode($allFunding[0]));
         }
         
-        include 'views/admin/investment-funding.php';
+        include __DIR__ . '/../views/admin/investment-funding.php';
     }
 
     public function transactionGenerator() {
@@ -1980,6 +1980,6 @@ class AdminController {
             error_log('transactionGenerator listBatches: ' . $e->getMessage());
         }
 
-        include 'views/admin/transaction-generator.php';
+        include __DIR__ . '/../views/admin/transaction-generator.php';
     }
 }

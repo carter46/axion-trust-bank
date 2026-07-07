@@ -1,4 +1,6 @@
 <?php 
+require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../includes/head.php';
 
 // Get user currency from database (consistent with other pages)

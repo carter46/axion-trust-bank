@@ -12,12 +12,12 @@ class TransferController {
         $transactionModel = new Transaction();
         $recent_transfers = $transactionModel->getUserTransactions($_SESSION['user_id'], ['limit' => 10]);
         
-        include 'views/transfer/index.php';
+        include __DIR__ . '/../views/transfer/index.php';
     }
     
     public function status() {
         requireLogin();
-        include 'views/transfer/status.php';
+        include __DIR__ . '/../views/transfer/status.php';
     }
     
     public function internal() {
@@ -56,7 +56,7 @@ class TransferController {
         $accountModel = new Account();
         $accounts = $accountModel->getUserAccounts($_SESSION['user_id']);
         
-        include 'views/transfer/internal.php';
+        include __DIR__ . '/../views/transfer/internal.php';
     }
     
     public function domestic() {
@@ -100,7 +100,7 @@ class TransferController {
             'beneficiaries' => $beneficiaries
         ];
         
-        include 'views/transfer/domestic.php';
+        include __DIR__ . '/../views/transfer/domestic.php';
     }
     
     public function international() {
@@ -144,7 +144,7 @@ class TransferController {
             'beneficiaries' => $beneficiaries
         ];
         
-        include 'views/transfer/international.php';
+        include __DIR__ . '/../views/transfer/international.php';
     }
     
     public function external() {
@@ -187,7 +187,7 @@ class TransferController {
             'beneficiaries' => $beneficiaries
         ];
         
-        include 'views/transfer/external.php';
+        include __DIR__ . '/../views/transfer/external.php';
     }
     
     public function beneficiary() {
@@ -228,6 +228,6 @@ class TransferController {
         $stmt = $db->query($sql, [$_SESSION['user_id']]);
         $beneficiaries = $stmt->fetchAll();
         
-        include 'views/transfer/beneficiary.php';
+        include __DIR__ . '/../views/transfer/beneficiary.php';
     }
 }

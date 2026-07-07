@@ -155,7 +155,7 @@ class TransactionController {
             'user_currency' => $userData['currency'] ?? 'USD'
         ];
         
-        include 'views/transaction/index.php';
+        include __DIR__ . '/../views/transaction/index.php';
     }
     
     private function viewReceipt() {
@@ -233,7 +233,7 @@ class TransactionController {
             'is_shared' => $isShared
         ];
         
-        include 'views/transaction/receipt.php';
+        include __DIR__ . '/../views/transaction/receipt.php';
     }
 }
 

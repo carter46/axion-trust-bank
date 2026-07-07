@@ -70,7 +70,7 @@ class InvestmentController {
         $userAccounts = $accountModel->getUserAccounts($_SESSION['user_id']);
         
         // Variables are available directly in view
-        include 'views/investment/index.php';
+        include __DIR__ . '/../views/investment/index.php';
     }
     
     public function view($id) {
@@ -109,7 +109,7 @@ class InvestmentController {
         $annualROI = $productModel->getAnnualROI($product);
         
         // Variables are available directly in view
-        include 'views/investment/view.php';
+        include __DIR__ . '/../views/investment/view.php';
     }
     
     public function myInvestments() {
@@ -145,7 +145,7 @@ class InvestmentController {
         }
         
         // Variables are available directly in view
-        include 'views/investment/my-investments.php';
+        include __DIR__ . '/../views/investment/my-investments.php';
     }
     
     public function invest() {
@@ -454,7 +454,7 @@ class InvestmentController {
         }
         
         // Variables available in view
-        include 'views/investment/fund-crypto.php';
+        include __DIR__ . '/../views/investment/fund-crypto.php';
     }
     
     public function withdraw() {
@@ -633,7 +633,7 @@ class InvestmentController {
             return strtotime($b['date']) - strtotime($a['date']);
         });
         
-        include 'views/investment/transactions.php';
+        include __DIR__ . '/../views/investment/transactions.php';
     }
 }
 

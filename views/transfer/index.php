@@ -2,6 +2,8 @@
 $pageTitle = 'Transfer Funds - Octobank';
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../includes/functions.php';
+require_once __DIR__ . '/../../includes/countries.php';
+require_once __DIR__ . '/../../includes/transaction-categories.php';
 require_once __DIR__ . '/../../includes/transfer-rails.php';
 
 // Get dynamic site name for branding

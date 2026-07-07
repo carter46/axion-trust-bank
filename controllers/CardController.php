@@ -9,7 +9,7 @@ class CardController {
         $cardModel = new Card();
         $userCards = $cardModel->getUserCards($_SESSION['user_id']);
         
-        include 'views/card/index.php';
+        include __DIR__ . '/../views/card/index.php';
     }
     
     public function applications() {
@@ -19,7 +19,7 @@ class CardController {
         $pendingCards = $cardModel->getUserPendingCards($_SESSION['user_id']);
         $rejectedCards = $cardModel->getUserRejectedCards($_SESSION['user_id']);
         
-        include 'views/card/applications.php';
+        include __DIR__ . '/../views/card/applications.php';
     }
     
     public function view($id) {
@@ -41,7 +41,7 @@ class CardController {
             'transactions' => $transactions
         ];
         
-        include 'views/card/view.php';
+        include __DIR__ . '/../views/card/view.php';
     }
     
     public function create() {
@@ -103,7 +103,7 @@ class CardController {
         $accountModel = new Account();
         $accounts = $accountModel->getUserAccounts($_SESSION['user_id']);
         
-        include 'views/card/create.php';
+        include __DIR__ . '/../views/card/create.php';
     }
     
     public function freeze($id) {

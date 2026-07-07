@@ -169,7 +169,7 @@ class AuthController {
             redirect($redirectTo . $separator . 'logged_in=1');
         }
         
-        include 'views/auth/login.php';
+        include __DIR__ . '/../views/auth/login.php';
     }
     
     public function register() {
@@ -299,7 +299,7 @@ class AuthController {
             }
         }
         
-        include 'views/auth/register.php';
+        include __DIR__ . '/../views/auth/register.php';
     }
     
     public function verify2fa() {
@@ -341,7 +341,7 @@ class AuthController {
             }
         }
         
-        include 'views/auth/verify-2fa.php';
+        include __DIR__ . '/../views/auth/verify-2fa.php';
     }
     
     public function resend2fa() {
@@ -421,18 +421,18 @@ class AuthController {
     }
     
     public function registrationSuccess() {
-        include 'views/auth/registration-success.php';
+        include __DIR__ . '/../views/auth/registration-success.php';
     }
 
     public function verificationSuccess() {
         if (!isLoggedIn()) {
             redirect('/auth/login');
         }
-        include 'views/auth/verification-success.php';
+        include __DIR__ . '/../views/auth/verification-success.php';
     }
 
     public function verificationExpired() {
-        include 'views/auth/verification-expired.php';
+        include __DIR__ . '/../views/auth/verification-expired.php';
     }
     
     public function verifyEmail($token) {
@@ -504,7 +504,7 @@ class AuthController {
     }
     
     public function jointAccountConfirmation() {
-        include 'views/auth/joint-account-confirmation.php';
+        include __DIR__ . '/../views/auth/joint-account-confirmation.php';
     }
     
     public function forgotPassword() {
@@ -521,7 +521,7 @@ class AuthController {
             redirect('/auth/forgot-password');
         }
         
-        include 'views/auth/forgot-password.php';
+        include __DIR__ . '/../views/auth/forgot-password.php';
     }
     
     public function resetPassword($token = null) {
@@ -553,7 +553,7 @@ class AuthController {
             }
         }
         
-        include 'views/auth/reset-password.php';
+        include __DIR__ . '/../views/auth/reset-password.php';
     }
     
     public function logout() {

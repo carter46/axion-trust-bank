@@ -7,7 +7,7 @@ class AccountController {
         $accountModel = new Account();
         $accounts = $accountModel->getUserAccounts($_SESSION['user_id']);
         
-        include 'views/account/index.php';
+        include __DIR__ . '/../views/account/index.php';
     }
     
     public function view($id) {
@@ -36,7 +36,7 @@ class AccountController {
             'transactions' => $transactions
         ];
         
-        include 'views/account/view.php';
+        include __DIR__ . '/../views/account/view.php';
     }
     
     public function create() {
@@ -71,7 +71,7 @@ class AccountController {
             }
         }
         
-        include 'views/account/create.php';
+        include __DIR__ . '/../views/account/create.php';
     }
     
     public function statement($id) {
@@ -103,7 +103,7 @@ class AccountController {
             'date_to' => $dateTo
         ];
         
-        include 'views/account/statement.php';
+        include __DIR__ . '/../views/account/statement.php';
     }
     
     public function transaction($id) {
@@ -128,7 +128,7 @@ class AccountController {
             redirect('/dashboard');
         }
         
-        include 'views/account/transaction.php';
+        include __DIR__ . '/../views/account/transaction.php';
     }
     
     public function jointApprove($requestId) {
@@ -202,6 +202,6 @@ class AccountController {
         $jointAccount = new JointAccount();
         $requests = $jointAccount->getPendingRequests($_SESSION['user_id']);
         
-        include 'views/account/joint-requests.php';
+        include __DIR__ . '/../views/account/joint-requests.php';
     }
 }

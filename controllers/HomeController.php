@@ -2,11 +2,11 @@
 class HomeController {
     
     public function index() {
-        include 'views/home/index.php';
+        include __DIR__ . '/../views/home/index.php';
     }
     
     public function about() {
-        include 'views/home/about.php';
+        include __DIR__ . '/../views/home/about.php';
     }
     
     public function contact() {
@@ -18,46 +18,46 @@ class HomeController {
     }
 
     public function accounts() {
-        include 'views/home/accounts.php';
+        include __DIR__ . '/../views/home/accounts.php';
     }
 
     public function services() {
-        include 'views/home/services.php';
+        include __DIR__ . '/../views/home/services.php';
     }
 
     public function cards() {
-        include 'views/home/cards.php';
+        include __DIR__ . '/../views/home/cards.php';
     }
 
     public function investments() {
-        include 'views/home/investments.php';
+        include __DIR__ . '/../views/home/investments.php';
     }
 
     public function loans() {
-        include 'views/home/loans.php';
+        include __DIR__ . '/../views/home/loans.php';
     }
 
     public function charity() {
-        include 'views/home/charity.php';
+        include __DIR__ . '/../views/home/charity.php';
     }
 
     public function security() {
-        include 'views/home/security.php';
+        include __DIR__ . '/../views/home/security.php';
     }
 
     public function faqs() {
-        include 'views/home/faqs.php';
+        include __DIR__ . '/../views/home/faqs.php';
     }
 
     public function terms() {
-        include 'views/home/terms.php';
+        include __DIR__ . '/../views/home/terms.php';
     }
 
     public function investorPortal() {
-        include 'views/home/investor-portal.php';
+        include __DIR__ . '/../views/home/investor-portal.php';
     }
 
     public function partnership() {
-        include 'views/home/partnership.php';
+        include __DIR__ . '/../views/home/partnership.php';
     }
 }

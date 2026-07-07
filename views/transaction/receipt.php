@@ -1,6 +1,7 @@
 <?php 
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../includes/functions.php';
+require_once __DIR__ . '/../../includes/transfer-rails.php';
 require_once __DIR__ . '/../../includes/head.php';
 
 // Get user currency

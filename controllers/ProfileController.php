@@ -7,7 +7,7 @@ class ProfileController {
         $userModel = new User();
         $user = $userModel->findById($_SESSION['user_id']);
         
-        include 'views/profile/index.php';
+        include __DIR__ . '/../views/profile/index.php';
     }
     
     public function update() {
@@ -49,7 +49,7 @@ class ProfileController {
         $userModel = new User();
         $user = $userModel->findById($_SESSION['user_id']);
         
-        include 'views/profile/security.php';
+        include __DIR__ . '/../views/profile/security.php';
     }
     
     public function changePassword() {
@@ -155,7 +155,7 @@ class ProfileController {
         
         $data = ['preferences' => $preferences];
         
-        include 'views/profile/notifications.php';
+        include __DIR__ . '/../views/profile/notifications.php';
     }
     
     public function edit() {
@@ -164,7 +164,7 @@ class ProfileController {
         $userModel = new User();
         $user = $userModel->findById($_SESSION['user_id']);
         
-        include 'views/profile/edit.php';
+        include __DIR__ . '/../views/profile/edit.php';
     }
     
     public function twoFactor() {
@@ -173,7 +173,7 @@ class ProfileController {
         $userModel = new User();
         $user = $userModel->findById($_SESSION['user_id']);
         
-        include 'views/profile/two-factor.php';
+        include __DIR__ . '/../views/profile/two-factor.php';
     }
     
     public function kyc() {
@@ -274,7 +274,7 @@ class ProfileController {
             $beneficialOwners = $kycModel->getBeneficialOwners($existingKyc['id']);
         }
         
-        include 'views/profile/kyc.php';
+        include __DIR__ . '/../views/profile/kyc.php';
     }
     
     public function settings() {
@@ -327,6 +327,6 @@ class ProfileController {
             redirect('/profile/settings');
         }
         
-        include 'views/profile/settings.php';
+        include __DIR__ . '/../views/profile/settings.php';
     }
 }

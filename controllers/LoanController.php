@@ -7,7 +7,7 @@ class LoanController {
         $loanModel = new Loan();
         $loans = $loanModel->getUserLoans($_SESSION['user_id']);
         
-        include 'views/loan/index.php';
+        include __DIR__ . '/../views/loan/index.php';
     }
     
     public function view($id) {
@@ -29,7 +29,7 @@ class LoanController {
             'payment_schedule' => $paymentSchedule
         ];
         
-        include 'views/loan/view.php';
+        include __DIR__ . '/../views/loan/view.php';
     }
     
     public function apply() {
@@ -83,7 +83,7 @@ class LoanController {
         $accountModel = new Account();
         $accounts = $accountModel->getUserAccounts($_SESSION['user_id']);
         
-        include 'views/loan/apply.php';
+        include __DIR__ . '/../views/loan/apply.php';
     }
     
     public function payment($id) {

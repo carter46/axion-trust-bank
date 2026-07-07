@@ -1060,6 +1060,19 @@ function sendSMS($to, $message) {
 }
 
 /**
+ * Map UI/admin transaction status to values allowed in the transactions.status enum.
+ * The UI uses on_hold; MySQL enum uses pending (see admin-adjust-balance.php).
+ */
+function adminMapTransactionStatusForDb(string $status): string
+{
+    $status = strtolower(trim($status));
+    if ($status === 'on_hold') {
+        return 'pending';
+    }
+    return $status;
+}
+
+/**
  * Whether deleting this transaction should adjust the account balance.
  */
 function adminShouldReverseBalanceOnDelete(array $transaction): bool
@@ -1678,3 +1691,7 @@ if (!function_exists('getSystemSetting')) {
         }
     }
 }
+
+// Shared helpers used across views, controllers, and APIs (load once with functions.php).
+require_once __DIR__ . '/transaction-categories.php';
+require_once __DIR__ . '/countries.php';

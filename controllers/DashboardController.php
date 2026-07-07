@@ -206,6 +206,6 @@ class DashboardController {
         }
         
         // Variables are available directly in view
-        include 'views/dashboard/index.php';
+        include __DIR__ . '/../views/dashboard/index.php';
     }
 }
