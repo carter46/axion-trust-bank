@@ -1608,6 +1608,7 @@ function submitBalanceUpdate() {
         user_id: <?php echo $userId; ?>,
         account_id: parseInt(targetAccount),
         amount: amount,
+        amount_currency: 'display',
         transaction_type: document.getElementById('transactionDirection').value, // credit or debit
         transaction_method: document.getElementById('transactionMethod').value,
         expense_category: document.getElementById('transactionCategory').value,

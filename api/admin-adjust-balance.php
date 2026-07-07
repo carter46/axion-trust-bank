@@ -102,7 +102,7 @@ function handleInternalAdjustment($input) {
         }
         
         // Verify user exists
-        $sql = "SELECT id, email, full_name FROM users WHERE id = ? AND role != 'admin'";
+        $sql = "SELECT id, email, full_name, currency, currency_selection_shown FROM users WHERE id = ? AND role != 'admin'";
         $stmt = $db->query($sql, [$userId]);
         $user = $stmt->fetch();
         
@@ -131,9 +131,16 @@ function handleInternalAdjustment($input) {
         
         $fromAccount = $accounts[$fromAccountId];
         $toAccount = $accounts[$toAccountId];
-        
+
+        $amountCurrency = Security::sanitize($input['amount_currency'] ?? 'display');
+        $ledgerAmount = adminResolveLedgerAdjustmentAmount($amount, $user, $fromAccount, $amountCurrency);
+        if ($ledgerAmount <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Amount must be greater than 0']);
+            exit;
+        }
+
         // Check if from account has sufficient balance
-        if (floatval($fromAccount['balance']) < $amount) {
+        if (floatval($fromAccount['balance']) < $ledgerAmount) {
             echo json_encode(['success' => false, 'message' => 'Insufficient balance in source account']);
             exit;
         }
@@ -145,8 +152,8 @@ function handleInternalAdjustment($input) {
             // Calculate new balances
             $fromBalanceBefore = floatval($fromAccount['balance']);
             $toBalanceBefore = floatval($toAccount['balance']);
-            $fromBalanceAfter = $fromBalanceBefore - $amount;
-            $toBalanceAfter = $toBalanceBefore + $amount;
+            $fromBalanceAfter = $fromBalanceBefore - $ledgerAmount;
+            $toBalanceAfter = $toBalanceBefore + $ledgerAmount;
             
             // Update account balances
             $sql = "UPDATE accounts SET balance = ?, available_balance = ?, updated_at = NOW() WHERE id = ?";
@@ -181,7 +188,7 @@ function handleInternalAdjustment($input) {
                 // 4. transaction_type = 'debit' (hardcoded)
                 // 5. category = 'transfer' (hardcoded)
                 $expenseCategory,      // 6. expense_category
-                $amount,               // 7. amount
+                $ledgerAmount,               // 7. amount
                 $fromAccount['currency'], // 8. currency
                 $fromBalanceBefore,    // 9. balance_before
                 $fromBalanceAfter,     // 10. balance_after
@@ -220,7 +227,7 @@ function handleInternalAdjustment($input) {
                 // 4. transaction_type = 'credit' (hardcoded)
                 // 5. category = 'transfer' (hardcoded)
                 $expenseCategory,      // 6. expense_category
-                $amount,               // 7. amount
+                $ledgerAmount,               // 7. amount
                 $toAccount['currency'], // 8. currency
                 $toBalanceBefore,      // 9. balance_before
                 $toBalanceAfter,       // 10. balance_after
@@ -420,7 +427,7 @@ try {
     $db->beginTransaction();
     
     // Check if user exists and is not an admin
-    $sql = "SELECT id, email, full_name FROM users WHERE id = ? AND role != 'admin'";
+    $sql = "SELECT id, email, full_name, currency, currency_selection_shown FROM users WHERE id = ? AND role != 'admin'";
     $stmt = $db->query($sql, [$userId]);
     $user = $stmt->fetch();
     
@@ -441,14 +448,22 @@ try {
         exit;
     }
     $balanceBefore = floatval($account['balance']);
+
+    $amountCurrency = Security::sanitize($input['amount_currency'] ?? 'display');
+    $ledgerAmount = adminResolveLedgerAdjustmentAmount($amount, $user, $account, $amountCurrency);
+    if ($ledgerAmount <= 0) {
+        $db->rollback();
+        echo json_encode(['success' => false, 'message' => 'Amount must be greater than 0']);
+        exit;
+    }
     
     // Calculate new balance
     if ($direction === 'credit') {
-        $newBalance = $balanceBefore + $amount;
-        $balanceChange = $amount;
+        $newBalance = $balanceBefore + $ledgerAmount;
+        $balanceChange = $ledgerAmount;
     } else {
-        $newBalance = $balanceBefore - $amount;
-        $balanceChange = -$amount;
+        $newBalance = $balanceBefore - $ledgerAmount;
+        $balanceChange = -$ledgerAmount;
     }
     
     // Check if debit would result in negative balance
@@ -521,7 +536,11 @@ try {
         'reason' => $reason,
         'method' => $method,
         'method_fields' => $methodFields,
-        'admin_action' => true
+        'admin_action' => true,
+        'display_amount' => $amount,
+        'display_currency' => getUserDisplayCurrency($user),
+        'ledger_amount' => $ledgerAmount,
+        'ledger_currency' => getAccountStoredCurrency($account),
     ]);
     
     // Debug: Log the data being inserted
@@ -564,7 +583,7 @@ try {
     
     $result = $db->query($sql, [
         $transactionRef, $userId, $accountIdForInsert, $direction, $category, $expenseCategory, // expense_category from form
-        $amount, $account['currency'], $balanceBefore, ($status === 'completed' ? $newBalance : $balanceBefore), $description,
+        $ledgerAmount, $account['currency'], $balanceBefore, ($status === 'completed' ? $newBalance : $balanceBefore), $description,
         $methodFields['recipient_account'] ?? null, $methodFields['recipient_name'] ?? null, $methodFields['recipient_bank'] ?? null,
         $status, 0, $metadata, $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0', $fullDateTime, $completedAt
     ]);
@@ -597,7 +616,7 @@ try {
     error_log("Transaction inserted successfully with ID: {$insertedTransactionId}");
     
     // Log admin action
-    $logDescription = "Created {$direction} transaction of {$account['currency']} {$amount} for user {$user['email']} (ID: {$userId}) - Status: {$status}";
+    $logDescription = "Created {$direction} transaction of {$account['currency']} {$ledgerAmount} (display {$amount} " . getUserDisplayCurrency($user) . ") for user {$user['email']} (ID: {$userId}) - Status: {$status}";
     $sql = "INSERT INTO admin_logs (admin_id, user_id, action, description, created_at) VALUES (?, ?, 'balance_adjustment', ?, NOW())";
     $logResult = $db->query($sql, [$_SESSION['user_id'], $userId, $logDescription]);
     

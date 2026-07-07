@@ -411,7 +411,7 @@ include __DIR__ . '/../../includes/admin-modals.php';
             <?php if (!empty($accounts)): ?>
                 <div style="margin-bottom: 20px;">
                     <p style="color: #6b7280; font-size: 14px; margin: 0;">
-                        Adjust the balance for any of this user's accounts. Use positive amounts to credit and negative amounts to debit.
+                        Adjust the balance for any of this user's accounts. Amounts are in the user's display currency (<?php echo htmlspecialchars($userCurrency); ?>); the ledger is updated using the correct exchange rate per account.
                     </p>
                 </div>
 
@@ -489,6 +489,7 @@ function adjustAccountBalance(accountId, accountNumber, accountType) {
                     user_id: userId,
                     account_id: accountId,
                     amount: parseFloat(amount),
+                    amount_currency: 'display',
                     description: `Admin balance adjustment for ${accountType} account #${accountNumber}`
                 })
             })
@@ -543,6 +544,7 @@ function creditAllAccounts() {
                         user_id: userId,
                         account_id: account.id,
                         amount: parseFloat(amount),
+                        amount_currency: 'display',
                         description: `Bulk credit to ${account.account_type} account #${account.account_number}`
                     })
                 })

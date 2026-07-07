@@ -852,7 +852,7 @@ include __DIR__ . '/../../includes/admin-modals.php';
                 </div>
             </div>
             <div class="stat-number"><?php echo formatUserTotalBalance($user, $accounts); ?></div>
-            <div class="stat-label">Across all active accounts</div>
+            <div class="stat-label">Across all active accounts (<?php echo htmlspecialchars($userCurrency); ?> display)</div>
             <div class="stat-change positive">
                 <i class="fas fa-wallet"></i>
                 <span>Current balance</span>
@@ -893,7 +893,8 @@ include __DIR__ . '/../../includes/admin-modals.php';
                     <?php foreach ($accounts as $acct): ?>
                         <option value="<?php echo (int)$acct['id']; ?>">
                             <?php echo htmlspecialchars(ucfirst($acct['account_type'] ?? 'account') . ' #' . ($acct['account_number'] ?? '')); ?>
-                            — <?php echo formatCurrency((float)($acct['balance'] ?? 0), $userCurrency); ?>
+                            — <?php echo formatAccountBalance((float)($acct['balance'] ?? 0), $acct, $userCurrency); ?>
+                            <span style="color:#6b7280;font-size:12px;"> (ledger: <?php echo htmlspecialchars(getAccountStoredCurrency($acct)); ?>)</span>
                         </option>
                     <?php endforeach; ?>
                 </select>
@@ -902,7 +903,7 @@ include __DIR__ . '/../../includes/admin-modals.php';
                 </button>
                 <p class="clear-account-hint">
                     Wipes transaction history for the selected account only (<?php echo htmlspecialchars($user['full_name']); ?>).
-                    Balance is set to $0.00. Other users and other accounts are not affected.
+                    Balance is set to <?php echo formatDisplayCurrencyAmount(0, $userCurrency); ?>. Other users and other accounts are not affected.
                 </p>
             </div>
         <?php endif; ?>

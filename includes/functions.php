@@ -484,6 +484,29 @@ function formatAccountBalance($amount, array $account, $displayCurrency = null) 
 }
 
 /**
+ * Convert an amount entered in the user's display currency to an account's ledger currency.
+ */
+function convertDisplayAmountToAccountLedger(float $displayAmount, $user, array $account): float
+{
+    return round(convertCurrencyAmount(
+        $displayAmount,
+        getUserDisplayCurrency($user),
+        getAccountStoredCurrency($account)
+    ), 2);
+}
+
+/**
+ * Resolve admin adjustment amount: display currency (default) vs raw ledger units.
+ */
+function adminResolveLedgerAdjustmentAmount(float $amount, $user, array $account, string $amountCurrency = 'display'): float
+{
+    if ($amountCurrency === 'ledger') {
+        return round($amount, 2);
+    }
+    return convertDisplayAmountToAccountLedger($amount, $user, $account);
+}
+
+/**
  * Total balance across a user's active accounts in their display currency.
  */
 function getUserTotalBalanceForDisplay($user, array $accounts) {
