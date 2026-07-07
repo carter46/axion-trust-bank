@@ -29,6 +29,11 @@ if ($userId <= 0) {
     exit;
 }
 
+if ($accountId <= 0) {
+    echo json_encode(['success' => false, 'message' => 'Select an account to clear']);
+    exit;
+}
+
 if ($reason === '') {
     echo json_encode(['success' => false, 'message' => 'Reason is required']);
     exit;
@@ -38,20 +43,17 @@ try {
     $result = adminClearUserAccountHistory(
         Database::getInstance(),
         $userId,
-        $accountId > 0 ? $accountId : null,
+        $accountId,
         $reason
     );
 
-    $scopeLabel = ($result['scope'] ?? '') === 'all'
-        ? 'All accounts cleared'
-        : 'Account #' . ($result['account_number'] ?? $accountId) . ' cleared';
-
     echo json_encode([
         'success' => true,
-        'message' => $scopeLabel . '. ' . ($result['deleted_count'] ?? 0) . ' transaction(s) removed, balance set to $0.00.',
+        'message' => 'Account #' . ($result['account_number'] ?? $accountId) . ' cleared for this user. '
+            . ($result['deleted_count'] ?? 0) . ' transaction(s) removed, balance set to $0.00.',
         'deleted_count' => (int)($result['deleted_count'] ?? 0),
-        'accounts_zeroed' => (int)($result['accounts_zeroed'] ?? 0),
-        'scope' => $result['scope'] ?? 'account',
+        'accounts_zeroed' => 1,
+        'scope' => 'account',
     ]);
 } catch (InvalidArgumentException $e) {
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);

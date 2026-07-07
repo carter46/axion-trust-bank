@@ -887,9 +887,9 @@ include __DIR__ . '/../../includes/admin-modals.php';
 
         <?php if (!empty($accounts)): ?>
             <div class="clear-account-bar">
-                <label for="clearAccountSelect">Clear account history</label>
-                <select id="clearAccountSelect" class="form-control">
-                    <option value="all">All accounts (full wipe)</option>
+                <label for="clearAccountSelect">Clear this user's account</label>
+                <select id="clearAccountSelect" class="form-control" required>
+                    <option value="">Select account…</option>
                     <?php foreach ($accounts as $acct): ?>
                         <option value="<?php echo (int)$acct['id']; ?>">
                             <?php echo htmlspecialchars(ucfirst($acct['account_type'] ?? 'account') . ' #' . ($acct['account_number'] ?? '')); ?>
@@ -901,7 +901,8 @@ include __DIR__ . '/../../includes/admin-modals.php';
                     <i class="fas fa-eraser"></i> Clear account
                 </button>
                 <p class="clear-account-hint">
-                    Permanently deletes all transactions for the selected scope and sets balance to $0.00. This cannot be undone.
+                    Wipes transaction history for the selected account only (<?php echo htmlspecialchars($user['full_name']); ?>).
+                    Balance is set to $0.00. Other users and other accounts are not affected.
                 </p>
             </div>
         <?php endif; ?>
@@ -1210,15 +1211,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function clearAccountHistory() {
     const select = document.getElementById('clearAccountSelect');
-    const accountId = select ? select.value : 'all';
-    const isAll = accountId === 'all';
-    const label = isAll
-        ? 'ALL accounts for this user'
-        : select.options[select.selectedIndex].text;
+    const accountId = select ? select.value : '';
+    if (!accountId) {
+        showToast('Select an account to clear', 'error');
+        return;
+    }
+    const label = select.options[select.selectedIndex].text;
+    const userName = <?php echo json_encode($user['full_name']); ?>;
 
     showModal(
-        isAll ? 'Clear all accounts' : 'Clear account',
-        'This will permanently delete every transaction for ' + label + ' and set the balance to $0.00. This cannot be undone.',
+        'Clear account for ' + userName,
+        'Delete every transaction on ' + label.trim() + ' for this user only, and set that account balance to $0.00. This cannot be undone.',
         'danger',
         function(reason) {
             if (!reason) {
@@ -1231,7 +1234,7 @@ function clearAccountHistory() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     user_id: ADMIN_USER_ID,
-                    account_id: isAll ? 0 : parseInt(accountId, 10),
+                    account_id: parseInt(accountId, 10),
                     reason: reason
                 })
             })

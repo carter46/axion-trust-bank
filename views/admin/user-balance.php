@@ -461,13 +461,6 @@ include __DIR__ . '/../../includes/admin-modals.php';
                     </svg>
                     Unfreeze All Accounts
                 </button>
-
-                <button class="btn btn-danger" onclick="clearAllAccountsHistory()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M3 6h18M8 6V4h8v2m-1 4v8H9v-8" stroke="currentColor" stroke-width="2"/>
-                    </svg>
-                    Clear All History &amp; Zero Balances
-                </button>
             </div>
         </div>
     </div>
@@ -693,48 +686,6 @@ function unfreezeAllAccounts() {
                     }
                 });
             });
-        }
-    );
-}
-
-function clearAllAccountsHistory() {
-    showModal(
-        'Clear all accounts',
-        'Permanently delete ALL transaction history for this user and set every account balance to $0.00. This cannot be undone.',
-        'danger',
-        function(reason) {
-            if (!reason) {
-                showToast('Please provide a reason', 'error');
-                return;
-            }
-
-            fetch('/api/admin-clear-account.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user_id: <?php echo (int)$userId; ?>,
-                    account_id: 0,
-                    reason: reason
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showToast(data.message || 'Accounts cleared', 'success');
-                    location.reload();
-                } else {
-                    showToast('Error: ' + data.message, 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast('An error occurred while clearing accounts', 'error');
-            });
-        },
-        {
-            textarea: {
-                placeholder: 'Enter reason for clearing all account history...'
-            }
         }
     );
 }

@@ -1324,8 +1324,12 @@ function adminFindInternalTransferSenderDebit(PDO $conn, array $creditTxn): ?arr
 /**
  * Wipe transaction history and zero balance for one account or all of a user's accounts.
  */
-function adminClearUserAccountHistory(Database $db, int $userId, ?int $accountId, string $reason): array
+function adminClearUserAccountHistory(Database $db, int $userId, int $accountId, string $reason): array
 {
+    if ($accountId <= 0) {
+        throw new InvalidArgumentException('Account ID is required');
+    }
+
     $userStmt = $db->query(
         "SELECT id, email, role FROM users WHERE id = ? LIMIT 1",
         [$userId]
@@ -1339,10 +1343,6 @@ function adminClearUserAccountHistory(Database $db, int $userId, ?int $accountId
     $db->beginTransaction();
 
     try {
-        if ($accountId === null || $accountId <= 0) {
-            return adminClearAllUserAccountsHistory($db, $userId, $user, $reason);
-        }
-
         $acctStmt = $db->query(
             "SELECT id, account_number, balance FROM accounts WHERE id = ? AND user_id = ? FOR UPDATE",
             [$accountId, $userId]
@@ -1449,56 +1449,6 @@ function adminClearUserAccountHistory(Database $db, int $userId, ?int $accountId
         }
         throw $e;
     }
-}
-
-/**
- * @param array<string, mixed> $user
- * @return array<string, mixed>
- */
-function adminClearAllUserAccountsHistory(Database $db, int $userId, array $user, string $reason): array
-{
-    $countStmt = $db->query(
-        'SELECT COUNT(*) AS cnt FROM transactions WHERE user_id = ?',
-        [$userId]
-    );
-    $deletedCount = (int)(($countStmt ? $countStmt->fetch() : [])['cnt'] ?? 0);
-
-    $acctStmt = $db->query(
-        'SELECT COUNT(*) AS cnt FROM accounts WHERE user_id = ?',
-        [$userId]
-    );
-    $accountsZeroed = (int)(($acctStmt ? $acctStmt->fetch() : [])['cnt'] ?? 0);
-
-    $db->query('DELETE FROM transactions WHERE user_id = ?', [$userId]);
-    $db->query(
-        'UPDATE accounts SET balance = 0, available_balance = 0, updated_at = NOW() WHERE user_id = ?',
-        [$userId]
-    );
-    $db->query(
-        "UPDATE transaction_generation_batches SET status = 'undone', updated_at = NOW()
-         WHERE user_id = ? AND status = 'completed'",
-        [$userId]
-    );
-
-    $db->commit();
-
-    logActivity(
-        $_SESSION['user_id'] ?? 0,
-        'ADMIN_CLEAR_ALL_ACCOUNTS',
-        sprintf(
-            'Cleared all accounts for user %s (id %d). Deleted %d transaction(s). Reason: %s',
-            $user['email'],
-            $userId,
-            $deletedCount,
-            $reason
-        )
-    );
-
-    return [
-        'scope' => 'all',
-        'deleted_count' => $deletedCount,
-        'accounts_zeroed' => $accountsZeroed,
-    ];
 }
 
 function logActivity($userId, $action, $details = null) {
