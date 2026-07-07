@@ -424,7 +424,8 @@ function renderPlanSummary(data) {
             <li>International transfers: ${ps.international_transfers}</li>
             <li>Card payments: ${ps.card_payments}</li>
             <li>Bills: ${ps.bills}</li>
-            <li>Salary/credits: ${ps.salary_credits}</li>
+            <li>Incoming credits: ${ps.incoming_credits ?? ps.salary_credits ?? 0}</li>
+            ${ps.salary_credits ? `<li>Salary deposits: ${ps.salary_credits}</li>` : ''}
         </ul>`);
     }
     lines.push(`<p>History impact: ${data.history_impact >= 0 ? '+' : ''}${formatMoney(data.history_impact)}</p>`);

@@ -1,7 +1,7 @@
 <?php
 /**
  * Demo account personas — behaviour templates only; adapt to bank operating country.
- * Do not modify user records. Banks/merchants always follow system operating country.
+ * income_pattern: minimal | occasional | monthly_salary | business_inflow | wire_inflows
  */
 return [
     [
@@ -11,6 +11,7 @@ return [
         'financial_behaviour' => 'average',
         'volume' => 'medium',
         'salary_band' => 'entry',
+        'income_pattern' => 'minimal',
         'merchant_tags' => ['coffee', 'streaming', 'tuition', 'transit', 'groceries'],
     ],
     [
@@ -20,6 +21,7 @@ return [
         'financial_behaviour' => 'active_spender',
         'volume' => 'high',
         'salary_band' => 'executive',
+        'income_pattern' => 'business_inflow',
         'merchant_tags' => ['saas', 'supplier', 'payroll', 'tax', 'travel'],
     ],
     [
@@ -29,6 +31,7 @@ return [
         'financial_behaviour' => 'average',
         'volume' => 'medium',
         'salary_band' => 'standard',
+        'income_pattern' => 'monthly_salary',
         'merchant_tags' => ['groceries', 'fuel', 'utilities', 'streaming', 'restaurants'],
     ],
     [
@@ -38,6 +41,7 @@ return [
         'financial_behaviour' => 'digital_first',
         'volume' => 'medium',
         'salary_band' => 'standard',
+        'income_pattern' => 'occasional',
         'merchant_tags' => ['saas', 'subscription', 'coffee', 'groceries'],
     ],
     [
@@ -47,6 +51,7 @@ return [
         'financial_behaviour' => 'intl_traveller',
         'volume' => 'high',
         'salary_band' => 'executive',
+        'income_pattern' => 'wire_inflows',
         'merchant_tags' => ['investment', 'travel', 'hotels', 'premium'],
     ],
     [
@@ -56,6 +61,7 @@ return [
         'financial_behaviour' => 'conservative',
         'volume' => 'low',
         'salary_band' => 'entry',
+        'income_pattern' => 'occasional',
         'merchant_tags' => ['groceries', 'utilities', 'insurance'],
     ],
     [
@@ -65,6 +71,7 @@ return [
         'financial_behaviour' => 'luxury',
         'volume' => 'high',
         'salary_band' => 'premium',
+        'income_pattern' => 'wire_inflows',
         'merchant_tags' => ['premium', 'travel', 'restaurants', 'retail', 'hotels'],
     ],
     [
@@ -74,6 +81,7 @@ return [
         'financial_behaviour' => 'cash_heavy',
         'volume' => 'low',
         'salary_band' => 'entry',
+        'income_pattern' => 'minimal',
         'merchant_tags' => ['tuition', 'transit', 'food', 'streaming'],
     ],
     [
@@ -83,6 +91,7 @@ return [
         'financial_behaviour' => 'average',
         'volume' => 'medium',
         'salary_band' => 'standard',
+        'income_pattern' => 'business_inflow',
         'merchant_tags' => ['supplier', 'payroll', 'utilities', 'tax'],
     ],
     [
@@ -92,6 +101,7 @@ return [
         'financial_behaviour' => 'conservative',
         'volume' => 'low',
         'salary_band' => 'minimal',
+        'income_pattern' => 'minimal',
         'merchant_tags' => ['utilities'],
     ],
 ];

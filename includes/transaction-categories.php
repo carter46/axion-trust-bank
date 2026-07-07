@@ -109,6 +109,8 @@ function getStructuralCategoryForEventType(string $eventType): string
         'bill_payment' => 'payment',
         'subscription' => 'payment',
         'salary_credit' => 'deposit',
+        'incoming_domestic_transfer' => 'deposit',
+        'incoming_international_transfer' => 'deposit',
         'deposit_credit' => 'deposit',
         'investment_credit' => 'deposit',
         'investment_debit' => 'withdrawal',
