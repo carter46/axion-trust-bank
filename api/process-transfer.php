@@ -210,7 +210,7 @@ try {
     
     $sql = "SELECT COALESCE(SUM(amount), 0) as total_today FROM transactions
             WHERE account_id = ? AND transaction_type = 'debit' AND category = 'transfer'
-            AND status IN ('pending', 'processing', 'completed') AND DATE(created_at) = CURDATE()";
+            AND status IN ('pending', 'processing', 'successful', 'completed') AND DATE(created_at) = CURDATE()";
     $totalToday = floatval($db->query($sql, [$fromAccountId])->fetch()['total_today'] ?? 0);
     if (($totalToday + $amountForLimitCheck) > $dailyLimit) {
         $remaining = max(0, $dailyLimit - $totalToday);
@@ -225,7 +225,7 @@ try {
     
     $sql = "SELECT COALESCE(SUM(amount), 0) as total_month FROM transactions
             WHERE account_id = ? AND transaction_type = 'debit' AND category = 'transfer'
-            AND status IN ('pending', 'processing', 'completed')
+            AND status IN ('pending', 'processing', 'successful', 'completed')
             AND DATE_FORMAT(created_at, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')";
     $totalMonth = floatval($db->query($sql, [$fromAccountId])->fetch()['total_month'] ?? 0);
     if (($totalMonth + $amountForLimitCheck) > $monthlyLimit) {
@@ -555,7 +555,8 @@ try {
     }
     
     // Determine transaction status based on user account status and transaction override
-    $transactionStatus = 'completed';
+    // Successful transfers store as "successful"; admin may later set "completed"
+    $transactionStatus = 'successful';
     $completedAt = 'NOW()';
     $shouldDeductBalance = true; // Whether to deduct balance from account
     
@@ -566,10 +567,10 @@ try {
         $shouldDeductBalance = true; // Still deduct but mark as pending
         error_log("Transaction status set to pending due to transaction_override: force_pending");
     } elseif ($transactionOverride === 'force_success') {
-        $transactionStatus = 'completed';
+        $transactionStatus = 'successful';
         $completedAt = 'NOW()';
         $shouldDeductBalance = true;
-        error_log("Transaction status set to completed due to transaction_override: force_success");
+        error_log("Transaction status set to successful due to transaction_override: force_success");
     } elseif ($transactionOverride === 'force_failed') {
         $transactionStatus = 'failed';
         $completedAt = 'NULL';
@@ -601,7 +602,10 @@ try {
     $operatingCountryRow = $db->query(
         "SELECT setting_value FROM system_settings WHERE setting_key = 'bank_operating_country' LIMIT 1"
     )->fetch();
-    $operatingCountry = $operatingCountryRow['setting_value'] ?? 'United States';
+    $bankOperatingCountry = $operatingCountryRow['setting_value'] ?? 'United States';
+    // Domestic rails / bank list follow the user's display-currency country
+    $userDomesticCountry = currencyToPrimaryCountry(getUserDisplayCurrency($user));
+    $operatingCountry = $userDomesticCountry !== '' ? $userDomesticCountry : $bankOperatingCountry;
     
     if ($transferType === 'internal') {
         $bankName = Security::sanitize($input['bank_name'] ?? '');
@@ -718,7 +722,7 @@ try {
                         amount, currency, balance_before, balance_after, description, 
                         recipient_account, recipient_name, recipient_bank, status, fee, metadata, 
                         ip_address, created_at, completed_at
-                    ) VALUES (?, ?, ?, 'credit', 'transfer', NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, NOW(), " . ($transactionStatus === 'completed' ? 'NOW()' : 'NULL') . ")";
+                    ) VALUES (?, ?, ?, 'credit', 'transfer', NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, NOW(), " . (isSuccessfulTransactionStatus($transactionStatus) ? 'NOW()' : 'NULL') . ")";
             
             $db->query($sqlRecipientTxn, [
                 $recipientTransactionRef,
@@ -916,7 +920,7 @@ try {
     $db->commit();
     
     // Determine success message based on transaction status
-    $successMessage = 'Transfer completed successfully';
+    $successMessage = 'Transfer successful';
     if ($transactionStatus === 'pending') {
         $successMessage = 'Transfer submitted successfully. Your transfer is pending admin approval.';
     } elseif ($transactionStatus === 'processing') {

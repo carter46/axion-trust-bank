@@ -335,6 +335,11 @@ include __DIR__ . '/../../includes/admin-modals.php';
     color: #065f46;
 }
 
+.status-successful {
+    background: #d1fae5;
+    color: #065f46;
+}
+
 .status-pending {
     background: #fef3c7;
     color: #92400e;
@@ -991,7 +996,7 @@ include __DIR__ . '/../../includes/admin-modals.php';
                                     <button onclick="editTransaction(<?php echo $transaction['id']; ?>)" class="action-btn btn-edit" title="Edit Transaction">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <?php if ($transaction['status'] === 'completed'): ?>
+                                    <?php if (isSuccessfulTransactionStatus($transaction['status'] ?? '')): ?>
                                         <button onclick="reverseTransaction(<?php echo $transaction['id']; ?>)" class="action-btn btn-reverse" title="Reverse Transaction">
                                             <i class="fas fa-undo"></i>
                                         </button>
@@ -1070,7 +1075,7 @@ include __DIR__ . '/../../includes/admin-modals.php';
                             <button onclick="editTransaction(<?php echo $transaction['id']; ?>)" class="action-btn btn-edit" title="Edit Transaction">
                                 <i class="fas fa-edit"></i> Edit
                             </button>
-                            <?php if ($transaction['status'] === 'completed'): ?>
+                            <?php if (isSuccessfulTransactionStatus($transaction['status'] ?? '')): ?>
                                 <button onclick="reverseTransaction(<?php echo $transaction['id']; ?>)" class="action-btn btn-reverse" title="Reverse Transaction">
                                     <i class="fas fa-undo"></i> Reverse
                                 </button>
@@ -1430,7 +1435,8 @@ function showEditTransactionModal(transaction, dateValue, timeValue) {
                         <label style="display: block; margin-bottom: 5px; font-weight: 600;">Status *</label>
                         <select id="editStatus" required
                                 style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-                            <option value="completed" ${safeStatus === 'completed' ? 'selected' : ''}>✅ Completed</option>
+                            <option value="successful" ${safeStatus === 'successful' ? 'selected' : ''}>✅ Successful</option>
+                            <option value="completed" ${safeStatus === 'completed' ? 'selected' : ''}>☑️ Completed</option>
                             <option value="pending" ${safeStatus === 'pending' ? 'selected' : ''}>⏳ Pending</option>
                             <option value="failed" ${safeStatus === 'failed' ? 'selected' : ''}>❌ Failed</option>
                             <option value="on_hold" ${safeStatus === 'on_hold' ? 'selected' : ''}>🟣 On Hold</option>

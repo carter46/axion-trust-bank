@@ -1073,7 +1073,10 @@ include __DIR__ . '/../../includes/admin-modals.php';
                 <div class="form-group" id="statusFieldGroup" style="display: none;">
                 <label for="transactionStatus">Transaction Status</label>
                     <select id="transactionStatus" class="form-input">
+                  <option value="successful">Successful</option>
                   <option value="completed">Completed</option>
+                  <option value="pending">Pending</option>
+                  <option value="failed">Failed</option>
                   <option value="pending">Pending</option>
                   <option value="on_hold">On Hold</option>
                         <option value="failed">Failed</option>

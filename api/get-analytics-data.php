@@ -39,7 +39,7 @@ try {
                          FROM transactions 
                          WHERE user_id = ? 
                          AND transaction_type = 'credit' 
-                         AND status = 'completed'
+                         AND status IN ('successful', 'completed')
                          AND DATE(created_at) = ?";
             $stmt = $db->query($incomeSQL, [$userId, $date]);
             $income = $stmt->fetch()['total'];
@@ -51,7 +51,7 @@ try {
                           FROM transactions 
                           WHERE user_id = ? 
                           AND transaction_type = 'debit' 
-                          AND status = 'completed'
+                          AND status IN ('successful', 'completed')
                           AND DATE(created_at) = ?";
             $stmt = $db->query($expenseSQL, [$userId, $date]);
             $expense = $stmt->fetch()['total'];
@@ -75,7 +75,7 @@ try {
                          FROM transactions 
                          WHERE user_id = ? 
                          AND transaction_type = 'credit' 
-                         AND status = 'completed'
+                         AND status IN ('successful', 'completed')
                          AND YEAR(created_at) = YEAR(?) 
                          AND MONTH(created_at) = MONTH(?)";
             $stmt = $db->query($incomeSQL, [$userId, $date, $date]);
@@ -88,7 +88,7 @@ try {
                           FROM transactions 
                           WHERE user_id = ? 
                           AND transaction_type = 'debit' 
-                          AND status = 'completed'
+                          AND status IN ('successful', 'completed')
                           AND YEAR(created_at) = YEAR(?) 
                           AND MONTH(created_at) = MONTH(?)";
             $stmt = $db->query($expenseSQL, [$userId, $date, $date]);
@@ -118,7 +118,7 @@ try {
                          FROM transactions 
                          WHERE user_id = ? 
                          AND transaction_type = 'credit' 
-                         AND status = 'completed'
+                         AND status IN ('successful', 'completed')
                          AND created_at >= ? 
                          AND created_at <= ?";
             $stmt = $db->query($incomeSQL, [$userId, $startDate, $endDate]);
@@ -131,7 +131,7 @@ try {
                           FROM transactions 
                           WHERE user_id = ? 
                           AND transaction_type = 'debit' 
-                          AND status = 'completed'
+                          AND status IN ('successful', 'completed')
                           AND created_at >= ? 
                           AND created_at <= ?";
             $stmt = $db->query($expenseSQL, [$userId, $startDate, $endDate]);

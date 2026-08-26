@@ -221,6 +221,11 @@ table td {
     color: #065f46;
 }
 
+.status-successful {
+    background: #d1fae5;
+    color: #065f46;
+}
+
 .status-pending {
     background: #fef3c7;
     color: #78350f;
@@ -470,16 +475,16 @@ table td {
                     <td>
                         <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;
                             background: <?php 
-                                echo $transaction['status'] === 'completed' ? '#d1fae5' : 
+                                echo isSuccessfulTransactionStatus($transaction['status'] ?? '') ? '#d1fae5' : 
                                     ($transaction['status'] === 'pending' ? '#fef3c7' : 
                                     ($transaction['status'] === 'failed' ? '#fee2e2' : '#e5e7eb')); 
                             ?>;
                             color: <?php 
-                                echo $transaction['status'] === 'completed' ? '#065f46' : 
+                                echo isSuccessfulTransactionStatus($transaction['status'] ?? '') ? '#065f46' : 
                                     ($transaction['status'] === 'pending' ? '#78350f' : 
                                     ($transaction['status'] === 'failed' ? '#991b1b' : '#374151')); 
                             ?>;">
-                            <?php echo strtoupper($transaction['status'] ?? 'unknown'); ?>
+                            <?php echo htmlspecialchars(formatTransactionStatusLabel($transaction['status'] ?? 'unknown')); ?>
                         </span>
                     </td>
                     <td>
@@ -493,7 +498,7 @@ table td {
                             <button onclick="editTransaction(<?php echo $transaction['id']; ?>)" style="padding: 6px 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;" title="Edit Transaction">
                                 <i class="fas fa-edit"></i> Edit
                             </button>
-                            <?php if ($transaction['status'] === 'completed'): ?>
+                            <?php if (isSuccessfulTransactionStatus($transaction['status'] ?? '')): ?>
                             <button onclick="reverseTransaction(<?php echo $transaction['id']; ?>)" style="padding: 6px 12px; background: #f59e0b; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;" title="Reverse Transaction">
                                 <i class="fas fa-undo"></i>
                             </button>
@@ -575,7 +580,7 @@ table td {
                         <button onclick="editTransaction(<?php echo $transaction['id']; ?>)" class="action-btn btn-edit" title="Edit Transaction">
                             <i class="fas fa-edit"></i> Edit
                         </button>
-                        <?php if ($transaction['status'] === 'completed'): ?>
+                        <?php if (isSuccessfulTransactionStatus($transaction['status'] ?? '')): ?>
                             <button onclick="reverseTransaction(<?php echo $transaction['id']; ?>)" class="action-btn btn-reverse" title="Reverse Transaction">
                                 <i class="fas fa-undo"></i> Reverse
                             </button>
@@ -662,7 +667,8 @@ function showEditTransactionModal(transaction, dateValue, timeValue) {
                         <label style="display: block; margin-bottom: 5px; font-weight: 600;">Status *</label>
                         <select id="editStatus" required 
                                 style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-                            <option value="completed" ${safeStatus === 'completed' ? 'selected' : ''}>✅ Completed</option>
+                            <option value="successful" ${safeStatus === 'successful' ? 'selected' : ''}>✅ Successful</option>
+                            <option value="completed" ${safeStatus === 'completed' ? 'selected' : ''}>☑️ Completed</option>
                             <option value="pending" ${safeStatus === 'pending' ? 'selected' : ''}>⏳ Pending</option>
                             <option value="failed" ${safeStatus === 'failed' ? 'selected' : ''}>❌ Failed</option>
                             <option value="on_hold" ${safeStatus === 'on_hold' ? 'selected' : ''}>🟣 On Hold</option>

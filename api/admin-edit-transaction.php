@@ -67,7 +67,7 @@ if ($newDescription === '') {
     exit;
 }
 
-$validStatusesUi = ['completed', 'pending', 'failed', 'on_hold', 'processing'];
+$validStatusesUi = ['successful', 'completed', 'pending', 'failed', 'on_hold', 'processing'];
 if ($newStatusUi !== '' && !in_array($newStatusUi, $validStatusesUi, true)) {
     echo json_encode([
         'success' => false,
@@ -110,9 +110,9 @@ try {
             $updateFields[] = 'status = ?';
             $updateValues[] = $newStatusDb;
 
-            if ($newStatusDb === 'completed') {
+            if (isSuccessfulTransactionStatus($newStatusDb)) {
                 $updateFields[] = 'completed_at = NOW()';
-            } elseif ($oldStatus === 'completed' && $newStatusDb !== 'completed') {
+            } elseif (isSuccessfulTransactionStatus($oldStatus) && !isSuccessfulTransactionStatus($newStatusDb)) {
                 $updateFields[] = 'completed_at = NULL';
             }
         }

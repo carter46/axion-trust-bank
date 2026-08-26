@@ -45,7 +45,7 @@ class DashboardController {
         $incomeSql = "SELECT COALESCE(SUM(amount), 0) as total
                       FROM transactions 
                       WHERE transaction_type = 'credit'
-                      AND status = 'completed'
+                      AND status IN ('successful', 'completed')
                       AND DATE_FORMAT(created_at, '%Y-%m') = ?";
         $incomeParams = [$currentMonth];
         
@@ -68,7 +68,7 @@ class DashboardController {
         $outgoingSql = "SELECT COALESCE(SUM(amount), 0) as total
                         FROM transactions 
                         WHERE transaction_type = 'debit'
-                        AND status = 'completed'
+                        AND status IN ('successful', 'completed')
                         AND DATE_FORMAT(created_at, '%Y-%m') = ?";
         $outgoingParams = [$currentMonth];
         
@@ -123,7 +123,7 @@ class DashboardController {
         // For joint accounts, show all transactions, not just user's own
         $volumeSql = "SELECT COALESCE(SUM(amount), 0) as total
                       FROM transactions 
-                      WHERE status = 'completed'";
+                      WHERE status IN ('successful', 'completed')";
         $volumeParams = [];
         
         // If primary account exists, filter by account_id (includes joint account transactions)
@@ -152,7 +152,7 @@ class DashboardController {
                         COUNT(*) as transaction_count
                       FROM transactions 
                       WHERE transaction_type = 'debit'
-                      AND status = 'completed'
+                      AND status IN ('successful', 'completed')
                       AND MONTH(created_at) = MONTH(CURRENT_DATE())
                       AND YEAR(created_at) = YEAR(CURRENT_DATE())";
         

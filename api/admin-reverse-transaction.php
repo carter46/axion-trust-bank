@@ -39,7 +39,7 @@ try {
     // Check if transaction exists and is completed
     $sql = "SELECT t.*, u.email as user_email FROM transactions t 
             JOIN users u ON t.user_id = u.id 
-            WHERE t.id = ? AND t.status = 'completed' AND u.role != 'admin'";
+            WHERE t.id = ? AND t.status IN ('successful', 'completed') AND u.role != 'admin'";
     $stmt = $db->query($sql, [$transactionId]);
     $transaction = $stmt->fetch();
     

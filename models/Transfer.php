@@ -36,7 +36,7 @@ class Transfer {
                 WHERE account_id = ? 
                 AND transaction_type = 'debit' 
                 AND category = 'transfer'
-                AND status IN ('pending', 'processing', 'completed')
+                AND status IN ('pending', 'processing', 'successful', 'completed')
                 AND DATE(created_at) = CURDATE()";
         $stmt = $this->db->query($sql, [$fromAccountId]);
         $result = $stmt->fetch();
@@ -53,7 +53,7 @@ class Transfer {
                 WHERE account_id = ? 
                 AND transaction_type = 'debit' 
                 AND category = 'transfer'
-                AND status IN ('pending', 'processing', 'completed')
+                AND status IN ('pending', 'processing', 'successful', 'completed')
                 AND DATE_FORMAT(created_at, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')";
         $stmt = $this->db->query($sql, [$fromAccountId]);
         $result = $stmt->fetch();
@@ -187,7 +187,7 @@ class Transfer {
                 WHERE account_id = ? 
                 AND transaction_type = 'debit' 
                 AND category = 'transfer'
-                AND status IN ('pending', 'processing', 'completed')
+                AND status IN ('pending', 'processing', 'successful', 'completed')
                 AND DATE(created_at) = CURDATE()";
         $stmt = $this->db->query($sql, [$fromAccountId]);
         $result = $stmt->fetch();
@@ -204,7 +204,7 @@ class Transfer {
                 WHERE account_id = ? 
                 AND transaction_type = 'debit' 
                 AND category = 'transfer'
-                AND status IN ('pending', 'processing', 'completed')
+                AND status IN ('pending', 'processing', 'successful', 'completed')
                 AND DATE_FORMAT(created_at, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')";
         $stmt = $this->db->query($sql, [$fromAccountId]);
         $result = $stmt->fetch();
@@ -310,7 +310,7 @@ class Transfer {
                 WHERE account_id = ? 
                 AND transaction_type = 'debit' 
                 AND category = 'transfer'
-                AND status IN ('pending', 'processing', 'completed')
+                AND status IN ('pending', 'processing', 'successful', 'completed')
                 AND DATE(created_at) = CURDATE()";
         $stmt = $this->db->query($sql, [$fromAccountId]);
         $result = $stmt->fetch();
@@ -327,7 +327,7 @@ class Transfer {
                 WHERE account_id = ? 
                 AND transaction_type = 'debit' 
                 AND category = 'transfer'
-                AND status IN ('pending', 'processing', 'completed')
+                AND status IN ('pending', 'processing', 'successful', 'completed')
                 AND DATE_FORMAT(created_at, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')";
         $stmt = $this->db->query($sql, [$fromAccountId]);
         $result = $stmt->fetch();

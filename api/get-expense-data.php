@@ -57,7 +57,7 @@ try {
             FROM transactions 
             WHERE account_id IN ($placeholders)
             AND transaction_type = 'debit'
-            AND status = 'completed'
+            AND status IN ('successful', 'completed')
             AND MONTH(created_at) = ?
             AND YEAR(created_at) = YEAR(NOW())
             AND expense_category IS NOT NULL

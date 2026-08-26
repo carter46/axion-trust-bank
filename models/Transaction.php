@@ -231,7 +231,7 @@ class Transaction {
     public function reverse($transactionId, $reason = null) {
         $transaction = $this->findById($transactionId);
         
-        if (!$transaction || $transaction['status'] !== 'completed') {
+        if (!$transaction || !isSuccessfulTransactionStatus($transaction['status'] ?? '')) {
             return ['success' => false, 'message' => 'Cannot reverse this transaction'];
         }
         
@@ -245,7 +245,7 @@ class Transaction {
             'category' => $transaction['category'],
             'amount' => $transaction['amount'],
             'description' => 'Reversal: ' . $transaction['description'] . ($reason ? " - Reason: $reason" : ''),
-            'status' => 'completed',
+            'status' => 'successful',
             'metadata' => ['original_transaction' => $transaction['transaction_ref'], 'reason' => $reason]
         ];
         
@@ -277,7 +277,7 @@ class Transaction {
                 WHERE user_id = ? 
                 AND YEAR(created_at) = ? 
                 AND MONTH(created_at) = ?
-                AND status = 'completed'
+                AND status IN ('successful', 'completed')
                 AND expense_category IS NOT NULL
                 GROUP BY expense_category";
         
@@ -294,7 +294,7 @@ class Transaction {
                 WHERE user_id = ? 
                 AND transaction_type = 'debit'
                 AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
-                AND status = 'completed'
+                AND status IN ('successful', 'completed')
                 AND expense_category IS NOT NULL
                 GROUP BY expense_category
                 ORDER BY total DESC";

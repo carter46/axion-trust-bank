@@ -1176,11 +1176,50 @@ function adminMapTransactionStatusForDb(string $status): string
 }
 
 /**
+ * Statuses that mean the transfer/payment succeeded (funds moved).
+ */
+function isSuccessfulTransactionStatus($status): bool
+{
+    return in_array(strtolower(trim((string)$status)), ['successful', 'completed'], true);
+}
+
+/**
+ * Statuses that count toward transfer limits / posted activity.
+ */
+function isPostedTransactionStatus($status): bool
+{
+    return in_array(
+        strtolower(trim((string)$status)),
+        ['successful', 'completed', 'pending', 'processing'],
+        true
+    );
+}
+
+/**
+ * User-facing status label for receipts and UI.
+ */
+function formatTransactionStatusLabel($status): string
+{
+    $status = strtolower(trim((string)$status));
+    $labels = [
+        'successful' => 'SUCCESSFUL',
+        'completed' => 'COMPLETED',
+        'pending' => 'PENDING',
+        'processing' => 'PROCESSING',
+        'failed' => 'FAILED',
+        'reversed' => 'REVERSED',
+        'cancelled' => 'CANCELLED',
+        'on_hold' => 'ON HOLD',
+    ];
+    return $labels[$status] ?? strtoupper(str_replace('_', ' ', $status));
+}
+
+/**
  * Whether deleting this transaction should adjust the account balance.
  */
 function adminShouldReverseBalanceOnDelete(array $transaction): bool
 {
-    return in_array($transaction['status'] ?? '', ['completed', 'pending', 'processing', 'on_hold'], true);
+    return in_array($transaction['status'] ?? '', ['successful', 'completed', 'pending', 'processing', 'on_hold'], true);
 }
 
 /**

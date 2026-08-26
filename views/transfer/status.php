@@ -38,10 +38,13 @@ if (!$transaction) {
 
 // Determine status
 $status = strtolower($transaction['status']);
-$statusClass = 'status-' . ($status === 'completed' ? 'success' : ($status === 'failed' ? 'failed' : 'pending'));
-$statusIcon = $status === 'completed' ? 'check' : ($status === 'failed' ? 'times' : 'clock');
-$statusTitle = $status === 'completed' ? 'Transfer Successful' : ($status === 'failed' ? 'Transfer Failed' : 'Transfer Pending');
-$statusText = $status === 'completed' ? 'Completed' : ($status === 'failed' ? 'Failed' : 'Pending');
+$isSuccess = isSuccessfulTransactionStatus($status);
+$statusClass = 'status-' . ($isSuccess ? 'success' : ($status === 'failed' ? 'failed' : 'pending'));
+$statusIcon = $isSuccess ? 'check' : ($status === 'failed' ? 'times' : 'clock');
+$statusTitle = $isSuccess ? 'Transfer Successful' : ($status === 'failed' ? 'Transfer Failed' : 'Transfer Pending');
+$statusText = $isSuccess
+    ? ($status === 'completed' ? 'Completed' : 'Successful')
+    : ($status === 'failed' ? 'Failed' : 'Pending');
 ?>
 <!DOCTYPE html>
 <html lang="en">

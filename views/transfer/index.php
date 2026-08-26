@@ -51,11 +51,14 @@ if (empty($chargeSettings)) {
     ];
 }
 
-// Get system operating country for domestic transfers
-$sql = "SELECT setting_value FROM system_settings WHERE setting_key = 'bank_operating_country'";
-$stmt = $db->query($sql);
-$operatingCountry = $stmt->fetch();
-$bankCountry = $operatingCountry['setting_value'] ?? 'United States';
+// Domestic banks/rails follow the user's display-currency country (not bank operating country)
+$bankCountry = currencyToPrimaryCountry($userCurrency);
+if ($bankCountry === '') {
+    $sql = "SELECT setting_value FROM system_settings WHERE setting_key = 'bank_operating_country'";
+    $stmt = $db->query($sql);
+    $operatingCountry = $stmt->fetch();
+    $bankCountry = $operatingCountry['setting_value'] ?? 'United States';
+}
 $expenseCategoryOptionsHtml = renderExpenseCategorySelectOptions();
 $domesticRails = getDomesticRailFields($bankCountry);
 $siteDefaultCurrency = getSiteDefaultCurrency();
