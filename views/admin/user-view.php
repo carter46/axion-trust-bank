@@ -89,87 +89,106 @@ include __DIR__ . '/../../includes/admin-modals.php';
 
 .admin-container {
     max-width: 1400px;
-        margin: 0 auto;
+    margin: 0 auto;
 }
 
-.admin-header {
-    background: white;
-    border-radius: 16px;
-    padding: 30px;
-    margin-bottom: 30px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+/* No card / no full-width empty header — just a compact top row */
+.user-page-top {
+    display: flex;
     flex-wrap: wrap;
-    gap: 20px;
+    align-items: center;
+    gap: 14px 18px;
+    margin: 0 0 18px;
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    min-height: 0 !important;
+    width: auto;
+    max-width: 100%;
 }
 
-.header-left {
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+    width: auto;
+    max-width: max-content;
+    padding: 8px 12px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    color: #334155;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    box-shadow: none;
+}
+
+.back-link:hover {
+    color: #1e3a8a;
+    border-color: #cbd5e1;
+    background: #f8fafc;
+}
+
+.user-identity {
     display: flex;
     align-items: center;
-    gap: 20px;
-    }
-
-    .back-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-    padding: 10px 20px;
-    background: #f8f9fa;
-      border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    color: #2d3748;
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 14px;
-    transition: all 0.3s ease;
+    gap: 12px;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
-.back-btn:hover {
-    background: #e9ecef;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-
-    .user-header {
-        display: flex;
-        align-items: center;
-      gap: 16px;
-    }
-
-    .avatar {
-      width: 60px;
-      height: 60px;
-      border-radius: 12px;
-    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #1a2d5a 0%, #0d1b3a 100%);
     color: white;
-        display: flex;
-        align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 20px;
-    }
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    flex-shrink: 0;
+}
 
-    .user-info h1 {
-      font-size: 24px;
-      font-weight: 700;
-    color: #2d3748;
-    margin: 0 0 4px 0;
-    }
+.user-info {
+    min-width: 0;
+}
 
-    .user-info .email {
-    color: #6c757d;
-      font-size: 14px;
-    margin-bottom: 8px;
-    }
+.user-info h1 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 2px 0;
+    line-height: 1.25;
+}
 
-    .status {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
+.user-info .email {
+    color: #64748b;
+    font-size: 13px;
+    margin: 0;
+}
+
+.user-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.status {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
     text-transform: uppercase;
 }
 
@@ -178,18 +197,6 @@ include __DIR__ . '/../../includes/admin-modals.php';
 .status.suspended { background: #fecaca; color: #dc2626; }
 .status.blocked { background: #e5e7eb; color: #6b7280; }
 .status.hold { background: #fef3c7; color: #d97706; }
-
-.admin-title {
-    font-size: 32px;
-    font-weight: 700;
-    color: #2d3748;
-    margin-bottom: 8px;
-}
-
-.admin-subtitle {
-    color: #6c757d;
-    font-size: 16px;
-}
 
 .admin-grid {
       display: grid;
@@ -560,12 +567,6 @@ include __DIR__ . '/../../includes/admin-modals.php';
         padding: 10px;
     }
     
-    .admin-header {
-        padding: 20px;
-            flex-direction: column;
-            align-items: flex-start;
-      }
-      
     .admin-grid {
         grid-template-columns: 1fr;
         gap: 20px;
@@ -613,67 +614,45 @@ include __DIR__ . '/../../includes/admin-modals.php';
 </style>
 
 <div class="admin-container">
-    <!-- Admin Header -->
-    <div class="admin-header">
-        <div class="header-left">
-      <a href="/admin/users" class="back-btn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <div class="user-page-top">
+      <a href="<?php echo SITE_URL; ?>/admin/users" class="back-link">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2"/>
         </svg>
-            Back to Users
-        </a>
-      <div class="user-header">
+        Users
+      </a>
+      <div class="user-identity">
         <div class="avatar"><?php echo strtoupper(substr($user['full_name'], 0, 2)); ?></div>
         <div class="user-info">
           <h1><?php echo htmlspecialchars($user['full_name']); ?></h1>
           <div class="email"><?php echo htmlspecialchars($user['email']); ?></div>
-          <div class="email" style="margin-top:8px; display:flex; flex-wrap:wrap; align-items:center; gap:10px;">
-            <label for="adminUserCurrency" style="margin:0; font-weight:600;">Display currency:</label>
-            <select id="adminUserCurrency" style="padding:6px 10px; border:1px solid #cbd5e1; border-radius:8px; min-width:180px;">
-              <?php foreach ($supportedCurrencies as $code => $name): ?>
-                <option value="<?php echo htmlspecialchars($code); ?>" <?php echo $userCurrency === $code ? 'selected' : ''; ?>>
-                  <?php echo htmlspecialchars($code . ' — ' . $name); ?>
-                </option>
-              <?php endforeach; ?>
-            </select>
-            <button type="button" class="quick-btn" id="saveUserCurrencyBtn" onclick="saveUserCurrency()" style="padding:6px 14px;">Save</button>
-            <span id="currencySaveStatus" style="font-size:13px; color:#64748b;"></span>
-          </div>
-          <div class="status <?php echo strtolower($user['status']); ?>"><?php echo strtoupper($user['status']); ?></div>
-          <?php if ($isJointAccountUser): ?>
-            <div style="margin-top: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-              <span style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
-                <i class="fas fa-users"></i>
-                Joint Account Owner (Secondary)
+          <div class="user-meta-row">
+            <span class="status <?php echo strtolower($user['status']); ?>"><?php echo strtoupper($user['status']); ?></span>
+            <?php if ($isJointAccountUser): ?>
+              <span style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 4px 10px; border-radius: 16px; font-size: 12px; font-weight: 600;">
+                Joint (Secondary)
               </span>
-              <?php if ($primaryOwnerInfo): 
+              <?php if ($primaryOwnerInfo):
                 $primaryOwnerName = $primaryOwnerInfo['primary_owner_name'] ?? $primaryOwnerInfo['full_name'] ?? 'Unknown';
               ?>
-                <span style="color: #666; font-size: 13px;">
-                  Primary Owner: <?php echo htmlspecialchars($primaryOwnerName); ?>
+                <span style="color: #64748b; font-size: 13px;">Primary: <?php echo htmlspecialchars($primaryOwnerName); ?></span>
+              <?php endif; ?>
+            <?php elseif (!$isJointAccountUser && $accounts):
+              $hasJointUsers = false;
+              foreach ($accounts as $account) {
+                $owners = $jointAccount->getAccountOwners($account['id']);
+                if (count($owners) > 1) {
+                  $hasJointUsers = true;
+                  break;
+                }
+              }
+              if ($hasJointUsers): ?>
+                <span style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 4px 10px; border-radius: 16px; font-size: 12px; font-weight: 600;">
+                  Primary (has joint users)
                 </span>
               <?php endif; ?>
-                </div>
-          <?php elseif (!$isJointAccountUser && $accounts): 
-            // Check if this user has joint account users (is primary owner)
-            $hasJointUsers = false;
-            foreach ($accounts as $account) {
-              $owners = $jointAccount->getAccountOwners($account['id']);
-              if (count($owners) > 1) {
-                $hasJointUsers = true;
-                break;
-              }
-            }
-            if ($hasJointUsers): ?>
-              <div style="margin-top: 12px;">
-                <span style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
-                  <i class="fas fa-user-shield"></i>
-                  Primary Account Owner (Has Joint Users)
-                </span>
-              </div>
             <?php endif; ?>
-          <?php endif; ?>
-                </div>
+          </div>
         </div>
       </div>
     </div>
@@ -693,9 +672,9 @@ include __DIR__ . '/../../includes/admin-modals.php';
                 <button class="quick-btn" onclick="resetPassword()">Reset Password</button>
             </div>
             <div class="quick-action-item">
-                <div class="quick-action-title">Security Settings</div>
-                <div class="quick-action-desc">Manage 2FA, Login PIN, and Transfer PIN for this user.</div>
-                <button class="quick-btn" onclick="location.href='/admin/user/<?php echo (int)$userId; ?>?action=security'">Open Security</button>
+                <div class="quick-action-title">User Currency</div>
+                <div class="quick-action-desc">Set this user’s display currency. Balances and amounts convert via FX.</div>
+                <button class="quick-btn" onclick="openUserCurrencyModal()">Change Currency</button>
             </div>
             <div class="quick-action-item">
                 <div class="quick-action-title">Delete User Account</div>
@@ -750,6 +729,17 @@ include __DIR__ . '/../../includes/admin-modals.php';
                         </div>
           <button class="action-btn">Status Controls</button>
                         </div>
+
+        <div class="action-card" onclick="openUserCurrencyModal()">
+          <div class="action-header">
+            <div class="action-icon">💱</div>
+            <div class="action-title">User Currency</div>
+          </div>
+          <div class="action-desc">
+            Current: <?php echo htmlspecialchars($userCurrency); ?>. Change the display currency for balances and transfers.
+          </div>
+          <button class="action-btn" type="button">Change Currency</button>
+        </div>
                         </div>
 
     <!-- Statistics Grid -->
@@ -1751,6 +1741,56 @@ function handleExternalAdjustment() {
         console.error('Error:', error);
         showToast('An error occurred while updating password', 'error');
       });
+    }
+
+    function openUserCurrencyModal() {
+      const existing = document.getElementById('currencyModal');
+      if (existing) existing.remove();
+
+      const currencies = <?php echo json_encode($supportedCurrencies); ?>;
+      const current = <?php echo json_encode($userCurrency); ?>;
+      let optionsHtml = '';
+      Object.keys(currencies).forEach(function(code) {
+        const selected = code === current ? ' selected' : '';
+        optionsHtml += '<option value="' + code + '"' + selected + '>' + code + ' — ' + currencies[code] + '</option>';
+      });
+
+      const modal = document.createElement('div');
+      modal.id = 'currencyModal';
+      modal.className = 'modal';
+      modal.innerHTML = `
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>User Currency</h3>
+            <span class="close" onclick="closeUserCurrencyModal()">&times;</span>
+          </div>
+          <div class="modal-body">
+            <p style="margin:0 0 14px; color:#64748b; font-size:14px;">
+              Set the display currency for this user. Ledger balances stay in the bank default; amounts are converted for display and transfers.
+            </p>
+            <div class="form-group">
+              <label for="adminUserCurrency">Display currency</label>
+              <select id="adminUserCurrency" class="form-input">${optionsHtml}</select>
+            </div>
+            <div id="currencySaveStatus" style="font-size:12px; color:#64748b; min-height:18px;"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-secondary" onclick="closeUserCurrencyModal()">Cancel</button>
+            <button type="button" class="btn-primary" id="saveUserCurrencyBtn" onclick="saveUserCurrency()">Save Currency</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeUserCurrencyModal() {
+      const modal = document.getElementById('currencyModal');
+      if (modal) {
+        modal.remove();
+        document.body.style.overflow = '';
+      }
     }
 
     function saveUserCurrency() {

@@ -514,25 +514,8 @@ class AdminController {
     
     public function settings() {
         requireAdmin();
-        
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            foreach ($_POST as $key => $value) {
-                if ($key !== 'csrf_token') {
-                    $this->adminModel->updateSystemSetting($key, Security::sanitize($value));
-                }
-            }
-            
-            $_SESSION['success'] = 'Settings updated successfully';
-            redirect('/admin/settings');
-        }
-        
-        // Get all settings
-        $db = Database::getInstance();
-        $sql = "SELECT * FROM system_settings ORDER BY setting_key";
-        $stmt = $db->query($sql);
-        $settings = $stmt->fetchAll();
-        
-        include __DIR__ . '/../views/admin/settings.php';
+        // Transfer/bank settings live on System Settings — keep old URL working
+        redirect('/admin/system-settings');
     }
     
     // ============ USER MANAGEMENT ACTIONS ============
@@ -1214,7 +1197,7 @@ class AdminController {
                 $_SESSION['success'] = 'Maintenance mode disabled';
             }
             
-            redirect('/admin/settings');
+            redirect('/admin/system-settings');
         }
     }
     

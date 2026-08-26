@@ -53,10 +53,6 @@
                 <i class="fas fa-sliders-h"></i>
                 <span>System Settings</span>
             </a>
-            <a href="<?php echo SITE_URL; ?>/admin/settings" class="menu-item <?php echo (strpos($_SERVER['REQUEST_URI'], '/admin/settings') !== false && strpos($_SERVER['REQUEST_URI'], '/admin/system-settings') === false) ? 'active' : ''; ?>">
-                <i class="fas fa-cog"></i>
-                <span>Transfer Settings</span>
-            </a>
             <a href="<?php echo SITE_URL; ?>/admin/admin-settings" class="menu-item <?php echo (strpos($_SERVER['REQUEST_URI'], '/admin/admin-settings') !== false) ? 'active' : ''; ?>">
                 <i class="fas fa-user-shield"></i>
                 <span>Admin Settings</span>

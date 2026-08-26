@@ -213,6 +213,26 @@ $criticalSettings = [
         'type' => 'string',
         'description' => 'Country where the bank operates'
     ],
+    'bank_operating_region' => [
+        'value' => 'north-america',
+        'type' => 'string',
+        'description' => 'Bank operating region used for transfer rails and domestic bank lists'
+    ],
+    'transfer_internal_fee' => [
+        'value' => '0',
+        'type' => 'number',
+        'description' => 'Internal transfer fee percentage charged within the same bank'
+    ],
+    'transfer_domestic_fee' => [
+        'value' => '0.5',
+        'type' => 'number',
+        'description' => 'Domestic transfer fee percentage charged within the operating country'
+    ],
+    'transfer_international_fee' => [
+        'value' => '2.5',
+        'type' => 'number',
+        'description' => 'International wire transfer fee percentage'
+    ],
     'kyc_use_custom_fields' => [
         'value' => '0',
         'type' => 'boolean',
@@ -255,28 +275,24 @@ foreach ($allSettings as $setting) {
     $desc = $setting['description'];
     $key = $setting['setting_key'];
     
-    // Exclude settings that are managed on dedicated pages to avoid duplication
+    // Exclude settings that are managed on dedicated sub-UIs only
     $excludedSettings = [
-        'transfer_internal_fee',
-        'transfer_domestic_fee',
-        'transfer_international_fee',
-        'bank_operating_region',
-        'max_daily_transfer_amount',
         'kyc_custom_fields',
         'kyc_use_custom_fields',
     ];
     
     if (in_array($key, $excludedSettings)) {
-        continue; // Skip these settings - they're managed on /admin/settings
+        continue;
     }
     
     if (strpos($desc, 'Website') !== false || strpos($desc, 'Site') !== false || strpos($desc, 'contact') !== false || strpos($desc, 'support') !== false || strpos($desc, 'logo') !== false || strpos($desc, 'tagline') !== false || strpos($desc, 'address') !== false || strpos($desc, 'phone') !== false) {
         $settingsGroups['Site Branding & Identity'][] = $setting;
-    } elseif (strpos($desc, 'bank') !== false && strpos($desc, 'operates') !== false) {
+    } elseif (strpos($desc, 'bank') !== false && (strpos($desc, 'operates') !== false || strpos($desc, 'operating') !== false)
+        || $key === 'bank_operating_country' || $key === 'bank_operating_region') {
         $settingsGroups['Bank Operations'][] = $setting;
-    } elseif (strpos($desc, 'currency') !== false || $key === 'enable_currency_conversion' || $key === 'default_currency') {
+    } elseif (strpos($desc, 'currency') !== false || $key === 'enable_currency_conversion' || $key === 'default_currency' || $key === 'exchange_rate_api_key') {
         $settingsGroups['Bank Operations'][] = $setting;
-    } elseif (strpos($desc, 'transfer') !== false || (strpos($desc, 'limit') !== false && strpos($desc, 'account') === false)) {
+    } elseif (strpos($desc, 'transfer') !== false || strpos($key, 'transfer_') === 0 || (strpos($desc, 'limit') !== false && strpos($desc, 'account') === false)) {
         $settingsGroups['Transfer Limits & Fees'][] = $setting;
     } elseif (strpos($desc, 'account') !== false || strpos($desc, 'interest') !== false || strpos($desc, 'overdraft') !== false || strpos($desc, 'maintenance fee') !== false || strpos($desc, 'daily limit') !== false || strpos($desc, 'monthly limit') !== false) {
         $settingsGroups['Account Settings'][] = $setting;
@@ -611,13 +627,13 @@ include __DIR__ . '/../../includes/admin-sidebar.php';
                             ?>
                             <i class="fas <?php echo $icon; ?>"></i> 
                             <span><?php echo $groupName; ?></span>
-                            <?php if ($groupName === 'Transfer Limits & Fees'): ?>
+                            <?php if ($groupName === 'Bank Operations'): ?>
                                 <span style="font-size: 12px; color: #666; font-weight: normal; margin-left: 8px;">
-                                    (Note: Transfer fees are managed on the <a href="<?php echo SITE_URL; ?>/admin/settings" style="color: #1e3a8a; text-decoration: underline;">Transfer Settings</a> page)
+                                    (Operating country, currency, FX API key, and related bank settings.)
                                 </span>
-                            <?php elseif ($groupName === 'Bank Operations'): ?>
+                            <?php elseif ($groupName === 'Transfer Limits & Fees'): ?>
                                 <span style="font-size: 12px; color: #666; font-weight: normal; margin-left: 8px;">
-                                    (Bank operating country affects domestic transfer bank search.)
+                                    (Internal, domestic, and international transfer fees.)
                                 </span>
                             <?php endif; ?>
                         </div>
@@ -640,6 +656,27 @@ include __DIR__ . '/../../includes/admin-sidebar.php';
                                                 <option value="<?php echo htmlspecialchars($code); ?>" 
                                                         <?php echo ($setting['setting_value'] === $code) ? 'selected' : ''; ?>>
                                                     <?php echo htmlspecialchars($code); ?> - <?php echo htmlspecialchars($name); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    <?php elseif ($setting['setting_key'] === 'bank_operating_region'): ?>
+                                        <?php
+                                        $regionOptions = [
+                                            'north-america' => 'North America',
+                                            'south-america' => 'South America',
+                                            'europe' => 'Europe',
+                                            'asia' => 'Asia',
+                                            'africa' => 'Africa',
+                                            'oceania' => 'Oceania',
+                                            'middle-east' => 'Middle East',
+                                        ];
+                                        $currentRegion = trim((string)$setting['setting_value']);
+                                        ?>
+                                        <select name="setting_<?php echo $setting['setting_key']; ?>" required>
+                                            <?php foreach ($regionOptions as $regionValue => $regionLabel): ?>
+                                                <option value="<?php echo htmlspecialchars($regionValue); ?>"
+                                                    <?php echo ($currentRegion === $regionValue) ? 'selected' : ''; ?>>
+                                                    <?php echo htmlspecialchars($regionLabel); ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
