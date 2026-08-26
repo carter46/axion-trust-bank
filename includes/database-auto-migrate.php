@@ -186,16 +186,28 @@ class DatabaseAutoMigrate {
     public static function ensureColumn($db, $table, $column, $definitionSql) {
         $table = preg_replace('/[^a-zA-Z0-9_]/', '', $table);
         $column = preg_replace('/[^a-zA-Z0-9_]/', '', $column);
-        $stmt = $db->query("SHOW COLUMNS FROM `{$table}` LIKE ?", [$column]);
+
+        // Use information_schema — SHOW COLUMNS ... LIKE ? often fails with PDO prepared statements
+        $stmt = $db->query(
+            "SELECT COUNT(*) AS cnt
+             FROM information_schema.columns
+             WHERE table_schema = DATABASE()
+               AND table_name = ?
+               AND column_name = ?",
+            [$table, $column]
+        );
         if ($stmt === false) {
-            throw new Exception("Failed checking column {$table}.{$column}");
+            $pdoErr = method_exists($db, 'errorInfo') ? ($db->errorInfo()[2] ?? '') : '';
+            throw new Exception("Failed checking column {$table}.{$column}" . ($pdoErr ? ": {$pdoErr}" : ''));
         }
-        if ($stmt->fetch()) {
+        $row = $stmt->fetch();
+        if (!empty($row['cnt'])) {
             return false;
         }
         $result = $db->query("ALTER TABLE `{$table}` ADD COLUMN {$definitionSql}");
         if ($result === false) {
-            throw new Exception("Failed adding column {$table}.{$column}");
+            $pdoErr = method_exists($db, 'errorInfo') ? ($db->errorInfo()[2] ?? '') : '';
+            throw new Exception("Failed adding column {$table}.{$column}" . ($pdoErr ? ": {$pdoErr}" : ''));
         }
         return true;
     }
