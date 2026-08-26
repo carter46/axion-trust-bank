@@ -65,6 +65,11 @@ $detectedCurrency = isset($detectedCurrency) ? $detectedCurrency : null;
 $bankOperatingCountry = SystemSettings::getInstance()->get('bank_operating_country', 'United States');
 $bankCountryFlagUrl = countryFlagCdnUrl($bankOperatingCountry);
 $bankCountryDescriptor = countryToAccountDescriptor($bankOperatingCountry);
+$userCountryForFlag = trim((string)($user['country'] ?? ''));
+if ($userCountryForFlag === '') {
+    $userCountryForFlag = $bankOperatingCountry;
+}
+$userCountryFlagUrl = countryFlagCdnUrl($userCountryForFlag);
 $showKycPrompt = shouldShowKycDashboardPrompt($_SESSION['user_id'] ?? null);
 
 // Include head
@@ -2511,7 +2516,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                     <div class="account-row">
                         <div class="account-box" aria-hidden="true">
                             <div class="acc-left">
-                                <?php $countryFlagUrl = $bankCountryFlagUrl; ?>
+                                <?php $countryFlagUrl = $userCountryFlagUrl; ?>
                                 <div class="shield" aria-hidden="true">
                                     <?php if ($countryFlagUrl): ?>
                                         <img src="<?php echo htmlspecialchars($countryFlagUrl); ?>" alt="" style="width: 36px; height: 36px; border-radius: 10px; object-fit: cover; display: block;">
@@ -2622,7 +2627,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                     <div class="account-row">
                         <div class="account-box" aria-hidden="true">
                             <div class="acc-left">
-                                <?php $countryFlagUrl = $bankCountryFlagUrl; ?>
+                                <?php $countryFlagUrl = $userCountryFlagUrl; ?>
                                 <div class="shield" aria-hidden="true">
                                     <?php if ($countryFlagUrl): ?>
                                         <img src="<?php echo htmlspecialchars($countryFlagUrl); ?>" alt="" style="width: 36px; height: 36px; border-radius: 10px; object-fit: cover; display: block;">
@@ -3439,8 +3444,8 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 <div class="time-date" id="currentDate"><?php echo date('m/d/Y'); ?></div>
                                 <div class="time-clock" id="currentTime"><?php echo date('H:i:s'); ?></div>
                             </div>
-                            <?php $countryFlagUrl = $bankCountryFlagUrl; ?>
-                            <div class="country-flag" title="<?php echo htmlspecialchars($bankOperatingCountry); ?>" style="<?php echo $countryFlagUrl ? 'background-image:url(' . htmlspecialchars($countryFlagUrl) . ');' : ''; ?>"></div>
+                            <?php $countryFlagUrl = $userCountryFlagUrl; ?>
+                            <div class="country-flag" title="<?php echo htmlspecialchars($userCountryForFlag); ?>" style="<?php echo $countryFlagUrl ? 'background-image:url(' . htmlspecialchars($countryFlagUrl) . ');' : ''; ?>"></div>
                         </div>
                     </div>
                     

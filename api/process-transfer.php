@@ -77,10 +77,6 @@ $transferType = $input['transfer_type'];
 $accountName = Security::sanitize($input['account_name']);
 $inputAmount = floatval($input['amount']);
 $amountCurrency = strtoupper(trim($input['amount_currency'] ?? ''));
-$bankEntryCurrency = getBankTransferEntryCurrency();
-if ($amountCurrency === '' || !preg_match('/^[A-Z]{3}$/', $amountCurrency)) {
-    $amountCurrency = $bankEntryCurrency;
-}
 $expenseCategory = normalizeExpenseCategory(Security::sanitize($input['expense_category'] ?? 'other'));
 $transferPin = $input['transfer_pin'] ?? '';
 
@@ -112,6 +108,10 @@ try {
     
     $user = $userStatus;
     $transactionOverride = $userStatus['transaction_override'] ?? 'normal';
+    $bankEntryCurrency = getBankTransferEntryCurrency($user);
+    if ($amountCurrency === '' || !preg_match('/^[A-Z]{3}$/', $amountCurrency)) {
+        $amountCurrency = $bankEntryCurrency;
+    }
     
     require_once __DIR__ . '/../includes/system-settings.php';
     $systemSettings = SystemSettings::getInstance();
@@ -162,8 +162,19 @@ try {
     $accountCurrency = getAccountStoredCurrency($account);
     if ($amountCurrency === '' || strtoupper($amountCurrency) === $accountCurrency) {
         $amount = $inputAmount;
+        $transferFxRate = 1.0;
     } else {
-        $amount = convertCurrencyAmount($inputAmount, $amountCurrency, $accountCurrency);
+        $transferFxRate = getExchangeRate($amountCurrency, $accountCurrency);
+        if ($transferFxRate === null || $transferFxRate <= 0) {
+            http_response_code(503);
+            echo json_encode([
+                'success' => false,
+                'error_type' => 'exchange_rate_unavailable',
+                'message' => 'Exchange rate unavailable for ' . $amountCurrency . ' → ' . $accountCurrency . '. Please try again later.',
+            ]);
+            exit;
+        }
+        $amount = round($inputAmount * $transferFxRate, 2);
     }
     if ($amount <= 0) {
         http_response_code(400);
@@ -668,8 +679,25 @@ try {
         $recipientAccount = $stmtRecipient->fetch();
         
         if ($recipientAccount) {
-            // Credit recipient's account with the transfer amount (not including sender's fee)
-            $recipientNewBalance = $recipientAccount['balance'] + $amount;
+            // Credit recipient in their account ledger currency (convert if needed)
+            $recipientLedgerCurrency = getAccountStoredCurrency($recipientAccount);
+            $creditAmount = $amount;
+            $creditRate = 1.0;
+            if ($recipientLedgerCurrency !== $accountCurrency) {
+                $creditRate = getExchangeRate($accountCurrency, $recipientLedgerCurrency);
+                if ($creditRate === null || $creditRate <= 0) {
+                    http_response_code(503);
+                    echo json_encode([
+                        'success' => false,
+                        'error_type' => 'exchange_rate_unavailable',
+                        'message' => 'Exchange rate unavailable for recipient credit (' . $accountCurrency . ' → ' . $recipientLedgerCurrency . ').',
+                    ]);
+                    exit;
+                }
+                $creditAmount = round($amount * $creditRate, 2);
+            }
+
+            $recipientNewBalance = $recipientAccount['balance'] + $creditAmount;
             $sqlUpdateRecipient = "UPDATE accounts SET balance = ?, available_balance = ? WHERE id = ?";
             $db->query($sqlUpdateRecipient, [$recipientNewBalance, $recipientNewBalance, $recipientAccount['id']]);
             
@@ -696,25 +724,28 @@ try {
                 $recipientTransactionRef,
                 $recipientAccount['user_id'],
                 $recipientAccount['id'],
-                $amount, // Amount credited (without sender's fee)
+                $creditAmount,
                 $recipientAccount['currency'],
                 $recipientAccount['balance'],
                 $recipientNewBalance,
                 $recipientDescription,
-                $account['account_number'], // Sender's account number
+                $account['account_number'],
                 $senderName,
                 'SecureBank',
-                $transactionStatus, // Use same status as sender's transaction
+                $transactionStatus,
                 json_encode([
                     'sender_account' => $account['account_number'],
                     'sender_name' => $senderName,
-                    'transfer_type' => 'internal'
+                    'transfer_type' => 'internal',
+                    'source_amount' => $amount,
+                    'source_currency' => $accountCurrency,
+                    'exchange_rate' => $creditRate,
                 ]),
                 $recipientIpAddress
             ]);
             
             // Log activity for recipient
-            logActivity($recipientAccount['user_id'], 'receive_transfer', "Received $" . number_format($amount, 2) . " from $senderName");
+            logActivity($recipientAccount['user_id'], 'receive_transfer', "Received " . formatCurrency($creditAmount, $recipientLedgerCurrency, $recipientLedgerCurrency) . " from $senderName");
         }
     }
     
@@ -743,6 +774,8 @@ try {
         'entry_currency' => $amountCurrency,
         'entry_fee' => round($entryFee, 2),
         'entry_total' => round($entryTotal, 2),
+        'ledger_currency' => $accountCurrency,
+        'exchange_rate' => $transferFxRate ?? 1.0,
     ]);
 
     $completedAtSql = ($completedAt === 'NOW()') ? 'NOW()' : 'NULL';

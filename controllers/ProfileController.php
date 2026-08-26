@@ -291,11 +291,7 @@ class ProfileController {
                 $data['language'] = Security::sanitize($_POST['language']);
             }
             
-            if (isset($_POST['currency'])) {
-                $data['currency'] = Security::sanitize($_POST['currency']);
-                // Mark as an explicit user choice so getUserDisplayCurrency() applies it.
-                $data['currency_selection_shown'] = 1;
-            }
+            // Currency is admin-owned — ignore any currency posted from user settings.
             
             // Get existing metadata and update preferences
             $currentMetadata = json_decode($user['metadata'] ?? '{}', true);

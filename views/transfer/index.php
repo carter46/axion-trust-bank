@@ -600,7 +600,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                     </div>
                     
                     <div class="form-group">
-                        <label class="form-label" for="internalAmount">Amount (<span class="amount-currency-code"><?php echo strtoupper($siteDefaultCurrency); ?></span>)</label>
+                        <label class="form-label" for="internalAmount">Amount (<span class="amount-currency-code"><?php echo strtoupper($userCurrency); ?></span>)</label>
                         <input type="number" id="internalAmount" class="form-input" placeholder="Enter amount" step="0.01" min="0">
                     </div>
                     
@@ -656,7 +656,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                     </div>
                     
                     <div class="form-group">
-                        <label class="form-label" for="domesticAmount">Amount (<span class="amount-currency-code"><?php echo strtoupper($siteDefaultCurrency); ?></span>)</label>
+                        <label class="form-label" for="domesticAmount">Amount (<span class="amount-currency-code"><?php echo strtoupper($userCurrency); ?></span>)</label>
                         <input type="number" id="domesticAmount" class="form-input" placeholder="Enter amount" step="0.01" min="0">
                     </div>
                 </div>
@@ -717,7 +717,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                     </div>
                     
                     <div class="form-group">
-                        <label class="form-label" for="internationalAmount">Amount (<span class="amount-currency-code"><?php echo strtoupper($siteDefaultCurrency); ?></span>)</label>
+                        <label class="form-label" for="internationalAmount">Amount (<span class="amount-currency-code"><?php echo strtoupper($userCurrency); ?></span>)</label>
                         <input type="number" id="internationalAmount" class="form-input" placeholder="Enter amount" step="0.01" min="0">
                     </div>
                 </div>
@@ -1315,10 +1315,10 @@ include __DIR__ . '/../../includes/sidebar.php';
     // Bank operating country
     const bankCountry = <?php echo json_encode($bankCountry); ?>;
     
-    // Transfer amounts use bank default currency (admin setting), not the account's stored currency
+    // Transfer amounts use the user's admin-assigned display currency
     const userCurrency = <?php echo json_encode($userCurrency); ?>;
     const defaultCurrency = <?php echo json_encode($siteDefaultCurrency); ?>;
-    const entryCurrency = defaultCurrency;
+    const entryCurrency = userCurrency;
     const domesticAccountRules = <?php echo json_encode($domesticAccountRules); ?>;
     const userStatus = <?php echo json_encode($userStatus); ?>;
     const clientMustCollectTransferPin = <?php echo $clientMustCollectTransferPin ? 'true' : 'false'; ?>;
@@ -1347,50 +1347,52 @@ include __DIR__ . '/../../includes/sidebar.php';
     
     // Fetch exchange rate on page load and on demand
     async function ensureExchangeRate(fromCurrency, toCurrency) {
-        fromCurrency = (fromCurrency || defaultCurrency).toUpperCase();
+        fromCurrency = (fromCurrency || entryCurrency).toUpperCase();
         toCurrency = (toCurrency || userCurrency).toUpperCase();
         if (fromCurrency === toCurrency) {
             exchangeRateCache[`${fromCurrency}_${toCurrency}`] = 1.0;
             return 1.0;
         }
         const cacheKey = `${fromCurrency}_${toCurrency}`;
-        if (exchangeRateCache[cacheKey]) {
+        if (exchangeRateCache[cacheKey] != null && exchangeRateCache[cacheKey] > 0) {
             return exchangeRateCache[cacheKey];
         }
         try {
             const response = await fetch(`<?php echo SITE_URL; ?>/api/get-exchange-rate.php?from=${encodeURIComponent(fromCurrency)}&to=${encodeURIComponent(toCurrency)}`);
             const data = await response.json();
-            if (data.success && data.rate) {
+            if (data.success && data.rate && parseFloat(data.rate) > 0) {
                 exchangeRateCache[cacheKey] = parseFloat(data.rate);
                 return exchangeRateCache[cacheKey];
             }
         } catch (error) {
             console.error('Error loading exchange rate:', error);
         }
-        exchangeRateCache[cacheKey] = 1.0;
-        return 1.0;
+        return null;
     }
 
     async function loadExchangeRate() {
-        await ensureExchangeRate(defaultCurrency, userCurrency);
+        await ensureExchangeRate(entryCurrency, defaultCurrency);
+        if (selectedAccountData && selectedAccountData.currency) {
+            await ensureExchangeRate(entryCurrency, selectedAccountData.currency);
+        }
     }
 
     function convertAmountJS(amount, fromCurrency, toCurrency) {
-        const from = (fromCurrency || defaultCurrency).toUpperCase();
+        const from = (fromCurrency || entryCurrency).toUpperCase();
         const to = (toCurrency || userCurrency).toUpperCase();
         const value = parseFloat(amount) || 0;
         if (from === to) {
             return value;
         }
         const directKey = `${from}_${to}`;
-        if (exchangeRateCache[directKey]) {
+        if (exchangeRateCache[directKey] != null && exchangeRateCache[directKey] > 0) {
             return value * exchangeRateCache[directKey];
         }
         const reverseKey = `${to}_${from}`;
         if (exchangeRateCache[reverseKey] && exchangeRateCache[reverseKey] !== 0) {
             return value / exchangeRateCache[reverseKey];
         }
-        return value;
+        return null;
     }
     
     // Format currency in JavaScript (amount is in fromCurrency, displayed in currency)
@@ -1398,6 +1400,9 @@ include __DIR__ . '/../../includes/sidebar.php';
         const displayCurrency = (currency || userCurrency).toUpperCase();
         const sourceCurrency = (fromCurrency || displayCurrency).toUpperCase();
         const converted = convertAmountJS(amount, sourceCurrency, displayCurrency);
+        if (converted === null || Number.isNaN(converted)) {
+            return formatCurrencyJSAlreadyConverted(amount, sourceCurrency) + ' (rate unavailable)';
+        }
         return formatCurrencyJSAlreadyConverted(converted, displayCurrency);
     }
     
@@ -1689,6 +1694,9 @@ include __DIR__ . '/../../includes/sidebar.php';
                 return amount > selectedAccountData.dailyLimit;
             }
             const amountInDefault = convertAmountJS(amount, entryCurrency, defaultCurrency);
+            if (amountInDefault === null) {
+                return false;
+            }
             return amountInDefault > selectedAccountData.dailyLimit;
         }
 
@@ -1720,9 +1728,14 @@ include __DIR__ . '/../../includes/sidebar.php';
             }
             const total = calculateTransferTotal(amount);
             const accountCurrency = selectedAccountData.currency || defaultCurrency;
-            const totalInAccountCurrency = (entryCurrency === accountCurrency)
-                ? total
-                : convertAmountJS(total, entryCurrency, accountCurrency);
+            let totalInAccountCurrency = total;
+            if (entryCurrency !== accountCurrency) {
+                totalInAccountCurrency = convertAmountJS(total, entryCurrency, accountCurrency);
+                if (totalInAccountCurrency === null) {
+                    showErrorModal('Exchange Rate Unavailable', 'Could not convert ' + entryCurrency + ' to ' + accountCurrency + '. Please try again later.', 'error');
+                    return false;
+                }
+            }
             if (totalInAccountCurrency > selectedAccountData.balance) {
                 showErrorModal(
                     'Insufficient Balance',
@@ -1975,6 +1988,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                     currency: accountCurrency,
                     status: selectedOption.getAttribute('data-account-status') || 'active'
                 };
+                ensureExchangeRate(entryCurrency, accountCurrency);
             }
         });
         
@@ -3113,10 +3127,19 @@ include __DIR__ . '/../../includes/sidebar.php';
             const charges = (amount * feePercentage) / 100;
             const total = amount + charges;
             
-            // Update amounts — user enters values in their display currency (no extra conversion)
-            previewAmount.textContent = formatEntryAmount(amount);
+            // Update amounts in display/entry currency; show ledger equivalent when currencies differ
+            const accountCurrency = (selectedAccountData && selectedAccountData.currency) ? selectedAccountData.currency : defaultCurrency;
+            let amountLabel = formatEntryAmount(amount);
+            let totalLabel = formatEntryAmount(total);
+            if (entryCurrency !== accountCurrency) {
+                const ledgerTotal = convertAmountJS(total, entryCurrency, accountCurrency);
+                if (ledgerTotal !== null) {
+                    totalLabel += ' ≈ ' + formatCurrencyJSAlreadyConverted(ledgerTotal, accountCurrency);
+                }
+            }
+            previewAmount.textContent = amountLabel;
             previewCharges.textContent = formatEntryAmount(charges) + ' (' + feePercentage + '%)';
-            previewTotal.textContent = formatEntryAmount(total);
+            previewTotal.textContent = totalLabel;
         }
     });
     

@@ -129,6 +129,41 @@
 
         <!-- Content Area -->
         <div class="content-area">
+        <?php
+        // Database auto-migration status banners (set by requireAdmin → DatabaseAutoMigrate)
+        $autoMigrationErrors = $_SESSION['auto_migration_errors'] ?? [];
+        $autoMigrationSuccess = $_SESSION['auto_migration_success'] ?? [];
+        if (!empty($autoMigrationSuccess)) {
+            unset($_SESSION['auto_migration_success']);
+        }
+        // Keep errors visible until fixed (cleared when migrator succeeds with no failures)
+        ?>
+        <?php if (!empty($autoMigrationErrors)): ?>
+            <div class="auto-migration-banner auto-migration-error" style="margin:0 0 16px 0;padding:14px 16px;border-radius:10px;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;">
+                <div style="font-weight:700;margin-bottom:6px;">
+                    <i class="fas fa-database"></i> Database update failed
+                </div>
+                <p style="margin:0 0 8px 0;font-size:14px;">
+                    Pending schema/settings updates could not be applied. Fix the issue below, then reload any admin page to retry.
+                </p>
+                <ul style="margin:0;padding-left:18px;font-size:13px;">
+                    <?php foreach ($autoMigrationErrors as $err): ?>
+                        <li style="margin-bottom:4px;"><?php echo htmlspecialchars((string)$err); ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        <?php elseif (!empty($autoMigrationSuccess)): ?>
+            <div class="auto-migration-banner auto-migration-success" style="margin:0 0 16px 0;padding:14px 16px;border-radius:10px;background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;">
+                <div style="font-weight:700;margin-bottom:6px;">
+                    <i class="fas fa-check-circle"></i> Database updated
+                </div>
+                <ul style="margin:0;padding-left:18px;font-size:13px;">
+                    <?php foreach ($autoMigrationSuccess as $ok): ?>
+                        <li style="margin-bottom:4px;"><?php echo htmlspecialchars((string)$ok); ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        <?php endif; ?>
 
 <script>
 // Optimized toggle sidebar function for admin - MUST be in global scope

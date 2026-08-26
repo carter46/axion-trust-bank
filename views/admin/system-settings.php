@@ -166,7 +166,7 @@ $criticalSettings = [
     'two_factor_required' => [
         'value' => '0',
         'type' => 'boolean',
-        'description' => 'Force 2FA for all users. When enabled, all users must enable two-factor authentication.'
+        'description' => 'Suggest 2FA for users (informational). Does not lock users out of the app when 2FA is disabled.'
     ],
     'disable_2fa_entirely' => [
         'value' => '0',
@@ -202,6 +202,11 @@ $criticalSettings = [
         'value' => '1',
         'type' => 'boolean',
         'description' => 'Enable currency conversion. When enabled, users can view balances and amounts in their preferred currency. When disabled, all amounts are displayed in the site default currency.'
+    ],
+    'exchange_rate_api_key' => [
+        'value' => '',
+        'type' => 'string',
+        'description' => 'ExchangeRate-API v6 API key for live FX rates. Leave empty to use cached or built-in offline fallback rates.'
     ],
     'bank_operating_country' => [
         'value' => 'United States',
@@ -671,6 +676,12 @@ include __DIR__ . '/../../includes/admin-sidebar.php';
                                                value="<?php echo htmlspecialchars($setting['setting_value']); ?>"
                                                step="0.01"
                                                min="0">
+                                    <?php elseif ($setting['setting_key'] === 'exchange_rate_api_key'): ?>
+                                        <input type="password" 
+                                               name="setting_<?php echo $setting['setting_key']; ?>" 
+                                               value="<?php echo htmlspecialchars($setting['setting_value']); ?>"
+                                               placeholder="ExchangeRate-API key"
+                                               autocomplete="new-password">
                                     <?php else: ?>
                                         <input type="text" 
                                                name="setting_<?php echo $setting['setting_key']; ?>" 

@@ -146,17 +146,10 @@ class AuthController {
                 redirect('/dashboard?restricted=1&logged_in=1');
             }
             
-            // For regular users: If system requires 2FA but user hasn't enabled it, redirect to security settings
-            // Only check if 2FA is not disabled entirely
-            if ($twoFactorRequired && !$twoFactorDisabled && !$user['two_factor_enabled']) {
-                $_SESSION['warning'] = 'Two-Factor Authentication (2FA) is required for all users. Please enable 2FA in your security settings.';
-                $_SESSION['security_setup_required'] = true; // Flag that security setup is required
-                redirect('/profile/security?logged_in=1');
-            }
-            
-            // Check if security setup is incomplete (Transfer PIN, Login PIN, etc.)
+            // 2FA is optional — do not force-redirect when disabled.
+            // Check if security setup is incomplete (Transfer PIN, Login PIN only)
             if (isSecuritySetupIncomplete($user['id'])) {
-                $_SESSION['security_setup_required'] = true; // Flag that security setup is required
+                $_SESSION['security_setup_required'] = true;
                 redirect('/profile/security?logged_in=1');
             }
             

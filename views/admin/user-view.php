@@ -2,6 +2,7 @@
 $pageTitle = 'User Management - Admin - SecureBank';
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../includes/functions.php';
+require_once __DIR__ . '/../../includes/currency.php';
 
 // Ensure admin access
 requireLogin();
@@ -29,6 +30,8 @@ $accountModel = new Account();
 $accounts = $accountModel->getUserAccounts($userId);
 $totalUserBalance = $accountModel->getTotalBalance($userId);
 $userCurrency = getUserDisplayCurrency($user);
+$currencyHelper = new Currency();
+$supportedCurrencies = $currencyHelper->getSupportedCurrencies();
 
 // Check if user is a joint account user
 require_once __DIR__ . '/../../models/JointAccount.php';
@@ -624,7 +627,18 @@ include __DIR__ . '/../../includes/admin-modals.php';
         <div class="user-info">
           <h1><?php echo htmlspecialchars($user['full_name']); ?></h1>
           <div class="email"><?php echo htmlspecialchars($user['email']); ?></div>
-          <div class="email" style="margin-top:4px;">Display currency: <strong><?php echo htmlspecialchars($userCurrency); ?></strong></div>
+          <div class="email" style="margin-top:8px; display:flex; flex-wrap:wrap; align-items:center; gap:10px;">
+            <label for="adminUserCurrency" style="margin:0; font-weight:600;">Display currency:</label>
+            <select id="adminUserCurrency" style="padding:6px 10px; border:1px solid #cbd5e1; border-radius:8px; min-width:180px;">
+              <?php foreach ($supportedCurrencies as $code => $name): ?>
+                <option value="<?php echo htmlspecialchars($code); ?>" <?php echo $userCurrency === $code ? 'selected' : ''; ?>>
+                  <?php echo htmlspecialchars($code . ' — ' . $name); ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+            <button type="button" class="quick-btn" id="saveUserCurrencyBtn" onclick="saveUserCurrency()" style="padding:6px 14px;">Save</button>
+            <span id="currencySaveStatus" style="font-size:13px; color:#64748b;"></span>
+          </div>
           <div class="status <?php echo strtolower($user['status']); ?>"><?php echo strtoupper($user['status']); ?></div>
           <?php if ($isJointAccountUser): ?>
             <div style="margin-top: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
@@ -679,9 +693,9 @@ include __DIR__ . '/../../includes/admin-modals.php';
                 <button class="quick-btn" onclick="resetPassword()">Reset Password</button>
             </div>
             <div class="quick-action-item">
-                <div class="quick-action-title">Toggle 2FA</div>
-                <div class="quick-action-desc">Enable or disable two-factor authentication for this user.</div>
-                <button class="quick-btn" onclick="toggle2FA()">Toggle 2FA</button>
+                <div class="quick-action-title">Security Settings</div>
+                <div class="quick-action-desc">Manage 2FA, Login PIN, and Transfer PIN for this user.</div>
+                <button class="quick-btn" onclick="location.href='/admin/user/<?php echo (int)$userId; ?>?action=security'">Open Security</button>
             </div>
             <div class="quick-action-item">
                 <div class="quick-action-title">Delete User Account</div>
@@ -800,7 +814,7 @@ include __DIR__ . '/../../includes/admin-modals.php';
             </div>
         </div>
 
-        <div class="admin-card">
+        <div class="admin-card" style="cursor:pointer;" onclick="location.href='/admin/user/<?php echo (int)$userId; ?>?action=security'" title="Manage 2FA on Security page">
             <div class="card-header">
                 <h3 class="card-title">2FA Status</h3>
                 <div class="card-icon icon-2fa">
@@ -811,7 +825,7 @@ include __DIR__ . '/../../includes/admin-modals.php';
             <div class="stat-label">Two-factor authentication</div>
             <div class="stat-change <?php echo $user['two_factor_enabled'] ? 'positive' : 'negative'; ?>">
                 <i class="fas fa-<?php echo $user['two_factor_enabled'] ? 'check-circle' : 'times-circle'; ?>"></i>
-                <span><?php echo $user['two_factor_enabled'] ? 'Active' : 'Inactive'; ?></span>
+                <span><?php echo $user['two_factor_enabled'] ? 'Active' : 'Inactive'; ?> — manage on Security</span>
             </div>
         </div>
 
@@ -1236,10 +1250,10 @@ function loadUserAccountsForInternal() {
                     
                     const option = document.createElement('option');
                     option.value = account.id;
-                    const balance = parseFloat(account.balance || 0);
-                    const balanceFormatted = new Intl.NumberFormat('en-US', {
+                    const balance = parseFloat(account.display_balance != null ? account.display_balance : (account.balance || 0));
+                    const balanceFormatted = account.balance_formatted || new Intl.NumberFormat('en-US', {
                         style: 'currency',
-                        currency: 'USD',
+                        currency: <?php echo json_encode($userCurrency); ?>,
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2
                     }).format(balance);
@@ -1288,10 +1302,10 @@ function updateToAccountOptions() {
         
         const option = document.createElement('option');
         option.value = account.id;
-        const balance = parseFloat(account.balance || 0);
-        const balanceFormatted = new Intl.NumberFormat('en-US', {
+        const balance = parseFloat(account.display_balance != null ? account.display_balance : (account.balance || 0));
+        const balanceFormatted = account.balance_formatted || new Intl.NumberFormat('en-US', {
             style: 'currency',
-            currency: 'USD',
+            currency: <?php echo json_encode($userCurrency); ?>,
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         }).format(balance);
@@ -1402,10 +1416,10 @@ function updateToAccountOptions() {
               data.accounts.forEach(account => {
                 const option = document.createElement('option');
                 option.value = account.id;
-                const balance = parseFloat(account.balance || 0);
-                const balanceFormatted = new Intl.NumberFormat('en-US', {
+                const balance = parseFloat(account.display_balance != null ? account.display_balance : (account.balance || 0));
+                const balanceFormatted = account.balance_formatted || new Intl.NumberFormat('en-US', {
                   style: 'currency',
-                  currency: 'USD',
+                  currency: <?php echo json_encode($userCurrency); ?>,
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2
                 }).format(balance);
@@ -1739,172 +1753,37 @@ function handleExternalAdjustment() {
       });
     }
 
-    function toggle2FA() {
-      show2FAToggleModal();
-    }
-    
-    function show2FAToggleModal() {
-      const userId = <?php echo $userId; ?>;
-      
-      fetch(`/api/get-user-2fa-status.php?user_id=${userId}`)
-        .then(response => response.json())
-        .then(data => {
-          const currentStatus = data.success && typeof data.enabled !== 'undefined' 
-            ? data.enabled 
-            : <?php echo $user['two_factor_enabled'] ? 'true' : 'false'; ?>;
-          create2FAModal(currentStatus);
-        })
-        .catch(error => {
-          console.error('Error fetching 2FA status:', error);
-          const currentStatus = <?php echo $user['two_factor_enabled'] ? 'true' : 'false'; ?>;
-          create2FAModal(currentStatus);
-        });
-      
-      function create2FAModal(currentStatus) {
-        const existingModal = document.getElementById('toggle2FAModal');
-        if (existingModal) existingModal.remove();
-        
-        const modal = document.createElement('div');
-        modal.id = 'toggle2FAModal';
-        modal.className = 'modal';
-        modal.innerHTML = `
-          <div class="modal-content">
-            <div class="modal-header">
-              <h3>Two-Factor Authentication (2FA)</h3>
-              <span class="close" onclick="close2FAModal()">&times;</span>
-            </div>
-            <div class="modal-body">
-              <div class="two-factor-form">
-                        <div class="current-status" style="margin-bottom: 20px; padding: 16px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #4f46e5;">
-                            <p style="margin: 0; font-size: 14px; color: #2d3748;">Current Status: <span class="status-badge ${currentStatus ? 'status-enabled' : 'status-disabled'}" style="padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; ${currentStatus ? 'background: #d1fae5; color: #065f46;' : 'background: #fee2e2; color: #991b1b;'}">${currentStatus ? 'Enabled' : 'Disabled'}</span></p>
-                </div>
-                        <div class="toggle-section" style="margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e2e8f0;">
-                            <label class="toggle-label" style="display: flex; align-items: center; cursor: pointer; font-size: 16px; font-weight: 500; color: #2d3748;">
-                                <input type="checkbox" id="twoFactorToggle" ${currentStatus ? 'checked' : ''} onchange="updateToggleStatus()" style="display: none;">
-                                <span class="toggle-slider" style="width: 50px; height: 26px; background: ${currentStatus ? '#10b981' : '#e2e8f0'}; border-radius: 13px; position: relative; margin-right: 12px; transition: background 0.3s ease;">
-                                    <span style="position: absolute; width: 22px; height: 22px; border-radius: 50%; background: white; top: 2px; left: ${currentStatus ? '24px' : '2px'}; transition: transform 0.3s ease; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);"></span>
-                                </span>
-                    <span class="toggle-text">${currentStatus ? 'Disable' : 'Enable'} Two-Factor Authentication</span>
-                  </label>
-                </div>
-                        <div class="info-section" style="margin-top: 20px; padding: 16px; background: #eff6ff; border-radius: 8px; border-left: 4px solid #3b82f6;">
-                            <p style="margin: 0 0 8px 0; font-size: 14px; color: #1e3a8a; line-height: 1.5;"><strong>What is Two-Factor Authentication?</strong></p>
-                            <p style="margin: 0; font-size: 14px; color: #1e3a8a; line-height: 1.5;">2FA adds an extra layer of security to user accounts by requiring a second verification step in addition to the password.</p>
-                </div>
-              </div>
-            </div>
-            <div class="modal-footer">
-                    <button class="btn-secondary" onclick="close2FAModal()">Cancel</button>
-                    <button class="btn-primary" onclick="save2FAStatus()">Save Changes</button>
-            </div>
-          </div>
-        `;
-        
-        if (document.body) {
-          document.body.appendChild(modal);
-          modal.style.display = 'flex';
-          document.body.style.overflow = 'hidden';
-        } else {
-          if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function() {
-              if (document.body) {
-                document.body.appendChild(modal);
-                modal.style.display = 'flex';
-                document.body.style.overflow = 'hidden';
-              }
-            });
-          } else {
-            setTimeout(function() {
-              if (document.body) {
-                document.body.appendChild(modal);
-                modal.style.display = 'flex';
-                document.body.style.overflow = 'hidden';
-              }
-            }, 100);
-          }
-        }
-      }
-    }
-    
-    function close2FAModal() {
-      const modal = document.getElementById('toggle2FAModal');
-      if (modal) {
-        modal.remove();
-        document.body.style.overflow = '';
-      }
-    }
-    
-    function updateToggleStatus() {
-      const toggle = document.getElementById('twoFactorToggle');
-      const text = document.querySelector('.toggle-text');
-      const statusBadge = document.querySelector('.status-badge');
-    const slider = document.querySelector('.toggle-slider');
-    const sliderSpan = slider.querySelector('span');
-      
-      if (toggle.checked) {
-        text.textContent = 'Disable Two-Factor Authentication';
-        statusBadge.textContent = 'Enabled';
-        statusBadge.className = 'status-badge status-enabled';
-        statusBadge.style.background = '#d1fae5';
-        statusBadge.style.color = '#065f46';
-        slider.style.background = '#10b981';
-        sliderSpan.style.left = '24px';
-      } else {
-        text.textContent = 'Enable Two-Factor Authentication';
-        statusBadge.textContent = 'Disabled';
-        statusBadge.className = 'status-badge status-disabled';
-        statusBadge.style.background = '#fee2e2';
-        statusBadge.style.color = '#991b1b';
-        slider.style.background = '#e2e8f0';
-        sliderSpan.style.left = '2px';
-      }
-    }
-    
-    function save2FAStatus() {
-      const toggle = document.getElementById('twoFactorToggle');
-      const newStatus = toggle.checked;
-      const userId = <?php echo $userId; ?>;
-      
-      fetch('/api/toggle-2fa.php', {
+    function saveUserCurrency() {
+      const select = document.getElementById('adminUserCurrency');
+      const statusEl = document.getElementById('currencySaveStatus');
+      const btn = document.getElementById('saveUserCurrencyBtn');
+      if (!select) return;
+      const currency = select.value;
+      if (statusEl) statusEl.textContent = 'Saving...';
+      if (btn) btn.disabled = true;
+
+      fetch('<?php echo SITE_URL; ?>/api/admin-set-user-currency.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, enabled: newStatus })
-    })
-    .then(response => {
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          return response.text().then(text => {
-            console.error('Non-JSON response:', text);
-            throw new Error('Invalid response format');
-          });
-        }
-        return response.json();
+        body: JSON.stringify({ user_id: <?php echo (int)$userId; ?>, currency: currency })
       })
+      .then(r => r.json())
       .then(data => {
-        if (data && data.success) {
-          showToast('2FA ' + (newStatus ? 'enabled' : 'disabled') + ' successfully', 'success');
-          close2FAModal();
-          update2FAStatus(newStatus);
+        if (data.success) {
+          if (statusEl) statusEl.textContent = 'Saved — reloading...';
+          showToast('Currency updated to ' + currency, 'success');
+          setTimeout(() => location.reload(), 700);
         } else {
-          showToast('Error: ' + (data ? data.message : 'Unknown error'), 'error');
+          if (statusEl) statusEl.textContent = '';
+          if (btn) btn.disabled = false;
+          showToast(data.message || 'Failed to update currency', 'error');
         }
       })
-      .catch(error => {
-        console.error('Error:', error);
-        showToast('An error occurred while toggling 2FA: ' + error.message, 'error');
-        const toggle = document.getElementById('twoFactorToggle');
-        if (toggle) toggle.checked = !newStatus;
-      });
-    }
-    
-    function update2FAStatus(newStatus) {
-    const statCards = document.querySelectorAll('.admin-card');
-    statCards.forEach(card => {
-        const title = card.querySelector('.card-title');
-        if (title && title.textContent === '2FA Status') {
-            const statNumber = card.querySelector('.stat-number');
-            if (statNumber) statNumber.textContent = newStatus ? 'Enabled' : 'Disabled';
-        }
+      .catch(err => {
+        console.error(err);
+        if (statusEl) statusEl.textContent = '';
+        if (btn) btn.disabled = false;
+        showToast('Failed to update currency', 'error');
       });
     }
 

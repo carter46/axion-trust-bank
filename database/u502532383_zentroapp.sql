@@ -3,8 +3,8 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Jun 02, 2026 at 11:28 PM
--- Server version: 11.8.6-MariaDB-log
+-- Generation Time: Aug 25, 2026 at 12:03 AM
+-- Server version: 11.8.8-MariaDB-log
 -- PHP Version: 7.2.34
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `u502532383_firstnation`
+-- Database: `u502532383_zentroapp`
 --
 
 -- --------------------------------------------------------
@@ -51,8 +51,7 @@ CREATE TABLE `accounts` (
 --
 
 INSERT INTO `accounts` (`id`, `user_id`, `account_number`, `account_type`, `account_name`, `balance`, `available_balance`, `currency`, `interest_rate`, `overdraft_limit`, `daily_limit`, `status`, `opened_at`, `closed_at`, `created_at`, `updated_at`) VALUES
-(128, 134, '202642569179', 'checking', 'Primary Checking', 365.84, 365.84, 'CAD', 0.00, 0.00, 500000.00, 'active', '2026-05-31 01:22:17', NULL, '2026-05-31 01:22:17', '2026-05-31 01:43:40'),
-(129, 135, '202646663507', 'savings', 'Savings Account', 20000.00, 20000.00, 'CAD', 0.00, 0.00, 500000.00, 'active', '2026-05-31 22:38:34', NULL, '2026-05-31 22:38:34', '2026-05-31 23:01:17');
+(145, 150, '202630142630', 'checking', 'Checking Account', 12109950.00, 12109950.00, 'USD', 0.00, 0.00, 500000.00, 'active', '2026-08-12 18:52:31', NULL, '2026-08-12 18:52:31', '2026-08-24 21:46:24');
 
 -- --------------------------------------------------------
 
@@ -450,40 +449,8 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `action`, `details`, `ip_address`,
 (1018, 3, 'LOGIN', 'User logged in', '102.89.68.171', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-29 02:17:06'),
 (1019, 3, 'ADMIN_DELETED', 'Deleted administrator: admin user (support@zentropay-global.pro)', '102.89.68.171', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-29 02:17:27'),
 (1020, 3, 'ADMIN_USER_CREATED', 'Created new admin user: support@cosmopolitantrustbankpf.com', '102.89.68.171', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-29 02:21:13'),
-(1021, 60, 'LOGIN', 'User logged in', '98.97.76.229', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0.1 Mobile/15E148 Safari/604.1', '2026-01-29 14:07:49'),
-(1022, 60, 'LOGIN', 'User logged in', '95.181.235.147', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-01-29 14:45:31'),
-(1023, 60, 'LOGIN', 'User logged in', '2605:59c1:19e5:d610:e1fa:9d4a:1fae:da67', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-29 14:55:58'),
-(1024, 60, 'LOGOUT', 'User logged out', '2605:59c1:19e5:d610:e1fa:9d4a:1fae:da67', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-29 15:08:03'),
-(1025, 60, 'LOGIN', 'User logged in', '2605:59c1:19e5:d610:e1fa:9d4a:1fae:da67', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-29 15:08:31'),
-(1026, 60, 'USER_DELETED', 'Deleted user: aishagaddafi3992@gmail.com (ID: 61)', '2605:59c1:19e5:d610:e1fa:9d4a:1fae:da67', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-29 15:11:22'),
-(1027, 60, 'LOGOUT', 'User logged out', '2605:59c1:19e5:d610:e1fa:9d4a:1fae:da67', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-29 15:11:40'),
-(1028, 60, 'LOGIN', 'User logged in', '2605:59c1:19e5:d610:e1fa:9d4a:1fae:da67', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-29 15:11:44'),
-(1029, 60, 'LOGOUT', 'User logged out', '105.112.217.80', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-29 15:16:45'),
-(1030, 60, 'LOGIN', 'User logged in', '105.112.217.80', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-29 15:18:24'),
-(1031, 60, 'ADMIN_UPLOAD_PROFILE_PICTURE', 'Uploaded profile picture for user aishagaddafi3992@gmail.com (ID: 66)', '105.112.217.80', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-29 15:24:09'),
-(1032, 60, 'ADMIN_UPLOAD_PROFILE_PICTURE', 'Uploaded profile picture for user aishagaddafi3992@gmail.com (ID: 66)', '105.112.217.80', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-29 15:24:41'),
-(1033, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user aishagaddafi3992@gmail.com (ID: 66)', '105.112.217.80', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-29 15:49:10'),
-(1037, 60, 'LOGIN', 'User logged in', '105.112.217.80', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-29 16:00:17'),
-(1038, 60, 'LOGOUT', 'User logged out', '105.112.217.80', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-29 16:01:17'),
-(1039, 60, 'LOGIN', 'User logged in', '105.112.217.80', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-29 16:01:41'),
-(1040, 60, 'USER_DELETED', 'Deleted user: aishagaddafi3992@gmail.com (ID: 66)', '105.112.217.80', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-29 16:01:56'),
-(1041, 60, 'LOGOUT', 'User logged out', '2605:59c1:19e5:d610:5d3c:b172:96a2:df12', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-29 16:29:36'),
-(1042, 60, 'LOGIN', 'User logged in', '2605:59c1:19e5:d610:c87:f164:f520:4729', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-30 04:50:38'),
-(1043, 60, 'USER_DELETED', 'Deleted user: aishamuammarg81@gmail.com (ID: 69)', '2605:59c1:19e5:d610:c87:f164:f520:4729', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-30 04:51:43'),
-(1044, 60, 'USER_DELETED', 'Deleted user: aishagaddafi3992@gmail.com (ID: 68)', '2605:59c1:19e5:d610:c87:f164:f520:4729', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-30 04:51:46'),
-(1045, 60, 'LOGOUT', 'User logged out', '2605:59c1:19e5:d610:c87:f164:f520:4729', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-30 05:00:55'),
-(1046, 60, 'LOGIN', 'User logged in', '2605:59c1:19e5:d610:c87:f164:f520:4729', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-30 05:01:29'),
-(1047, 60, 'LOGOUT', 'User logged out', '2605:59c1:19e5:d610:c87:f164:f520:4729', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-30 05:03:18'),
-(1048, 60, 'LOGIN', 'User logged in', '2605:59c1:19e5:d610:c87:f164:f520:4729', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-30 06:24:28'),
 (1049, 3, 'LOGIN', 'User logged in', '102.88.113.167', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-30 12:55:52'),
 (1050, 3, 'EMAIL_TEST', 'Sent test email (test) to mr.carter.tech07@gmail.com', '102.88.113.167', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-30 13:06:09'),
-(1051, 60, 'LOGIN', 'User logged in', '105.112.107.102', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-01-31 13:35:09'),
-(1052, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user gaddafiayeshamaummar@gmail.com (ID: 71)', '105.112.107.102', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-01-31 13:38:18'),
-(1057, 60, 'LOGIN', 'User logged in', '105.112.107.102', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-01-31 13:43:26'),
-(1058, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user gaddafiayeshamaummar@gmail.com (ID: 71)', '105.112.107.102', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-01-31 13:51:03'),
-(1061, 60, 'LOGIN', 'User logged in', '105.112.107.102', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-01-31 14:08:25'),
-(1062, 60, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction TXN697E0AF9A407B for user gaddafiayeshamaummar@gmail.com. Amount changed from 10250 to 10250. Date changed from 2026-01-31 14:00:25 to 2005-11-15 13:00:00', '105.112.107.102', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-01-31 14:09:40'),
-(1063, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user gaddafiayeshamaummar@gmail.com (ID: 71)', '105.112.107.102', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-01-31 14:10:36'),
 (1066, 3, 'LOGIN', 'User logged in', '149.88.103.34', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-01 14:47:24'),
 (1067, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user hkr.fred@outlook.com (ID: 27)', '149.88.103.34', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-01 15:07:47'),
 (1068, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '149.88.103.34', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-01 15:08:22'),
@@ -493,39 +460,6 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `action`, `details`, `ip_address`,
 (1076, 3, 'LOGIN', 'User logged in', '105.113.96.67', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-04 17:17:19'),
 (1077, 3, 'EMAIL_TEST', 'Sent test email (test) to mr.carter.tech07@gmail.com', '105.113.96.67', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-04 17:18:35'),
 (1078, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user billyfredrickgibbons@gmail.com (ID: 37)', '105.113.96.67', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-04 17:21:23'),
-(1080, 60, 'LOGIN', 'User logged in', '2605:59c0:e40:4600:9444:6779:544f:fa43', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-04 20:48:56'),
-(1081, 60, 'LOGOUT', 'User logged out', '2605:59c0:e40:4600:9444:6779:544f:fa43', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-04 20:50:02'),
-(1082, 60, 'LOGIN', 'User logged in', '2605:59c0:e40:4600:9444:6779:544f:fa43', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-04 20:50:14'),
-(1083, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user gaddafiayeshamaummar@gmail.com (ID: 71)', '2605:59c0:e40:4600:9444:6779:544f:fa43', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-04 20:53:40'),
-(1084, 60, 'LOGIN', 'User logged in', '173.239.247.138', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0.1 Mobile/15E148 Safari/604.1', '2026-02-04 22:55:22'),
-(1085, 60, 'LOGOUT', 'User logged out', '173.239.247.138', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0.1 Mobile/15E148 Safari/604.1', '2026-02-04 22:58:18'),
-(1086, 60, 'LOGIN', 'User logged in', '173.239.247.138', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0.1 Mobile/15E148 Safari/604.1', '2026-02-04 22:58:29'),
-(1087, 60, 'ADMIN_UPLOAD_PROFILE_PICTURE', 'Uploaded profile picture for user gaddafiayeshamaummar@gmail.com (ID: 71)', '173.239.247.138', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0.1 Mobile/15E148 Safari/604.1', '2026-02-04 23:02:53'),
-(1088, 60, 'ADMIN_UPLOAD_PROFILE_PICTURE', 'Uploaded profile picture for user gaddafiayeshamaummar@gmail.com (ID: 71)', '173.239.247.138', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0.1 Mobile/15E148 Safari/604.1', '2026-02-04 23:06:19'),
-(1089, 60, 'rates_refreshed', 'Refreshed exchange rates', '173.239.247.138', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0.1 Mobile/15E148 Safari/604.1', '2026-02-04 23:47:49'),
-(1090, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user gaddafiayeshamaummar@gmail.com (ID: 71)', '173.239.247.138', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0.1 Mobile/15E148 Safari/604.1', '2026-02-04 23:49:32'),
-(1092, 60, 'LOGIN', 'User logged in', '173.239.247.138', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0.1 Mobile/15E148 Safari/604.1', '2026-02-04 23:53:02'),
-(1093, 60, 'LOGOUT', 'User logged out', '173.239.247.138', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0.1 Mobile/15E148 Safari/604.1', '2026-02-04 23:53:19'),
-(1094, 60, 'LOGIN', 'User logged in', '173.239.247.138', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0.1 Mobile/15E148 Safari/604.1', '2026-02-04 23:53:30'),
-(1100, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user gaddafiayeshamaummar@gmail.com (ID: 71)', '173.239.247.138', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0.1 Mobile/15E148 Safari/604.1', '2026-02-05 00:21:07'),
-(1103, 60, 'LOGIN', 'User logged in', '173.239.247.138', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0.1 Mobile/15E148 Safari/604.1', '2026-02-05 00:24:27'),
-(1104, 60, 'LOGOUT', 'User logged out', '173.239.247.138', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0.1 Mobile/15E148 Safari/604.1', '2026-02-05 00:24:35'),
-(1105, 60, 'LOGIN', 'User logged in', '173.239.247.138', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0.1 Mobile/15E148 Safari/604.1', '2026-02-05 00:24:42'),
-(1106, 60, 'LOGOUT', 'User logged out', '173.239.247.138', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0.1 Mobile/15E148 Safari/604.1', '2026-02-05 00:25:09'),
-(1107, 60, 'LOGIN', 'User logged in', '173.239.247.138', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0.1 Mobile/15E148 Safari/604.1', '2026-02-05 00:25:18'),
-(1108, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user gaddafiayeshamaummar@gmail.com (ID: 71)', '173.239.247.138', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0.1 Mobile/15E148 Safari/604.1', '2026-02-05 00:27:24'),
-(1142, 60, 'LOGIN', 'User logged in', '105.112.102.62', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-06 22:08:33'),
-(1143, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user gaddafiayeshamaummar@gmail.com (ID: 71)', '105.112.102.62', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-06 22:09:08'),
-(1158, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:c465:6926:fa38:9ea6', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-08 19:56:32'),
-(1169, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:e479:71de:fd1:df97', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-09 01:04:58'),
-(1189, 60, 'LOGIN', 'User logged in', '105.112.106.183', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1', '2026-02-09 19:23:52'),
-(1190, 60, 'LOGIN', 'User logged in', '105.112.106.183', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1', '2026-02-09 20:36:30'),
-(1191, 60, 'LOGOUT', 'User logged out', '105.112.106.183', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1', '2026-02-09 20:39:43'),
-(1192, 60, 'LOGIN', 'User logged in', '105.112.106.183', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1', '2026-02-09 20:40:00'),
-(1193, 60, 'LOGOUT', 'User logged out', '105.112.106.183', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1', '2026-02-09 20:50:43'),
-(1196, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:7ce0:5d4f:9309:2cfb', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-09 21:10:18'),
-(1197, 60, 'LOGOUT', 'User logged out', '2605:59c0:ec1:1310:7ce0:5d4f:9309:2cfb', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-09 21:10:50'),
-(1198, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:7ce0:5d4f:9309:2cfb', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-09 21:11:02'),
 (1200, 3, 'LOGIN', 'User logged in', '102.89.44.223', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-09 22:27:30'),
 (1201, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user billyfredrickgibbons@gmail.com (ID: 37)', '102.89.44.223', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-09 22:27:54'),
 (1202, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.89.44.223', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-09 22:28:27'),
@@ -535,215 +469,16 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `action`, `details`, `ip_address`,
 (1209, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.89.44.223', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-09 22:41:48'),
 (1210, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user hkr.fred@outlook.com (ID: 27)', '102.89.44.223', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-09 22:41:54'),
 (1211, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.89.44.223', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-09 22:42:10'),
-(1212, 3, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction TXN698A628F73F68 for user hkr.fred@outlook.com. Reason: x', '102.89.44.223', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-09 22:42:28');
-INSERT INTO `activity_logs` (`id`, `user_id`, `action`, `details`, `ip_address`, `user_agent`, `created_at`) VALUES
+(1212, 3, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction TXN698A628F73F68 for user hkr.fred@outlook.com. Reason: x', '102.89.44.223', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-09 22:42:28'),
 (1213, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user billyfredrickgibbons@gmail.com (ID: 37)', '102.89.44.223', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-09 22:43:51'),
 (1214, 3, 'LOGIN', 'User logged in', '102.89.44.223', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-09 22:43:58'),
-(1220, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:eff:6ee3:af62:f671', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-10 02:16:19'),
-(1221, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user officialaishagaddafi1@gmail.com (ID: 80)', '2605:59c0:ec1:1310:eff:6ee3:af62:f671', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-10 02:16:48'),
-(1223, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:eff:6ee3:af62:f671', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-10 02:19:13'),
-(1224, 60, 'LOGOUT', 'User logged out', '2605:59c0:ec1:1310:eff:6ee3:af62:f671', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-10 02:21:37'),
-(1226, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:eff:6ee3:af62:f671', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-10 02:24:32'),
-(1227, 60, 'ADMIN_USER_PASSWORD_RESET', 'Admin reset password for user: gaddafiayeshamaummar@gmail.com (ID: 71)', '2605:59c0:ec1:1310:eff:6ee3:af62:f671', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-10 02:26:04'),
-(1228, 60, 'LOGOUT', 'User logged out', '2605:59c0:ec1:1310:eff:6ee3:af62:f671', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-10 02:26:37'),
-(1229, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:eff:6ee3:af62:f671', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-10 02:32:40'),
-(1230, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user gaddafiayeshamaummar@gmail.com (ID: 71)', '2605:59c0:ec1:1310:eff:6ee3:af62:f671', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-10 02:34:46'),
-(1232, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:eff:6ee3:af62:f671', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-10 02:54:37'),
-(1233, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user gaddafiayeshamaummar@gmail.com (ID: 71)', '2605:59c0:ec1:1310:eff:6ee3:af62:f671', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-10 03:04:35'),
-(1236, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:eff:6ee3:af62:f671', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-10 03:11:05'),
-(1237, 60, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction TXN698AA1530CD93 for user gaddafiayeshamaummar@gmail.com. Amount changed from 10250 to 10250. Date changed from 2026-02-10 03:09:07 to 2009-10-28 02:09:00', '2605:59c0:ec1:1310:eff:6ee3:af62:f671', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-10 03:14:52'),
-(1238, 60, 'ADMIN_SET_TRANSACTION_MODE', 'Set transaction mode to \'force_pending\' for user gaddafiayeshamaummar@gmail.com (ID: 71)', '2605:59c0:ec1:1310:eff:6ee3:af62:f671', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-10 03:18:14'),
-(1239, 60, 'LOGOUT', 'User logged out', '2605:59c0:ec1:1310:eff:6ee3:af62:f671', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-10 03:19:31'),
-(1273, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:1977:fbc9:4485:c20', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-11 12:42:38'),
-(1276, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:8fe1:ed4b:3d3f:5e76', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-11 20:00:22'),
-(1277, 60, 'LOGOUT', 'User logged out', '2605:59c0:ec1:1310:8fe1:ed4b:3d3f:5e76', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-11 20:00:36'),
 (1287, 3, 'LOGIN', 'User logged in', '105.113.77.250', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-12 10:18:50'),
 (1288, 3, 'EMAIL_TEST', 'Sent test email (test) to mr.carter.tech07@gmail.com', '105.113.77.250', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-12 10:19:28'),
 (1290, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user billyfredrickgibbons@gmail.com (ID: 37)', '105.113.77.250', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-12 10:38:30'),
 (1297, 3, 'LOGIN', 'User logged in', '105.113.60.235', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-12 14:57:20'),
-(1304, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:bd6b:4341:8258:9bb9', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-13 04:32:47'),
-(1306, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:60e7:417e:b711:bea1', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1', '2026-02-13 12:22:27'),
-(1307, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:6db4:d695:b224:70c2', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-13 12:25:10'),
-(1308, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user officialaishagaddafi1@gmail.com (ID: 80)', '2605:59c0:ec1:1310:6db4:d695:b224:70c2', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-13 12:27:51'),
-(1310, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:6db4:d695:b224:70c2', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-13 12:34:16'),
-(1311, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:b917:2c17:5c7b:389c', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-13 12:37:25'),
-(1312, 60, 'USER_DELETED', 'Deleted user: officialaishagaddafi1@gmail.com (ID: 80)', '2605:59c0:ec1:1310:b917:2c17:5c7b:389c', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-13 12:39:15'),
-(1313, 60, 'KYC_AUTO_VERIFIED', 'Auto-verified KYC for user 90 during account creation', '2605:59c0:ec1:1310:b917:2c17:5c7b:389c', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-13 12:49:44'),
-(1315, 60, 'ADMIN_UPLOAD_PROFILE_PICTURE', 'Uploaded profile picture for user officialaishagaddafi1@gmail.com (ID: 90)', '2605:59c0:ec1:1310:b917:2c17:5c7b:389c', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-13 12:52:14'),
-(1316, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user officialaishagaddafi1@gmail.com (ID: 90)', '2605:59c0:ec1:1310:b917:2c17:5c7b:389c', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-13 12:52:48'),
-(1321, 60, 'LOGIN', 'User logged in', '105.112.212.60', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1', '2026-02-13 13:30:53'),
-(1322, 60, 'LOGOUT', 'User logged out', '105.112.212.60', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1', '2026-02-13 13:33:32'),
-(1327, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:4fc:ea5e:35ba:e468', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-13 13:55:05'),
-(1328, 60, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction TXN698F25BD92141 for user officialaishagaddafi1@gmail.com. Amount changed from 205000 to 205000. Date changed from 2026-02-13 13:23:09 to 2005-08-24 12:23:00', '2605:59c0:ec1:1310:4fc:ea5e:35ba:e468', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-13 14:25:31'),
-(1329, 60, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction TXN698F294FA1A0D for user officialaishagaddafi1@gmail.com. Amount changed from 153750 to 153750. Date changed from 2026-02-13 13:38:23 to 2006-05-03 12:38:00', '2605:59c0:ec1:1310:4fc:ea5e:35ba:e468', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-13 14:26:07'),
-(1331, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:64df:ded3:467d:7f3f', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-15 13:41:43'),
-(1332, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:4e3c:fea1:7a18:20b6', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-15 13:53:01'),
-(1333, 60, 'LOGOUT', 'User logged out', '2605:59c0:ec1:1310:4e3c:fea1:7a18:20b6', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-15 13:55:02'),
-(1334, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:4e3c:fea1:7a18:20b6', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-15 13:55:41'),
-(1335, 60, 'ADMIN_USER_PASSWORD_RESET', 'Admin reset password for user: gaddafiayeshamaummar@gmail.com (ID: 71)', '2605:59c0:ec1:1310:4e3c:fea1:7a18:20b6', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-15 13:57:54'),
-(1336, 60, 'LOGOUT', 'User logged out', '2605:59c0:ec1:1310:4e3c:fea1:7a18:20b6', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-15 13:58:51'),
-(1338, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:64df:ded3:467d:7f3f', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-15 14:23:26'),
-(1345, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:c1e8:ad79:4d15:33bd', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-16 23:23:16'),
-(1346, 60, 'ADMIN_TOGGLE_2FA', 'Admin support@cosmopolitantrustbankpf.com disabled two-factor authentication for user gaddafiayeshamaummar@gmail.com', '2605:59c0:ec1:1310:c1e8:ad79:4d15:33bd', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-16 23:29:46'),
-(1348, 60, 'ADMIN_TOGGLE_2FA', 'Admin support@cosmopolitantrustbankpf.com disabled two-factor authentication for user gaddafiayeshamaummar@gmail.com', '2605:59c0:ec1:1310:c1e8:ad79:4d15:33bd', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-16 23:36:16'),
-(1349, 60, 'ADMIN_TOGGLE_2FA', 'Admin support@cosmopolitantrustbankpf.com enabled two-factor authentication for user gaddafiayeshamaummar@gmail.com', '2605:59c0:ec1:1310:c1e8:ad79:4d15:33bd', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-16 23:37:20'),
-(1358, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:542e:6e28:c121:f5b', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-17 13:43:29'),
-(1359, 60, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction ADM20260217094057562 for user officialaishagaddafi1@gmail.com. Amount changed from 413000 to 413000. Date changed from 2026-02-17 15:34:00 to 2010-01-01 14:34:00', '2605:59c0:ec1:1310:542e:6e28:c121:f5b', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-17 14:42:28'),
-(1360, 60, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction ADM20260217090848479 for user officialaishagaddafi1@gmail.com. Amount changed from 78000 to 78000. Date changed from 2026-02-17 02:57:00 to 2009-09-17 09:57:00', '2605:59c0:ec1:1310:542e:6e28:c121:f5b', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2026-02-17 14:43:48'),
-(1363, 60, 'LOGIN', 'User logged in', '143.105.174.198', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-18 08:05:07'),
-(1372, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:d0a0:fc5c:efdf:d9a3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-19 00:30:43'),
-(1373, 60, 'LOGIN', 'User logged in', '105.112.213.171', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-19 07:53:20'),
-(1374, 60, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction TXN69957429B7BF8 for user officialaishagaddafi1@gmail.com. Reason: There was a mistake in the transaction', '105.112.213.171', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-19 07:55:55'),
-(1375, 60, 'LOGIN', 'User logged in', '105.112.212.21', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-19 08:34:12'),
-(1376, 60, 'KYC_AUTO_VERIFIED', 'Auto-verified KYC for user 96 during account creation', '105.112.212.21', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-19 08:44:04'),
-(1378, 60, 'ADMIN_UPLOAD_PROFILE_PICTURE', 'Uploaded profile picture for user aishamuammar87@gmail.com (ID: 96)', '105.112.212.21', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-19 08:45:39'),
-(1379, 60, 'ADMIN_UPLOAD_PROFILE_PICTURE', 'Uploaded profile picture for user aishamuammar87@gmail.com (ID: 96)', '105.112.212.21', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-19 08:46:05'),
-(1381, 60, 'LOGIN', 'User logged in', '105.112.212.21', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-19 09:51:00'),
-(1382, 60, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction ADM20260219045030616 for user aishamuammar87@gmail.com. Amount changed from 341000 to 500000. Date changed from 2006-09-15 15:45:00 to 2006-11-07 13:45:00', '105.112.212.21', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-19 09:55:32'),
-(1383, 60, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction ADM20260219045030616 for user aishamuammar87@gmail.com. Amount changed from 500000 to 500000. Date changed from 2006-11-07 13:45:00 to 2006-11-07 12:45:00', '105.112.212.21', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-19 09:56:45'),
-(1387, 60, 'LOGIN', 'User logged in', '105.112.212.21', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-19 10:05:02'),
-(1388, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user gaddafiayeshamaummar@gmail.com (ID: 71)', '105.112.212.21', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-19 10:08:38'),
-(1395, 60, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction TXN6996E764886D5 for user aishamuammar87@gmail.com. Reason: mistake', '105.112.212.21', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-19 10:35:44'),
-(1400, 60, 'LOGIN', 'User logged in', '143.105.174.26', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-19 22:31:57'),
-(1401, 60, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction TXN69978F146EAC6 for user aishamuammar87@gmail.com. Reason: Mistake', '143.105.174.26', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-19 22:32:18'),
-(1406, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:7de1:375b:ae23:8bb7', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-19 23:50:13'),
-(1407, 60, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction TXN6997A16E64EE4 for user officialaishagaddafi1@gmail.com. Reason: mistake', '2605:59c0:ec1:1310:7de1:375b:ae23:8bb7', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-19 23:50:44'),
 (1513, 3, 'LOGIN', 'User logged in', '105.112.39.87', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 12:45:26'),
 (1514, 3, 'LOGOUT', 'User logged out', '105.112.39.87', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 13:06:14'),
-(1523, 60, 'LOGIN', 'User logged in', '197.211.53.98', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-23 03:57:01'),
-(1524, 60, 'LOGOUT', 'User logged out', '197.211.53.98', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-23 03:59:06'),
-(1525, 60, 'LOGIN', 'User logged in', '197.211.53.98', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-23 03:59:18'),
-(1527, 60, 'LOGOUT', 'User logged out', '197.211.53.98', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-23 04:01:15'),
-(1528, 60, 'LOGIN', 'User logged in', '197.211.53.98', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-23 04:03:50'),
-(1529, 60, 'LOGOUT', 'User logged out', '197.211.53.98', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-23 04:04:39'),
-(1530, 60, 'LOGIN', 'User logged in', '197.211.53.98', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-23 04:08:23'),
-(1532, 60, 'LOGIN', 'User logged in', '197.211.52.179', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-23 12:22:57'),
-(1534, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user gaddafiayeshamaummar@gmail.com (ID: 71)', '129.205.124.218', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-23 12:33:48'),
-(1538, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:f581:8939:9db4:7263', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2026-02-23 20:45:23'),
-(1539, 60, 'bank_added', 'Added bank: Vietcom bank', '2605:59c0:ec1:1310:f581:8939:9db4:7263', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2026-02-23 20:48:36'),
-(1540, 60, 'bank_added', 'Added bank: VietinBank', '2605:59c0:ec1:1310:f581:8939:9db4:7263', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2026-02-23 20:50:05'),
-(1541, 60, 'LOGIN', 'User logged in', '105.112.203.83', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1', '2026-02-23 23:44:12'),
-(1542, 60, 'KYC_AUTO_VERIFIED', 'Auto-verified KYC for user 108 during account creation', '105.112.203.83', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1', '2026-02-23 23:53:29'),
-(1544, 60, 'LOGIN', 'User logged in', '129.222.206.233', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2026-02-24 05:33:47'),
-(1545, 60, 'LOGIN', 'User logged in', '129.222.206.233', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2026-02-24 05:37:59'),
-(1546, 60, 'bank_added', 'Added bank: Vietnam International Commercial Joint Stock Bank (VIB)', '129.222.206.233', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2026-02-24 05:38:29'),
-(1547, 60, 'bank_added', 'Added bank: BIDV (Bank for Investment and Development of Vietnam', '129.222.206.233', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2026-02-24 05:41:13'),
-(1548, 60, 'bank_added', 'Added bank: Agribank', '129.222.206.233', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2026-02-24 05:42:07'),
-(1549, 60, 'bank_added', 'Added bank: MBBank (Military Commercial Joint Stock Bank', '129.222.206.233', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2026-02-24 05:42:56'),
-(1550, 60, 'bank_added', 'Added bank: Techcombank (Vietnam Technological and Commercial Joint Stock Bank', '129.222.206.233', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2026-02-24 05:43:55'),
-(1551, 60, 'bank_added', 'Added bank: HDBank (Ho Chi Minh City Development Joint Stock Commercial Bank', '129.222.206.233', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2026-02-24 05:45:25'),
-(1552, 60, 'bank_added', 'Added bank: ACB (Asia Commercial Joint Stock Bank)', '129.222.206.233', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2026-02-24 05:46:29'),
-(1553, 60, 'bank_added', 'Added bank: Techcombank (Vietnam Technological and Commercial Joint Stock Bank )', '129.222.206.233', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2026-02-24 05:47:24'),
-(1554, 60, 'bank_added', 'Added bank: Sacombank (Saigon Thuong Tin Commercial Joint Stock Bank )', '129.222.206.233', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2026-02-24 05:48:15'),
-(1555, 60, 'bank_added', 'Added bank: MSB (Vietnam Maritime Commercial Joint Stock Bank )', '129.222.206.233', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2026-02-24 05:49:13'),
-(1556, 60, 'bank_added', 'Added bank: LPBank (Loc Phat Vietnam Commercial Joint Stock Bank )', '129.222.206.233', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2026-02-24 05:53:31'),
-(1557, 60, 'bank_added', 'Added bank: VIB (Vietnam International Commercial Joint Stock Bank )', '129.222.206.233', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2026-02-24 05:54:26'),
-(1558, 60, 'bank_added', 'Added bank: HCM City Development Bank (HDBank)', '129.222.206.233', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2026-02-24 05:56:24'),
-(1559, 60, 'LOGIN', 'User logged in', '129.222.206.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-24 06:04:52'),
-(1560, 60, 'LOGOUT', 'User logged out', '129.222.206.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-24 06:26:22'),
-(1561, 60, 'LOGIN', 'User logged in', '129.222.206.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-24 06:30:08'),
-(1562, 60, 'LOGOUT', 'User logged out', '129.222.206.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-24 06:30:19'),
-(1563, 60, 'LOGIN', 'User logged in', '129.222.206.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-24 06:30:37'),
-(1564, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user gaddafiayeshamaummar@gmail.com (ID: 71)', '129.222.206.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-24 06:30:51'),
-(1571, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:ac8a:629:14fa:5666', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-24 08:02:08'),
-(1572, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user gaddafiayeshamaummar@gmail.com (ID: 71)', '2605:59c0:ec1:1310:ac8a:629:14fa:5666', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-24 08:08:01'),
-(1573, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:ac8a:629:14fa:5666', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 08:12:34'),
-(1574, 60, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction ADM20260224040223647 for user officialaishagaddafi1@gmail.com. Amount changed from 878000 to 878000. Date changed from 2026-02-24 15:06:00 to 2008-11-28 14:06:00', '2605:59c0:ec1:1310:ac8a:629:14fa:5666', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 09:03:47'),
-(1575, 60, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction ADM20260224035141804 for user officialaishagaddafi1@gmail.com. Amount changed from 340000 to 340000. Date changed from 2026-02-24 13:50:00 to 2009-01-07 12:50:00', '2605:59c0:ec1:1310:ac8a:629:14fa:5666', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 09:05:14'),
-(1577, 60, 'LOGIN', 'User logged in', '105.112.209.72', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-24 11:42:57'),
-(1578, 60, 'LOGIN', 'User logged in', '197.210.55.62', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 11:54:12'),
-(1579, 60, 'LOGIN', 'User logged in', '105.115.5.73', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 11:58:43'),
-(1580, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user officialaishagaddafi1@gmail.com (ID: 108)', '105.112.209.72', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-24 12:06:58'),
-(1581, 60, 'KYC_AUTO_VERIFIED', 'Auto-verified KYC for user 109 during account creation', '105.115.5.73', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 12:11:14'),
-(1583, 60, 'ADMIN_UPLOAD_PROFILE_PICTURE', 'Uploaded profile picture for user aishamuammar87@gmail.com (ID: 109)', '105.115.5.73', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 12:12:07'),
-(1584, 60, 'ADMIN_USER_PASSWORD_RESET', 'Admin reset password for user: aishamuammar87@gmail.com (ID: 109)', '105.115.5.73', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 12:15:47'),
-(1585, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user aishamuammar87@gmail.com (ID: 109)', '105.115.5.73', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 12:17:27'),
-(1589, 60, 'LOGIN', 'User logged in', '105.115.5.73', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 12:22:32'),
-(1592, 60, 'LOGIN', 'User logged in', '105.115.5.73', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 13:10:54'),
-(1593, 60, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction ADM20260224081031621 for user aishamuammar87@gmail.com. Reason: MISTAKE', '105.115.5.73', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 13:11:20'),
-(1594, 60, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction ADM20260224081031785 for user aishamuammar87@gmail.com. Reason: MISTAKE', '105.115.5.73', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 13:11:51'),
-(1595, 60, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction ADM20260224081031879 for user aishamuammar87@gmail.com. Reason: MISTAKE', '105.115.5.73', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 13:11:58'),
-(1596, 60, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction ADM20260224081031405 for user aishamuammar87@gmail.com. Reason: MISTAKE', '105.115.5.73', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 13:12:32'),
-(1597, 60, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction ADM20260224081031413 for user aishamuammar87@gmail.com. Reason: MISTAKE', '105.115.5.73', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 13:12:32'),
-(1598, 60, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction ADM20260224081031853 for user aishamuammar87@gmail.com. Reason: MISTAKE', '105.115.5.73', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 13:12:37'),
-(1599, 60, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction ADM20260224081031316 for user aishamuammar87@gmail.com. Reason: MISTAKE', '105.115.5.73', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 13:12:54'),
-(1600, 60, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction ADM20260224081031105 for user aishamuammar87@gmail.com. Reason: MISTAKE', '105.115.5.73', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 13:12:54'),
-(1601, 60, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction ADM20260224081031156 for user aishamuammar87@gmail.com. Reason: MISTAKE', '105.115.5.73', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 13:12:57'),
-(1602, 60, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction ADM20260224081031235 for user aishamuammar87@gmail.com. Reason: MISTAKE', '105.115.5.73', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 13:13:04'),
-(1603, 60, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction ADM20260224081031993 for user aishamuammar87@gmail.com. Reason: MISTAKE', '105.115.5.73', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 13:13:23'),
-(1604, 60, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction ADM20260224081031947 for user aishamuammar87@gmail.com. Reason: MISTAKE', '105.115.5.73', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 13:13:28'),
-(1605, 60, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction ADM20260224081031494 for user aishamuammar87@gmail.com. Reason: MISTAKE', '105.115.5.73', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 13:13:34'),
-(1606, 60, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction ADM20260224081031112 for user aishamuammar87@gmail.com. Reason: MISTAKE', '105.115.5.73', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 13:13:42'),
-(1609, 60, 'LOGIN', 'User logged in', '105.115.5.73', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 13:28:01'),
-(1610, 60, 'LOGIN', 'User logged in', '143.105.174.70', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-24 13:39:53'),
-(1611, 60, 'bank_added', 'Added bank: Bank Muscat (SAOG)', '143.105.174.70', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-24 13:45:26'),
-(1612, 60, 'bank_added', 'Added bank: National Bank of Oman (NBO)', '143.105.174.70', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-24 13:46:13'),
-(1613, 60, 'bank_added', 'Added bank: Bank Dhofar (S.A.O.G.)', '143.105.174.70', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-24 13:46:37'),
-(1614, 60, 'bank_added', 'Added bank: Oman Arab Bank (OAB)', '143.105.174.70', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-24 13:46:59'),
-(1615, 60, 'bank_added', 'Added bank: Sohar International (formerly Bank Sohar):', '143.105.174.70', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-24 13:47:26'),
-(1616, 60, 'LOGOUT', 'User logged out', '105.112.204.65', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 13:47:56'),
-(1617, 60, 'bank_added', 'Added bank: Ahli Bank', '143.105.174.70', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-24 13:47:57'),
-(1618, 60, 'LOGIN', 'User logged in', '105.112.204.65', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 13:48:06'),
-(1619, 60, 'bank_added', 'Added bank: Oman Development Bank / Oman Housing Bank', '143.105.174.70', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-24 13:48:31'),
-(1620, 60, 'bank_added', 'Added bank: Bank Nizwa', '143.105.174.70', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-24 13:49:05'),
-(1621, 60, 'bank_added', 'Added bank: Standard Chartered Bank', '143.105.174.70', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-24 13:49:40'),
-(1622, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user aishamuammar87@gmail.com (ID: 109)', '105.112.204.65', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 14:15:51'),
-(1623, 60, 'LOGIN', 'User logged in', '105.112.204.65', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 14:25:06'),
-(1624, 60, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction ADM20260224081604408 for user aishamuammar87@gmail.com. Amount changed from 85000 to 41482.31. Date changed from 2009-02-24 14:13:00 to 2009-02-24 13:13:00', '105.112.204.65', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 14:26:15'),
-(1625, 60, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction ADM20260224081604408 for user aishamuammar87@gmail.com. Amount changed from 41482.31 to 48092.65. Date changed from 2009-02-24 13:13:00 to 2009-02-24 12:13:00', '105.112.204.65', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 14:30:27'),
-(1626, 60, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction ADM20260224081604408 for user aishamuammar87@gmail.com. Amount changed from 48092.65 to 60309.22. Date changed from 2009-02-24 12:13:00 to 2009-02-24 11:13:00', '105.112.204.65', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 14:32:17'),
-(1627, 60, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction ADM20260224081604408 for user aishamuammar87@gmail.com. Amount changed from 60309.22 to 35876.08. Date changed from 2009-02-24 11:13:00 to 2009-02-24 10:13:00', '105.112.204.65', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 14:34:37'),
-(1628, 60, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction ADM20260224081604408 for user aishamuammar87@gmail.com. Amount changed from 35876.08 to 34020.38. Date changed from 2009-02-24 10:13:00 to 2009-02-24 09:13:00', '105.112.204.65', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 14:36:11'),
-(1629, 60, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction ADM20260224081604408 for user aishamuammar87@gmail.com. Amount changed from 34020.38 to 33738.5. Date changed from 2009-02-24 09:13:00 to 2009-02-24 08:13:00', '105.112.204.65', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 14:37:52'),
-(1636, 60, 'LOGIN', 'User logged in', '105.112.216.184', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-25 09:06:31'),
-(1637, 60, 'LOGOUT', 'User logged out', '105.112.216.184', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-25 09:06:51'),
-(1638, 60, 'LOGIN', 'User logged in', '105.112.216.184', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-25 09:06:56'),
-(1639, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user aishamuammar87@gmail.com (ID: 109)', '105.112.216.184', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-25 09:07:24'),
-(1641, 60, 'LOGIN', 'User logged in', '105.112.216.184', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-25 09:08:29'),
-(1642, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user aishamuammar87@gmail.com (ID: 109)', '105.112.216.184', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-25 09:09:27'),
-(1646, 60, 'LOGIN', 'User logged in', '105.113.67.140', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1', '2026-02-25 13:02:54'),
-(1649, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:d802:a082:7e94:22d9', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-25 13:58:23'),
-(1650, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user officialaishagaddafi1@gmail.com (ID: 108)', '2605:59c0:ec1:1310:d802:a082:7e94:22d9', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-25 13:58:53'),
-(1652, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:d802:a082:7e94:22d9', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-25 14:00:55'),
-(1653, 60, 'ADMIN_REVERSE_TRANSACTION', 'Reversed transaction TXN699E7618C2340 for user officialaishagaddafi1@gmail.com', '2605:59c0:ec1:1310:d802:a082:7e94:22d9', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-25 14:03:05'),
-(1654, 60, 'ADMIN_SET_TRANSACTION_MODE', 'Set transaction mode to \'force_pending\' for user officialaishagaddafi1@gmail.com (ID: 108)', '2605:59c0:ec1:1310:d802:a082:7e94:22d9', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-25 14:03:40'),
-(1655, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user officialaishagaddafi1@gmail.com (ID: 108)', '2605:59c0:ec1:1310:d802:a082:7e94:22d9', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-25 14:08:30'),
-(1657, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:8d1a:9218:c55e:dca8', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2026-02-26 01:23:52'),
-(1658, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user officialaishagaddafi1@gmail.com (ID: 108)', '2605:59c0:ec1:1310:8d1a:9218:c55e:dca8', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2026-02-26 01:25:19'),
-(1659, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:8d1a:9218:c55e:dca8', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2026-02-26 02:13:02'),
-(1660, 60, 'LOGOUT', 'User logged out', '2605:59c0:ec1:1310:8d1a:9218:c55e:dca8', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2026-02-26 02:13:09'),
-(1661, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:8d1a:9218:c55e:dca8', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2026-02-26 02:13:16'),
-(1662, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user officialaishagaddafi1@gmail.com (ID: 108)', '2605:59c0:ec1:1310:8d1a:9218:c55e:dca8', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2026-02-26 02:13:41'),
-(1665, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:94d4:4a8e:5e76:2fd3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-26 09:43:37'),
-(1666, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user officialaishagaddafi1@gmail.com (ID: 108)', '2605:59c0:ec1:1310:94d4:4a8e:5e76:2fd3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-26 09:44:18'),
-(1670, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:2c7e:72d8:45bc:9e76', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-28 07:33:02'),
-(1671, 60, 'USER_DELETED', 'Deleted user: baelaycash@gmail.com (ID: 114)', '2605:59c0:ec1:1310:2c7e:72d8:45bc:9e76', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-28 07:33:18'),
-(1672, 60, 'USER_DELETED', 'Deleted user: bael@gmail.com (ID: 113)', '2605:59c0:ec1:1310:2c7e:72d8:45bc:9e76', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-28 07:33:22'),
-(1673, 60, 'USER_DELETED', 'Deleted user: mcstephen1090@gmail.com (ID: 111)', '2605:59c0:ec1:1310:2c7e:72d8:45bc:9e76', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-28 07:33:35'),
-(1674, 60, 'USER_DELETED', 'Deleted user: elon93604@gmail.com (ID: 112)', '2605:59c0:ec1:1310:2c7e:72d8:45bc:9e76', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-28 07:33:48'),
-(1675, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user officialaishagaddafi1@gmail.com (ID: 108)', '2605:59c0:ec1:1310:2c7e:72d8:45bc:9e76', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-28 07:34:07'),
-(1676, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:480b:d738:8a1:f41d', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-28 11:10:06'),
-(1677, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user officialaishagaddafi1@gmail.com (ID: 108)', '2605:59c0:ec1:1310:480b:d738:8a1:f41d', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-02-28 11:10:22'),
-(1685, 60, 'LOGIN', 'User logged in', '105.112.100.175', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-03-01 23:10:54'),
-(1686, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user gaddafiayeshamaummar@gmail.com (ID: 71)', '105.112.100.175', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-03-01 23:11:17'),
-(1687, 60, 'LOGIN', 'User logged in', '105.112.100.175', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-03-01 23:55:36'),
-(1688, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user gaddafiayeshamaummar@gmail.com (ID: 71)', '105.112.100.175', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-03-01 23:56:06'),
-(1689, 60, 'LOGIN', 'User logged in', '105.112.100.175', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-03-02 01:01:07'),
-(1690, 60, 'LOGOUT', 'User logged out', '105.112.100.175', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-03-02 01:01:16'),
-(1691, 60, 'LOGIN', 'User logged in', '105.112.100.175', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-03-02 01:01:23'),
-(1692, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user gaddafiayeshamaummar@gmail.com (ID: 71)', '105.112.100.175', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-03-02 01:01:38'),
-(1694, 60, 'LOGIN', 'User logged in', '105.112.100.175', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-03-02 01:10:43'),
-(1695, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user officialaishagaddafi1@gmail.com (ID: 108)', '105.112.100.175', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-03-02 01:11:11'),
 (1696, 3, 'LOGIN', 'User logged in', '102.89.76.252', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 01:42:19'),
-(1697, 60, 'LOGIN', 'User logged in', '105.112.100.175', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-03-02 01:54:34'),
-(1698, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user officialaishagaddafi1@gmail.com (ID: 108)', '105.112.100.175', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-03-02 01:55:11'),
-(1699, 60, 'LOGIN', 'User logged in', '105.112.100.175', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-03-02 02:05:02');
-INSERT INTO `activity_logs` (`id`, `user_id`, `action`, `details`, `ip_address`, `user_agent`, `created_at`) VALUES
-(1700, 60, 'LOGOUT', 'User logged out', '105.112.100.175', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-03-02 02:05:15'),
-(1701, 60, 'LOGIN', 'User logged in', '105.112.100.175', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-03-02 02:05:22'),
-(1702, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user officialaishagaddafi1@gmail.com (ID: 108)', '2605:59c0:ec1:1310:4037:7b7:f475:932e', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-03-02 02:10:27'),
-(1704, 60, 'LOGIN', 'User logged in', '2605:59c0:ec1:1310:4037:7b7:f475:932e', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-03-02 02:25:51'),
-(1705, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user gaddafiayeshamaummar@gmail.com (ID: 71)', '102.90.101.165', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-03-02 02:28:37'),
 (1706, 3, 'LOGIN', 'User logged in', '102.89.76.252', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 02:32:13'),
 (1707, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user hkr.fred@outlook.com (ID: 27)', '102.89.76.252', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 02:32:25'),
 (1708, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.89.76.252', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 02:41:56'),
@@ -752,23 +487,12 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `action`, `details`, `ip_address`,
 (1711, 3, 'ADMIN_UPLOAD_PROFILE_PICTURE', 'Uploaded profile picture for user Ivanawonderwoman@outlook.com (ID: 117)', '102.89.76.252', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 02:50:19'),
 (1712, 3, 'ADMIN_USER_PASSWORD_RESET', 'Admin reset password for user: Ivanawonderwoman@outlook.com (ID: 117)', '102.89.76.252', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 02:51:06'),
 (1713, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user Ivanawonderwoman@outlook.com (ID: 117)', '102.89.76.252', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 02:52:18'),
-(1717, 60, 'LOGIN', 'User logged in', '197.210.54.239', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-03-02 03:01:00'),
-(1718, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user officialaishagaddafi1@gmail.com (ID: 108)', '197.210.54.239', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-03-02 03:01:20'),
-(1721, 60, 'LOGIN', 'User logged in', '197.210.54.239', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-03-02 03:10:58'),
-(1722, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user gaddafiayeshamaummar@gmail.com (ID: 71)', '197.210.54.239', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-03-02 03:11:10'),
 (1725, 3, 'LOGIN', 'User logged in', '102.89.83.65', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 20:12:29'),
 (1726, 3, 'ADMIN_USER_PASSWORD_RESET', 'Admin reset password for user: Phartman076@outlook.com (ID: 118)', '102.89.83.65', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 20:27:26'),
 (1727, 3, 'ADMIN_USER_PASSWORD_RESET', 'Admin reset password for user: Phartman076@outlook.com (ID: 119)', '102.89.83.65', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 20:41:25'),
 (1728, 3, 'LOGOUT', 'User logged out', '102.89.83.65', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 20:41:34'),
 (1735, 3, 'LOGIN', 'User logged in', '102.89.83.65', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 20:49:58'),
 (1736, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user Phartman076@outlook.com (ID: 119)', '102.89.83.65', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 20:50:16'),
-(1750, 60, 'LOGIN', 'User logged in', '105.113.34.23', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1', '2026-03-06 11:54:29'),
-(1751, 60, 'LOGIN', 'User logged in', '105.113.34.23', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2026-03-06 11:55:07'),
-(1752, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user gaddafiayeshamaummar@gmail.com (ID: 71)', '105.113.34.23', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2026-03-06 11:55:25'),
-(1762, 60, 'LOGIN', 'User logged in', '105.112.213.96', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-03-15 08:56:42'),
-(1764, 60, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction TXN699E7618C2340 for user officialaishagaddafi1@gmail.com. Reason: invalid', '2605:59c0:ec1:1310:e5c5:d268:2289:7457', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-03-15 09:19:15'),
-(1765, 60, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction REVTXN699E7618C2340 for user officialaishagaddafi1@gmail.com. Reason: invalid', '2605:59c0:ec1:1310:e5c5:d268:2289:7457', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-03-15 09:19:25'),
-(1766, 60, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction TXN69A19B3D55F0C for user officialaishagaddafi1@gmail.com. Reason: invalid', '2605:59c0:ec1:1310:e5c5:d268:2289:7457', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', '2026-03-15 09:19:43'),
 (1768, 3, 'LOGIN', 'User logged in', '102.89.68.205', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-17 19:51:13'),
 (1769, 3, 'USER_DELETED', 'Deleted user: allstarjp260@gmail.com (ID: 122)', '102.89.68.205', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-17 19:51:43'),
 (1770, 3, 'USER_DELETED', 'Deleted user: smoothpicsstudio@gmail.com (ID: 121)', '102.89.68.205', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-17 19:51:53'),
@@ -791,101 +515,6 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `action`, `details`, `ip_address`,
 (1788, 3, 'USER_DELETED', 'Deleted user: gaddafiayeshamaummar@gmail.com (ID: 71)', '102.89.47.66', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-18 22:05:09'),
 (1789, 3, 'USER_DELETED', 'Deleted user: jadejordan6040@gmail.com (ID: 46)', '102.89.47.66', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-18 22:05:32'),
 (1790, 3, 'USER_DELETED', 'Deleted user: hille3498@gmail.com (ID: 123)', '102.89.47.66', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-18 22:05:38'),
-(1791, 60, 'LOGIN', 'User logged in', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-18 23:33:51'),
-(1792, 60, 'LOGOUT', 'User logged out', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-18 23:41:55'),
-(1793, 60, 'LOGIN', 'User logged in', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-18 23:44:42'),
-(1794, 60, 'USER_DELETED', 'Deleted user: billyfredrickgibbons@gmail.com (ID: 37)', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-18 23:44:57'),
-(1795, 60, 'USER_DELETED', 'Deleted user: hkr.fred@outlook.com (ID: 27)', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-18 23:45:01'),
-(1796, 60, 'KYC_AUTO_VERIFIED', 'Auto-verified KYC for user 124 during account creation', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-18 23:48:46'),
-(1797, 60, 'LOGOUT', 'User logged out', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-18 23:51:35'),
-(1804, 60, 'LOGIN', 'User logged in', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-18 23:56:03'),
-(1805, 60, 'USER_UPLOAD_PROFILE_PICTURE', 'Updated own profile picture', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-18 23:58:35'),
-(1806, 60, 'LOGOUT', 'User logged out', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-18 23:59:18'),
-(1807, 60, 'LOGIN', 'User logged in', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-18 23:59:26'),
-(1808, 60, 'ADMIN_SET_TRANSACTION_MODE', 'Set transaction mode to \'force_success\' for user alexwanghengry@gmail.com (ID: 124)', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 00:01:42'),
-(1809, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user alexwanghengry@gmail.com (ID: 124)', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 00:21:44'),
-(1822, 60, 'LOGIN', 'User logged in', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 00:36:20'),
-(1823, 60, 'LOGOUT', 'User logged out', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 00:36:36'),
-(1824, 60, 'LOGIN', 'User logged in', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 00:36:45'),
-(1825, 60, 'LOGOUT', 'User logged out', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 00:36:51'),
-(1826, 60, 'LOGIN', 'User logged in', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 00:37:05'),
-(1827, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user chukwukap19@gmail.com (ID: 125)', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 00:40:01'),
-(1828, 60, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 00:41:31'),
-(1829, 60, 'ADMIN_TOGGLE_2FA', 'Admin support@saveridgecapital.com enabled two-factor authentication for user chukwukap19@gmail.com', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 00:41:55'),
-(1830, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user chukwukap19@gmail.com (ID: 125)', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 00:42:43'),
-(1838, 60, 'LOGIN', 'User logged in', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 01:04:07'),
-(1839, 60, 'LOGIN', 'User logged in', '102.90.102.32', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 02:03:24'),
-(1840, 60, 'KYC_AUTO_VERIFIED', 'Auto-verified KYC for user 126 during account creation', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 02:23:23'),
-(1842, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user alexwanghenry@gmail.com (ID: 126)', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 02:25:16'),
-(1846, 60, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 02:27:22'),
-(1847, 60, 'ADMIN_TOGGLE_2FA', 'Admin support@saveridgecapital.com enabled two-factor authentication for user alexwanghenry@gmail.com', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 02:27:43'),
-(1848, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user alexwanghenry@gmail.com (ID: 126)', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 02:27:51'),
-(1854, 60, 'LOGIN', 'User logged in', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 02:44:24'),
-(1857, 60, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction TXN69BB613476C4C for user alexwanghenry@gmail.com. Amount changed from 3015 to 3015. Date changed from 2026-03-19 02:36:36 to 2024-03-09 23:36:00', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 02:56:18'),
-(1858, 60, 'ADMIN_UPLOAD_PROFILE_PICTURE', 'Uploaded profile picture for user alexwanghenry@gmail.com (ID: 126)', '102.90.82.44', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 02:57:12'),
-(1861, 60, 'LOGIN', 'User logged in', '102.90.96.129', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 08:52:21'),
-(1862, 60, 'LOGIN', 'User logged in', '102.89.83.251', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-19 09:03:26'),
-(1864, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user alexwanghenry@gmail.com (ID: 126)', '102.89.83.251', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-19 09:05:39'),
-(1866, 60, 'LOGIN', 'User logged in', '102.89.83.251', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-19 09:06:30'),
-(1867, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user alexwanghenry@gmail.com (ID: 126)', '102.89.83.251', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-19 09:07:16'),
-(1868, 60, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.89.83.251', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-19 09:12:11'),
-(1869, 60, 'LOGIN', 'User logged in', '102.89.83.251', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-19 09:46:51'),
-(1870, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user alexwanghenry@gmail.com (ID: 126)', '102.89.83.251', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-19 09:56:14'),
-(1871, 60, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.89.83.251', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-19 09:56:56'),
-(1872, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user alexwanghenry@gmail.com (ID: 126)', '102.89.83.251', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-19 09:57:15'),
-(1875, 60, 'LOGIN', 'User logged in', '102.90.102.32', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 10:22:10'),
-(1876, 60, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction TXN69BBCDC030472 for user alexwanghenry@gmail.com. Amount changed from 2010 to 2010. Date changed from 2026-03-19 10:19:44 to 2024-01-19 11:45:00', '102.90.102.32', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 10:24:51'),
-(1877, 60, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction TXN69BB4B19B5369 for user chukwukap19@gmail.com. Amount changed from 3075 to 3075. Date changed from 2026-03-19 01:02:17 to 2024-08-19 03:02:00', '102.90.102.32', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 10:25:30'),
-(1878, 60, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction TXN69BBCDC030472 for user alexwanghenry@gmail.com. Reason: Not needed', '102.90.102.32', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 10:37:57'),
-(1879, 60, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction TXN69BB613476C4C for user alexwanghenry@gmail.com. Reason: Not needed', '102.90.102.32', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 10:38:17'),
-(1880, 60, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction TXN69BBB6638D46F for user alexwanghenry@gmail.com. Reason: Not needed', '102.90.102.32', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 10:38:29'),
-(1889, 60, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction TXN69BBDFEE614E7 for user alexwanghenry@gmail.com. Amount changed from 2512.5 to 2512.5. Status changed from pending to completed. Date changed from 2026-03-19 11:37:18 to 2026-03-19 11:37:00', '102.90.102.32', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 11:40:23'),
-(1890, 60, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction TXN69BBDFEE614E7 for user alexwanghenry@gmail.com. Amount changed from 2512.5 to 2512.5. Date changed from 2026-03-19 11:37:00 to 2026-02-10 18:02:00', '102.90.102.32', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 11:41:23'),
-(1894, 60, 'LOGIN', 'User logged in', '197.210.227.226', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-19 13:06:24'),
-(1901, 60, 'LOGIN', 'User logged in', '102.88.110.174', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cursor/2.6.19 Chrome/142.0.7444.265 Electron/39.4.0 Safari/537.36', '2026-03-19 17:06:18'),
-(1902, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user alexwanghenry@gmail.com (ID: 126)', '102.88.110.174', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cursor/2.6.19 Chrome/142.0.7444.265 Electron/39.4.0 Safari/537.36', '2026-03-19 17:06:49'),
-(1903, 60, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.88.110.174', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cursor/2.6.19 Chrome/142.0.7444.265 Electron/39.4.0 Safari/537.36', '2026-03-19 17:22:01'),
-(1905, 60, 'LOGIN', 'User logged in', '102.89.83.251', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-19 17:44:24'),
-(1906, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user alexwanghenry@gmail.com (ID: 126)', '102.89.83.251', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-19 17:44:35'),
-(1907, 60, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.89.83.251', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-19 17:45:15'),
-(1908, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user alexwanghenry@gmail.com (ID: 126)', '102.89.83.251', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-19 17:46:31'),
-(1909, 60, 'LOGIN', 'User logged in', '102.88.115.94', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-19 23:48:23'),
-(1910, 60, 'LOGOUT', 'User logged out', '102.88.115.94', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-19 23:49:24'),
-(1921, 60, 'LOGIN', 'User logged in', '102.89.43.160', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-20 22:00:45'),
-(1923, 60, 'LOGIN', 'User logged in', '102.90.42.173', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-20 22:58:01'),
-(1924, 60, 'LOGOUT', 'User logged out', '102.90.42.173', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-20 22:58:16'),
-(1925, 60, 'LOGIN', 'User logged in', '102.90.42.173', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-20 22:58:31'),
-(1941, 60, 'LOGIN', 'User logged in', '102.90.42.173', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-21 09:45:28'),
-(1946, 60, 'LOGIN', 'User logged in', '197.210.54.228', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-21 16:58:51'),
-(1947, 60, 'LOGOUT', 'User logged out', '197.210.54.228', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-21 16:58:57'),
-(1948, 60, 'LOGIN', 'User logged in', '197.210.54.228', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-21 16:59:04'),
-(1949, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user alexwanghenry@gmail.com (ID: 126)', '197.210.54.228', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-21 16:59:20'),
-(1950, 60, 'LOGIN', 'User logged in', '197.210.54.228', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-21 17:19:44'),
-(1951, 60, 'LOGOUT', 'User logged out', '197.210.54.228', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-21 17:19:54'),
-(1952, 60, 'LOGIN', 'User logged in', '197.210.54.228', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-21 17:19:59'),
-(1953, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user chukwukap19@gmail.com (ID: 125)', '197.210.54.228', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-21 17:22:54'),
-(1957, 60, 'LOGIN', 'User logged in', '197.210.54.228', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-21 17:30:07'),
-(1958, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user alexwanghenry@gmail.com (ID: 126)', '197.210.54.228', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-21 17:36:38'),
-(1962, 60, 'LOGIN', 'User logged in', '197.210.54.228', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-21 17:44:46'),
-(1964, 60, 'LOGIN', 'User logged in', '105.113.65.22', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-21 19:18:45'),
-(1976, 60, 'LOGIN', 'User logged in', '102.90.96.145', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-24 14:02:02'),
-(1977, 60, 'LOGOUT', 'User logged out', '102.90.96.145', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-24 14:02:09'),
-(1978, 60, 'LOGIN', 'User logged in', '102.90.96.145', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-24 14:02:14'),
-(1985, 60, 'LOGIN', 'User logged in', '129.205.124.209', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 20:38:51'),
-(1987, 60, 'LOGIN', 'User logged in', '146.70.246.136', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 23:32:38'),
-(1988, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user alexwanghenry@gmail.com (ID: 126)', '146.70.246.136', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 23:32:46'),
-(1991, 60, 'LOGIN', 'User logged in', '102.89.46.223', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-28 03:07:21'),
-(1992, 60, 'LOGOUT', 'User logged out', '102.89.46.223', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-28 03:07:42'),
-(1993, 60, 'LOGIN', 'User logged in', '102.89.46.223', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-28 03:08:12'),
-(1994, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user alexwanghenry@gmail.com (ID: 126)', '102.89.46.223', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-28 03:08:21'),
-(1995, 60, 'LOGIN', 'User logged in', '102.89.46.172', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-28 10:44:35'),
-(1996, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user alexwanghenry@gmail.com (ID: 126)', '102.89.46.172', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-28 10:44:58'),
-(1997, 60, 'LOGIN', 'User logged in', '102.89.47.175', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-28 11:18:45'),
-(1998, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user alexwanghenry@gmail.com (ID: 126)', '102.89.47.175', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-28 11:18:57'),
-(1999, 60, 'LOGIN', 'User logged in', '102.90.99.1', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-28 12:55:11'),
-(2000, 60, 'ADMIN_PASSWORD_UPDATED', 'Updated password for support@saveridgecapital.com', '102.90.99.1', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-28 12:56:37'),
-(2001, 60, 'LOGOUT', 'User logged out', '102.90.99.1', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-28 12:56:52'),
-(2002, 60, 'LOGIN', 'User logged in', '102.90.99.1', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2026-03-28 12:57:02'),
 (2003, 3, 'LOGIN', 'User logged in', '102.89.47.175', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-28 19:01:35'),
 (2004, 3, 'KYC_AUTO_VERIFIED', 'Auto-verified KYC for user 127 during account creation', '102.89.47.175', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-28 19:21:06'),
 (2018, 3, 'LOGIN', 'User logged in', '31.14.252.10', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-13 02:45:54'),
@@ -906,7 +535,8 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `action`, `details`, `ip_address`,
 (2051, 3, 'LOGIN', 'User logged in', '102.88.108.255', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-30 10:04:46'),
 (2052, 3, 'EMAIL_TEST', 'Sent test email (test) to mr.carter.tech07@gmail.com', '102.88.108.255', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-30 10:05:15'),
 (2053, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user mr.carter.tech07@gmail.com (ID: 129)', '102.88.108.255', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-30 10:05:52'),
-(2062, 3, 'LOGIN', 'User logged in', '102.89.83.31', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-16 19:19:36'),
+(2062, 3, 'LOGIN', 'User logged in', '102.89.83.31', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-16 19:19:36');
+INSERT INTO `activity_logs` (`id`, `user_id`, `action`, `details`, `ip_address`, `user_agent`, `created_at`) VALUES
 (2063, 3, 'LOGIN', 'User logged in', '102.89.76.10', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-18 23:40:47'),
 (2064, 3, 'USER_DELETED', 'Deleted user: williamsjohnson277533@gmail.com (ID: 128)', '102.89.76.10', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-18 23:41:04'),
 (2065, 3, 'USER_DELETED', 'Deleted user: mingxayuen@gmail.com (ID: 130)', '102.89.76.10', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-18 23:41:09'),
@@ -947,20 +577,11 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `action`, `details`, `ip_address`,
 (2125, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 01:20:44'),
 (2126, 3, 'USER_DELETED', 'Deleted user: mr.carter.tech07@gmail.com (ID: 133)', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 01:20:50'),
 (2127, 3, 'LOGOUT', 'User logged out', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 01:21:00'),
-(2128, 134, 'ACCOUNT_CREATED', 'Created checking account: 202642569179', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 01:22:17'),
-(2129, 134, 'LOGIN', 'User session established', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 01:23:18'),
-(2130, 134, 'LOGIN_PIN_UPDATED', 'User updated their login PIN', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 01:23:37');
-INSERT INTO `activity_logs` (`id`, `user_id`, `action`, `details`, `ip_address`, `user_agent`, `created_at`) VALUES
-(2131, 134, 'TRANSFER_PIN_UPDATED', 'User updated their transfer PIN', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 01:23:49'),
-(2132, 134, 'TWO_FACTOR_ENABLED', 'User enabled two-factor authentication', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 01:23:54'),
-(2133, 134, 'LOGOUT', 'User logged out', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 01:25:44'),
 (2134, 3, 'LOGIN', 'User logged in', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 01:26:05'),
 (2135, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user mr.carter.tech07@gmail.com (ID: 134)', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 01:26:45'),
-(2136, 134, 'KYC_SUBMITTED', 'User submitted KYC verification', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 01:41:31'),
 (2137, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 01:41:48'),
 (2138, 3, 'KYC_APPROVED', 'Approved KYC ID: 36', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 01:42:16'),
 (2139, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user mr.carter.tech07@gmail.com (ID: 134)', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 01:42:33'),
-(2140, 134, 'transfer_funds', 'Transferred $233.00 to werty mum (Fee: $1.17)', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 01:43:40'),
 (2141, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 01:45:05'),
 (2142, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user mr.carter.tech07@gmail.com (ID: 134)', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 01:46:07'),
 (2143, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 01:47:51'),
@@ -972,47 +593,151 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `action`, `details`, `ip_address`,
 (2149, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 02:47:50'),
 (2150, 3, 'LOGOUT', 'User logged out', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 02:47:55'),
 (2151, 3, 'LOGIN', 'User logged in', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 02:53:50'),
-(2152, 3, 'LOGIN', 'User logged in', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 03:10:46'),
-(2153, 3, 'USER_DELETED', 'Deleted user: hkr.fred@outlook.com (ID: 131)', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 03:11:02'),
-(2154, 3, 'USER_DELETED', 'Deleted user: waltazite@gmail.com (ID: 132)', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 03:11:06'),
-(2155, 3, 'ADMIN_PASSWORD_UPDATED', 'Updated password for support@saveridgecapital.com', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 03:14:07'),
-(2156, 3, 'ADMIN_INFO_UPDATED', 'Updated info for support@saveridgecapital.com to support@firstnationalfn.com', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 03:14:07'),
-(2157, 3, 'EMAIL_TEST', 'Sent test email (test) to mr.carter.tech07@gmail.com', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 03:14:44'),
-(2158, 3, 'LOGOUT', 'User logged out', '102.89.82.233', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 03:15:21'),
-(2159, 60, 'LOGIN', 'User logged in', '102.90.98.168', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36', '2026-05-31 22:16:18'),
-(2160, 135, 'ACCOUNT_CREATED', 'Created savings account: 202646663507', '102.90.98.168', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36', '2026-05-31 22:38:34'),
-(2161, 135, 'LOGIN', 'User session established', '102.90.98.168', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36', '2026-05-31 22:39:00'),
-(2162, 135, 'LOGIN_PIN_UPDATED', 'User updated their login PIN', '102.90.98.168', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36', '2026-05-31 22:39:19'),
-(2163, 135, 'TRANSFER_PIN_UPDATED', 'User updated their transfer PIN', '102.90.98.168', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36', '2026-05-31 22:39:29'),
-(2164, 135, 'TWO_FACTOR_ENABLED', 'User enabled two-factor authentication', '102.90.98.168', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36', '2026-05-31 22:44:50'),
-(2165, 60, 'LOGIN', 'User logged in', '102.90.98.168', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 22:57:52'),
-(2166, 60, 'bank_added', 'Added bank: First Abu Dhabi Bank (FAB)', '102.90.98.168', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 23:29:34'),
-(2167, 60, 'bank_added', 'Added bank: Emirates NBD', '102.90.98.168', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 23:30:05'),
-(2168, 60, 'bank_deleted', 'Deleted bank ID: 276', '102.90.98.168', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 23:30:44'),
-(2169, 60, 'bank_deleted', 'Deleted bank ID: 222', '102.90.98.168', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 23:31:13'),
-(2170, 60, 'bank_added', 'Added bank: Commercial Bank of Dubai (CBD)', '102.90.98.168', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 23:32:49'),
-(2171, 60, 'bank_added', 'Added bank: RAKBANK', '102.90.98.168', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 23:34:02'),
-(2172, 60, 'bank_added', 'Added bank: HSBC Bank Middle East', '102.90.98.168', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 23:34:45'),
-(2173, 60, 'bank_added', 'Added bank: Sharjah Islamic Bank', '102.90.98.168', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 23:35:19'),
-(2174, 60, 'bank_added', 'Added bank: United Arab Bank (UAB)', '102.90.98.168', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 23:35:56'),
-(2175, 60, 'bank_added', 'Added bank: Abu Dhabi Islamic Bank (ADIB)', '102.90.98.168', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 23:37:57'),
-(2176, 60, 'bank_added', 'Added bank: Al Hilal Bank', '102.90.98.168', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 23:39:01'),
-(2177, 60, 'bank_added', 'Added bank: Al Maryah Community Bank', '102.90.98.168', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 23:39:59'),
-(2178, 60, 'bank_added', 'Added bank: Emirates Islamic', '102.90.98.168', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 23:41:13'),
-(2179, 60, 'bank_added', 'Added bank: Ajman Bank', '102.90.98.168', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-31 23:42:30'),
-(2180, 60, 'LOGIN', 'User logged in', '102.89.84.194', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-06-02 17:11:57'),
-(2181, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user mr.carter.tech07@gmail.com (ID: 134)', '102.89.84.194', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-06-02 17:12:28'),
-(2182, 134, 'LOGOUT', 'User logged out', '102.89.84.194', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-06-02 19:35:32'),
-(2183, 60, 'LOGIN', 'User logged in', '102.89.84.194', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-06-02 19:35:41'),
-(2184, 60, 'LOGOUT', 'User logged out', '102.89.84.194', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-06-02 19:40:04'),
-(2185, 60, 'LOGIN', 'User logged in', '102.90.118.131', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-06-02 22:20:09'),
-(2186, 135, 'LOGIN', 'User logged in', '102.90.118.131', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-06-02 22:21:20'),
-(2187, 135, 'LOGOUT', 'User logged out', '102.90.118.131', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-06-02 22:25:44'),
-(2188, 135, 'LOGIN', 'User logged in', '102.90.118.131', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-06-02 22:27:43'),
-(2189, 60, 'LOGIN', 'User logged in', '102.88.110.54', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-06-02 22:42:23'),
-(2190, 60, 'ADMIN_LOGIN_AS_USER', 'Logged in as user mr.carter.tech07@gmail.com (ID: 134)', '102.88.110.54', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-06-02 22:42:32'),
-(2191, 60, 'LOGIN', 'User logged in', '102.90.118.131', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-06-02 23:11:50'),
-(2192, 135, 'LOGIN', 'User logged in', '102.90.118.131', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-06-02 23:12:34');
+(2152, 3, 'LOGIN', 'User logged in', '102.89.84.194', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-06-02 17:41:21'),
+(2153, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user mr.carter.tech07@gmail.com (ID: 134)', '102.89.84.194', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-06-02 17:41:30'),
+(2154, 3, 'LOGIN', 'User logged in', '102.89.76.29', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-12 13:15:48'),
+(2155, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user mr.carter.tech07@gmail.com (ID: 134)', '102.89.76.29', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-12 13:17:48'),
+(2156, 3, 'LOGIN', 'User logged in', '102.89.76.29', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-12 15:03:06'),
+(2157, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user mr.carter.tech07@gmail.com (ID: 134)', '102.89.76.29', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-12 15:03:14'),
+(2159, 3, 'LOGIN', 'User logged in', '102.89.76.29', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-12 15:21:16'),
+(2160, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user mr.carter.tech07@gmail.com (ID: 134)', '102.89.76.29', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-12 15:21:38'),
+(2161, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.89.76.29', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-12 15:34:26'),
+(2162, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user mr.carter.tech07@gmail.com (ID: 134)', '102.89.76.29', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-12 15:34:41'),
+(2163, 3, 'LOGIN', 'User logged in', '102.89.76.29', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-12 19:19:22'),
+(2164, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user mr.carter.tech07@gmail.com (ID: 134)', '102.89.76.29', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-12 19:20:38'),
+(2165, 3, 'LOGIN', 'User logged in', '102.88.114.127', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-12 21:06:52'),
+(2166, 3, 'KYC_AUTO_VERIFIED', 'Auto-verified KYC for user 135 during account creation', '102.88.114.127', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-12 21:12:29'),
+(2168, 3, 'ADMIN_UPLOAD_PROFILE_PICTURE', 'Uploaded profile picture for user veograce@gmail.com (ID: 135)', '102.88.114.127', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-12 21:19:23'),
+(2169, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user veograce@gmail.com (ID: 135)', '102.88.114.127', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-12 21:19:37'),
+(2173, 3, 'LOGIN', 'User logged in', '102.88.114.127', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-12 22:59:24'),
+(2174, 3, 'ADMIN_UPLOAD_PROFILE_PICTURE', 'Uploaded profile picture for user veograce@gmail.com (ID: 135)', '102.88.114.127', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-12 23:00:23'),
+(2175, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user veograce@gmail.com (ID: 135)', '102.88.114.127', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-12 23:02:39'),
+(2176, 3, 'LOGIN', 'User logged in', '102.88.108.194', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-13 08:17:06'),
+(2177, 3, 'USER_DELETED', 'Deleted user: mr.carter.tech07@gmail.com (ID: 134)', '102.88.108.194', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-13 08:17:46'),
+(2178, 3, 'KYC_AUTO_VERIFIED', 'Auto-verified KYC for user 138 during account creation', '102.88.108.194', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-13 08:24:06'),
+(2180, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user mr.carter.tech07@gmail.com (ID: 138)', '102.88.108.194', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-13 08:24:48'),
+(2183, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.88.108.194', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-13 08:56:30'),
+(2184, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user mr.carter.tech07@gmail.com (ID: 138)', '102.88.108.194', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-13 08:58:11'),
+(2198, 3, 'LOGIN', 'User logged in', '102.93.9.118', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-21 16:11:00'),
+(2199, 3, 'LOGIN', 'User logged in', '102.89.68.49', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-21 16:58:29'),
+(2200, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user steveliu023@gmail.com (ID: 140)', '102.89.68.49', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-21 16:59:46'),
+(2201, 3, 'LOGIN', 'User logged in', '102.89.83.176', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-21 23:37:04'),
+(2202, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user mr.carter.tech07@gmail.com (ID: 138)', '102.89.83.176', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-21 23:37:15'),
+(2235, 3, 'LOGIN', 'User logged in', '102.89.83.37', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-25 19:22:25'),
+(2236, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user financemanege@gmail.com (ID: 143)', '102.88.108.204', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-06-25 19:41:07'),
+(2269, 3, 'LOGIN', 'User logged in', '102.88.108.84', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-05 12:45:31'),
+(2272, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user lichen6677788@gmail.com (ID: 144)', '102.88.108.84', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-05 13:23:18'),
+(2275, 3, 'LOGIN', 'User logged in', '102.88.108.84', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-05 15:14:55'),
+(2276, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user lichen6677788@gmail.com (ID: 144)', '102.88.108.84', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-05 15:18:32'),
+(2277, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.88.108.84', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-05 15:24:35'),
+(2278, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user steveliu023@gmail.com (ID: 140)', '102.88.108.84', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-05 15:25:26'),
+(2279, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.88.108.84', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-05 15:25:44'),
+(2280, 3, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction TXN6A4A52C36CC71 for user steveliu023@gmail.com. Amount changed from 6030 to 6030. Status changed from completed to failed. Date changed from 2026-07-05 12:49:07 to 2026-07-05 11:49:00', '102.88.108.84', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-05 15:26:52'),
+(2281, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user steveliu023@gmail.com (ID: 140)', '102.88.108.84', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-05 15:27:09'),
+(2282, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.88.108.84', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-05 15:27:27'),
+(2283, 3, 'ADMIN_DELETE_TRANSACTION', 'Deleted transaction TXN6A4A52C36CC71 for user steveliu023@gmail.com. Reason: Reversed', '102.88.108.84', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-05 15:27:53'),
+(2284, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user steveliu023@gmail.com (ID: 140)', '102.88.108.84', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-05 15:28:20'),
+(2288, 3, 'LOGIN', 'User logged in', '102.88.112.174', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-05 19:41:44'),
+(2289, 3, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction GEN-ACC138-20260705111825ad5256a4-150 for user lichen6677788@gmail.com. Amount changed from 38923.24 to 38923.24. Date changed from 2025-12-18 10:35:51 to 2024-12-18 09:35:00', '102.93.7.196', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-05 19:46:45'),
+(2290, 3, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction GEN-ACC138-20260705111825ad5256a4-149 for user lichen6677788@gmail.com. Amount changed from 49166.2 to 49166.2. Date changed from 2025-11-27 17:00:48 to 2024-11-27 16:00:00', '102.93.7.196', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-05 19:47:05'),
+(2291, 3, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction GEN-ACC138-20260705111825ad5256a4-148 for user lichen6677788@gmail.com. Amount changed from 0.56 to 0.56. Date changed from 2025-11-21 17:13:13 to 2024-10-21 16:13:00', '102.93.7.196', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-05 19:47:25'),
+(2292, 3, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction GEN-ACC138-20260705111825ad5256a4-147 for user lichen6677788@gmail.com. Amount changed from 829.39 to 829.39. Date changed from 2025-11-18 11:57:14 to 2024-11-19 10:57:00', '102.93.7.196', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-05 19:47:45'),
+(2293, 3, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction GEN-ACC138-20260705111825ad5256a4-112 for user lichen6677788@gmail.com. Amount changed from 16.1 to 16.1. Date changed from 2025-03-16 16:28:17 to 2024-03-15 15:28:00', '102.93.7.196', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-05 19:48:10'),
+(2294, 3, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction GEN-ACC138-20260705111825ad5256a4-001 for user lichen6677788@gmail.com. Amount changed from 68774.15 to 68774.15. Date changed from 2023-02-09 09:45:27 to 2022-12-22 08:45:00', '102.93.7.196', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-05 19:48:39'),
+(2295, 3, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction GEN-ACC138-20260705111825ad5256a4-146 for user lichen6677788@gmail.com. Amount changed from 0.5 to 0.5. Date changed from 2025-11-04 14:36:32 to 2024-11-04 13:36:00', '102.93.7.196', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-05 19:48:55'),
+(2296, 3, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction GEN-ACC138-20260705111825ad5256a4-145 for user lichen6677788@gmail.com. Amount changed from 0.52 to 0.52. Date changed from 2025-10-22 13:59:44 to 2024-11-14 12:59:00', '102.93.7.196', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-05 19:49:29'),
+(2302, 3, 'LOGIN', 'User logged in', '212.83.149.192', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-06 10:34:56'),
+(2303, 3, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction GEN-ACC138-20260705111825ad5256a4-144 for user lichen6677788@gmail.com. Amount changed from 0.51 to 0.51. Date changed from 2025-10-09 13:41:00 to 2023-10-09 12:41:00', '212.83.149.192', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-06 10:41:54'),
+(2314, 3, 'LOGIN', 'User logged in', '212.83.149.192', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-06 11:59:53'),
+(2315, 3, 'USER_DELETED', 'Deleted user: keanureeves124690@gmali.com (ID: 145)', '212.83.149.192', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-06 12:00:13'),
+(2316, 3, 'ADMIN_BULK_DELETE_TRANSACTIONS', 'Deleted 100 transaction(s). Refs: GEN-ACC138-20260705111825ad5256a4-050, GEN-ACC138-20260705111825ad5256a4-051, GEN-ACC138-20260705111825ad5256a4-052, GEN-ACC138-20260705111825ad5256a4-053, GEN-ACC138-20260705111825ad5256a4-054, GEN-ACC138-20260705111825ad5256a4-055, GEN-ACC138-20260705111825ad5256a4-056, GEN-ACC138-20260705111825ad5256a4-057, GEN-ACC138-20260705111825ad5256a4-058, GEN-ACC138-20260705111825ad5256a4-059.... Reason: dd', '212.83.149.192', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-06 12:24:04'),
+(2317, 3, 'ADMIN_BULK_DELETE_TRANSACTIONS', 'Deleted 50 transaction(s). Refs: GEN-ACC138-20260705111825ad5256a4-001, GEN-ACC138-20260705111825ad5256a4-002, GEN-ACC138-20260705111825ad5256a4-003, GEN-ACC138-20260705111825ad5256a4-004, GEN-ACC138-20260705111825ad5256a4-005, GEN-ACC138-20260705111825ad5256a4-006, GEN-ACC138-20260705111825ad5256a4-007, GEN-ACC138-20260705111825ad5256a4-008, GEN-ACC138-20260705111825ad5256a4-009, GEN-ACC138-20260705111825ad5256a4-010.... Reason: ss', '212.83.149.192', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-06 12:24:11'),
+(2319, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user lichen6677788@gmail.com (ID: 144)', '212.83.149.192', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-06 12:35:00'),
+(2320, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '212.83.149.192', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-06 12:35:19'),
+(2321, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user lichen6677788@gmail.com (ID: 144)', '212.83.149.192', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-06 12:37:50'),
+(2322, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '212.83.149.192', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-06 12:38:14'),
+(2323, 3, 'ADMIN_SET_TRANSACTION_MODE', 'Set transaction mode to \'force_failed\' for user keanureeves124690@gmail.com (ID: 146)', '212.83.149.192', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-06 12:38:46'),
+(2324, 3, 'ADMIN_SET_TRANSACTION_MODE', 'Set transaction mode to \'normal\' for user keanureeves124690@gmail.com (ID: 146)', '212.83.149.192', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-06 12:38:56'),
+(2326, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user keanureeves124690@gmail.com (ID: 146)', '212.83.149.192', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-06 12:40:52'),
+(2344, 3, 'LOGIN', 'User logged in', '212.83.149.192', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-06 21:11:09'),
+(2345, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user mr.carter.tech07@gmail.com (ID: 138)', '212.83.149.192', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-06 21:14:50'),
+(2346, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '212.83.149.192', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-06 21:18:13'),
+(2347, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user mr.carter.tech07@gmail.com (ID: 138)', '212.83.149.192', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-06 21:19:17'),
+(2349, 3, 'LOGIN', 'User logged in', '102.93.7.224', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-06 23:28:25'),
+(2350, 3, 'ADMIN_BULK_DELETE_TRANSACTIONS', 'Deleted 100 transaction(s). Refs: GEN-ACC130-2026061304580332cb0913-051, GEN-ACC130-2026061304580332cb0913-052, GEN-ACC130-2026061304580332cb0913-053, GEN-ACC130-2026061304580332cb0913-054, GEN-ACC130-2026061304580332cb0913-055, GEN-ACC130-2026061304580332cb0913-056, GEN-ACC130-2026061304580332cb0913-057, GEN-ACC130-2026061304580332cb0913-058, GEN-ACC130-2026061304580332cb0913-059, GEN-ACC130-2026061304580332cb0913-060.... Reason: sss', '102.93.7.224', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-06 23:37:05'),
+(2351, 3, 'ADMIN_BULK_DELETE_TRANSACTIONS', 'Deleted 50 transaction(s). Refs: GEN-ACC130-2026061304580332cb0913-001, GEN-ACC130-2026061304580332cb0913-002, GEN-ACC130-2026061304580332cb0913-003, GEN-ACC130-2026061304580332cb0913-004, GEN-ACC130-2026061304580332cb0913-005, GEN-ACC130-2026061304580332cb0913-006, GEN-ACC130-2026061304580332cb0913-007, GEN-ACC130-2026061304580332cb0913-008, GEN-ACC130-2026061304580332cb0913-009, GEN-ACC130-2026061304580332cb0913-010.... Reason: ddd', '102.93.7.224', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-06 23:37:12'),
+(2352, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user mr.carter.tech07@gmail.com (ID: 138)', '102.93.7.224', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-07 00:11:27'),
+(2353, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.93.7.224', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-07 00:12:00'),
+(2361, 3, 'LOGIN', 'User logged in', '102.93.10.188', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-07 08:58:43'),
+(2362, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user mr.carter.tech07@gmail.com (ID: 138)', '102.93.10.188', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-07 09:00:55'),
+(2363, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.93.10.188', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-07 09:06:36'),
+(2364, 3, 'ADMIN_EDIT_TRANSACTION', 'Edited transaction ADM20260707051645574 for user divinityintervention40@gmail.com. Amount changed from 550570.67 to 550570.67. Date changed from 2020-06-05 10:14:00 to 2020-06-05 09:14:00', '102.93.10.188', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-07 09:22:51'),
+(2365, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user divinityintervention40@gmail.com (ID: 147)', '102.93.10.188', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-07 09:23:10'),
+(2366, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.93.10.188', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-07 09:23:25'),
+(2367, 3, 'ADMIN_SET_TRANSACTION_MODE', 'Set transaction mode to \'force_failed\' for user divinityintervention40@gmail.com (ID: 147)', '102.93.10.188', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-07 09:24:08'),
+(2368, 3, 'LOGOUT', 'User logged out', '102.93.10.188', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-07 09:24:32'),
+(2369, 3, 'LOGIN', 'User logged in', '102.93.10.188', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-07 09:27:28'),
+(2370, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user mr.carter.tech07@gmail.com (ID: 138)', '102.93.10.188', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-07 09:27:39'),
+(2373, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.93.10.188', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-07 09:30:56'),
+(2374, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user mr.carter.tech07@gmail.com (ID: 138)', '102.93.10.188', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '2026-07-07 09:31:34'),
+(2390, 3, 'LOGIN', 'User logged in', '102.88.113.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '2026-07-11 00:02:34'),
+(2391, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user mr.carter.tech07@gmail.com (ID: 138)', '102.88.113.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '2026-07-11 00:02:53'),
+(2393, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.88.113.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '2026-07-11 00:03:20'),
+(2394, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user mr.carter.tech07@gmail.com (ID: 138)', '102.88.113.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '2026-07-11 00:06:41'),
+(2395, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.88.113.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '2026-07-11 00:19:16'),
+(2396, 3, 'ADMIN_USER_PASSWORD_RESET', 'Admin reset password for user: mr.carter.tech07@gmail.com (ID: 138)', '102.88.113.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '2026-07-11 00:20:24'),
+(2457, 3, 'LOGIN', 'User logged in', '102.88.113.241', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 17:01:36'),
+(2458, 3, 'USER_DELETED', 'Deleted user: abdultredar2747@gmail.com (ID: 149)', '102.88.113.241', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 17:01:56'),
+(2459, 3, 'USER_DELETED', 'Deleted user: adamabdulrahman629@gmail.com (ID: 148)', '102.88.113.241', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 17:02:03'),
+(2460, 3, 'ADMIN_DELETED', 'Deleted administrator: admin user (support@saveridgecapital.com)', '102.88.113.241', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 17:03:09'),
+(2461, 3, 'ADMIN_PASSWORD_UPDATED', 'Updated password for admin@demo.com', '102.88.113.241', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 17:03:32'),
+(2462, 3, 'USER_DELETED', 'Deleted user: paulwillz45@gmail.com (ID: 142)', '102.88.113.241', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 17:04:22'),
+(2463, 3, 'USER_DELETED', 'Deleted user: paul.stromae1985@gmail.com (ID: 141)', '102.88.113.241', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 17:04:26'),
+(2464, 3, 'USER_DELETED', 'Deleted user: omezirizion@gmail.com (ID: 139)', '102.88.113.241', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 17:04:30'),
+(2465, 3, 'LOGIN', 'User logged in', '102.88.113.241', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 18:48:45'),
+(2466, 3, 'KYC_AUTO_VERIFIED', 'Auto-verified KYC for user 150 during account creation', '102.88.113.241', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 18:52:31'),
+(2467, 150, 'ACCOUNT_CREATED', 'Created checking account: 202630142630', '102.88.113.241', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 18:52:31'),
+(2468, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user ElonmuskEthereumportfolio@outlook.com (ID: 150)', '102.88.113.241', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 18:53:24'),
+(2469, 150, 'LOGIN_PIN_UPDATED', 'User updated their login PIN', '102.88.113.241', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 18:53:52'),
+(2470, 150, 'TRANSFER_PIN_UPDATED', 'User updated their transfer PIN', '102.88.113.241', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 18:54:06'),
+(2471, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.88.113.241', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 18:54:40'),
+(2472, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user ElonmuskEthereumportfolio@outlook.com (ID: 150)', '102.88.113.241', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 18:56:27'),
+(2473, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.88.113.241', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 18:56:54'),
+(2474, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user ElonmuskEthereumportfolio@outlook.com (ID: 150)', '102.88.113.241', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 18:57:55'),
+(2475, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.88.113.241', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 18:58:17'),
+(2476, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user ElonmuskEthereumportfolio@outlook.com (ID: 150)', '102.88.113.241', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 18:59:13'),
+(2477, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.88.113.241', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 18:59:38'),
+(2478, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user ElonmuskEthereumportfolio@outlook.com (ID: 150)', '102.88.113.241', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 19:01:54'),
+(2479, 150, 'LOGIN', 'User logged in', '102.89.82.241', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Mobile/15E148 Safari/604.1', '2026-08-12 19:12:00'),
+(2480, 150, 'LOGIN', 'User logged in', '151.240.91.169', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 22:28:32'),
+(2481, 150, 'transfer_funds', 'Transferred $10,000.00 to Han (Fee: $50.00)', '151.240.91.169', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 22:32:53'),
+(2482, 150, 'LOGIN', 'User logged in', '50.54.168.36', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15', '2026-08-12 22:35:10'),
+(2483, 3, 'LOGIN', 'User logged in', '51.158.254.156', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 23:06:54'),
+(2484, 3, 'LOGOUT', 'User logged out', '51.158.254.156', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 23:09:12'),
+(2485, 3, 'LOGIN', 'User logged in', '51.158.254.156', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 23:09:39'),
+(2486, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user ElonmuskEthereumportfolio@outlook.com (ID: 150)', '51.158.254.156', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 23:11:10'),
+(2487, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '51.158.254.156', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 23:11:34'),
+(2488, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user ElonmuskEthereumportfolio@outlook.com (ID: 150)', '51.158.254.156', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 23:13:42'),
+(2489, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '51.158.254.156', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 23:14:06'),
+(2490, 3, 'ADMIN_TOGGLE_IMF', 'Set imf_required=1 for user ElonmuskEthereumportfolio@outlook.com (ID: 150)', '51.158.254.156', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-12 23:14:40'),
+(2491, 150, 'LOGIN', 'User logged in', '50.54.168.36', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15', '2026-08-13 00:23:37'),
+(2492, 150, 'LOGIN', 'User logged in', '50.54.168.36', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15', '2026-08-13 15:46:16'),
+(2493, 150, 'LOGIN', 'User logged in', '50.54.168.36', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15', '2026-08-13 18:34:22'),
+(2495, 150, 'LOGIN', 'User logged in', '2600:100f:b0e9:e495:bdb5:17f2:d2a3:64ca', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15', '2026-08-17 01:42:58'),
+(2496, 150, 'LOGIN', 'User logged in', '2600:100f:a020:f7d9:78e1:ccf:23cc:919a', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15', '2026-08-17 20:44:21'),
+(2497, 150, 'LOGIN', 'User logged in', '75.253.250.248', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15', '2026-08-21 16:18:37'),
+(2498, 3, 'LOGIN', 'User logged in', '102.89.69.110', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-24 21:44:05'),
+(2499, 3, 'USER_DELETED', 'Deleted user: mr.carter.tech07@gmail.com (ID: 138)', '102.89.69.110', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-24 21:45:06'),
+(2500, 3, 'USER_DELETED', 'Deleted user: lichen6677788@gmail.com (ID: 144)', '102.89.69.110', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-24 21:48:27'),
+(2501, 3, 'USER_DELETED', 'Deleted user: financemanege@gmail.com (ID: 143)', '102.89.69.110', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-24 21:48:39'),
+(2502, 3, 'USER_DELETED', 'Deleted user: veograce@gmail.com (ID: 135)', '102.89.69.110', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-24 21:48:43'),
+(2503, 3, 'USER_DELETED', 'Deleted user: steveliu023@gmail.com (ID: 140)', '102.89.69.110', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-24 21:48:47'),
+(2504, 3, 'USER_DELETED', 'Deleted user: keanureeves124690@gmail.com (ID: 146)', '102.89.69.110', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-24 21:48:51'),
+(2505, 3, 'USER_DELETED', 'Deleted user: divinityintervention40@gmail.com (ID: 147)', '102.89.69.110', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-24 21:48:55'),
+(2506, 3, 'USER_DELETED', 'Deleted user: waltazite@gmail.com (ID: 132)', '102.89.69.110', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-24 21:49:00'),
+(2507, 3, 'USER_DELETED', 'Deleted user: hkr.fred@outlook.com (ID: 131)', '102.89.69.110', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-24 21:49:04'),
+(2508, 3, 'ADMIN_LOGIN_AS_USER', 'Logged in as user ElonmuskEthereumportfolio@outlook.com (ID: 150)', '102.89.69.110', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-24 21:49:12'),
+(2509, 3, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account', '102.89.69.110', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '2026-08-24 21:49:33');
 
 -- --------------------------------------------------------
 
@@ -1052,16 +777,16 @@ CREATE TABLE `admin_logs` (
 --
 
 INSERT INTO `admin_logs` (`id`, `admin_id`, `user_id`, `action`, `description`, `metadata`, `ip_address`, `created_at`) VALUES
-(248, 3, 131, 'balance_adjustment', 'Created credit transaction of USD 4230000 for user hkr.fred@outlook.com (ID: 131) - Status: completed', NULL, NULL, '2026-05-19 15:38:40'),
-(249, 3, 131, 'balance_adjustment', 'Created debit transaction of USD 4600 for user hkr.fred@outlook.com (ID: 131) - Status: completed', NULL, NULL, '2026-05-19 16:33:18'),
-(250, 3, 131, 'balance_adjustment', 'Created debit transaction of USD 35700 for user hkr.fred@outlook.com (ID: 131) - Status: completed', NULL, NULL, '2026-05-19 16:35:39'),
-(251, 3, 131, 'balance_adjustment', 'Created debit transaction of USD 8492 for user hkr.fred@outlook.com (ID: 131) - Status: completed', NULL, NULL, '2026-05-19 16:37:13'),
-(252, 3, 132, 'balance_adjustment', 'Created credit transaction of USD 500900 for user waltazite@gmail.com (ID: 132) - Status: completed', NULL, NULL, '2026-05-28 21:28:39'),
-(253, 3, 132, 'status_change', 'Changed user status from \'pending\' to \'active\'', NULL, NULL, '2026-05-28 21:28:58'),
-(254, 3, 132, 'kyc_status_change', 'Changed KYC status from \'pending\' to \'verified\'', NULL, NULL, '2026-05-28 21:55:26'),
-(255, 3, 133, 'balance_adjustment', 'Created credit transaction of CAD 500 for user mr.carter.tech07@gmail.com (ID: 133) - Status: completed', NULL, NULL, '2026-05-30 22:53:21'),
-(256, 3, 134, 'balance_adjustment', 'Created credit transaction of CAD 600 for user mr.carter.tech07@gmail.com (ID: 134) - Status: completed', NULL, NULL, '2026-05-31 01:26:37'),
-(257, 60, 135, 'balance_adjustment', 'Created credit transaction of CAD 20000 for user simplyhiredremotejobs@gmail.com (ID: 135) - Status: completed', NULL, NULL, '2026-05-31 23:01:17');
+(283, 3, 140, 'status_change', 'Changed user status from \'active\' to \'blocked\'', NULL, NULL, '2026-08-12 17:02:54'),
+(284, 3, 144, 'status_change', 'Changed user status from \'active\' to \'blocked\'', NULL, NULL, '2026-08-12 17:03:50'),
+(285, 3, 143, 'status_change', 'Changed user status from \'active\' to \'blocked\'', NULL, NULL, '2026-08-12 17:04:05'),
+(286, 3, 135, 'status_change', 'Changed user status from \'active\' to \'blocked\'', NULL, NULL, '2026-08-12 17:04:43'),
+(287, 3, 132, 'status_change', 'Changed user status from \'active\' to \'blocked\'', NULL, NULL, '2026-08-12 17:04:59'),
+(288, 3, NULL, 'USER_CREATED', 'Created user: ElonmuskEthereumportfolio@outlook.com', '{\"user_id\":\"150\"}', '102.88.113.241', '2026-08-12 18:52:31'),
+(289, 3, 150, 'balance_adjustment', 'Created debit transaction of USD 11900000 (display 11900000 USD) for user ElonmuskEthereumportfolio@outlook.com (ID: 150) - Status: completed', NULL, NULL, '2026-08-12 18:56:15'),
+(290, 3, 150, 'balance_adjustment', 'Created credit transaction of USD 11250000 (display 11250000 USD) for user ElonmuskEthereumportfolio@outlook.com (ID: 150) - Status: completed', NULL, NULL, '2026-08-12 18:57:47'),
+(291, 3, 150, 'balance_adjustment', 'Created credit transaction of USD 670000 (display 670000 USD) for user ElonmuskEthereumportfolio@outlook.com (ID: 150) - Status: completed', NULL, NULL, '2026-08-12 18:59:03'),
+(292, 3, 150, 'balance_adjustment', 'Created credit transaction of USD 100000 (display 100000 USD) for user ElonmuskEthereumportfolio@outlook.com (ID: 150) - Status: completed', NULL, NULL, '2026-08-24 21:46:24');
 
 -- --------------------------------------------------------
 
@@ -1235,6 +960,7 @@ INSERT INTO `banks` (`id`, `name`, `code`, `region`, `country`, `swift_code`, `i
 (219, 'Bank of Papua New Guinea', 'BPNG', 'oceania', 'Papua New Guinea', 'BPNGPGPM', 1, NULL, '2025-11-06 18:25:10', '2025-11-06 18:25:10'),
 (220, 'Bank South Pacific PNG', 'BSP', 'oceania', 'Papua New Guinea', 'BSPPPGPM', 1, NULL, '2025-11-06 18:25:10', '2025-11-06 18:25:10'),
 (221, 'Emirates NBD', 'ENBD', 'middle-east', 'United Arab Emirates', 'EBILAEAD', 1, NULL, '2025-11-06 18:25:10', '2025-11-06 18:25:10'),
+(222, 'First Abu Dhabi Bank', 'FAB', 'middle-east', 'United Arab Emirates', 'NBADAEAA', 1, NULL, '2025-11-06 18:25:10', '2025-11-06 18:25:10'),
 (223, 'Abu Dhabi Commercial Bank', 'ADCB', 'middle-east', 'United Arab Emirates', 'ADCBAEAA', 1, NULL, '2025-11-06 18:25:10', '2025-11-06 18:25:10'),
 (224, 'Dubai Islamic Bank', 'DIB', 'middle-east', 'United Arab Emirates', 'DUIBAEAD', 1, NULL, '2025-11-06 18:25:10', '2025-11-06 18:25:10'),
 (225, 'Mashreq Bank', 'MASHREQ', 'middle-east', 'United Arab Emirates', 'BOMLAEAD', 1, NULL, '2025-11-06 18:25:10', '2025-11-06 18:25:10'),
@@ -1286,18 +1012,7 @@ INSERT INTO `banks` (`id`, `name`, `code`, `region`, `country`, `swift_code`, `i
 (271, 'Ahli Bank', NULL, 'middle-east', 'Oman', '', 1, 60, '2026-02-24 13:47:57', '2026-02-24 13:47:57'),
 (272, 'Oman Development Bank / Oman Housing Bank', NULL, 'middle-east', 'Oman', '', 1, 60, '2026-02-24 13:48:31', '2026-02-24 13:48:31'),
 (273, 'Bank Nizwa', NULL, 'middle-east', 'Oman', '', 1, 60, '2026-02-24 13:49:05', '2026-02-24 13:49:05'),
-(274, 'Standard Chartered Bank', NULL, 'middle-east', 'Oman', '', 1, 60, '2026-02-24 13:49:40', '2026-02-24 13:49:40'),
-(275, 'First Abu Dhabi Bank (FAB)', NULL, 'middle-east', 'United Arab Emirates', 'NBADAEAA', 1, 60, '2026-05-31 23:29:34', '2026-05-31 23:29:34'),
-(277, 'Commercial Bank of Dubai (CBD)', NULL, 'middle-east', 'United Arab Emirates', 'CBDUAEAD', 1, 60, '2026-05-31 23:32:49', '2026-05-31 23:32:49'),
-(278, 'RAKBANK', NULL, 'middle-east', 'United Arab Emirates', 'NRAKAEAK', 1, 60, '2026-05-31 23:34:02', '2026-05-31 23:34:02'),
-(279, 'HSBC Bank Middle East', NULL, 'middle-east', 'United Arab Emirates', 'BBMEAEAD', 1, 60, '2026-05-31 23:34:45', '2026-05-31 23:34:45'),
-(280, 'Sharjah Islamic Bank', NULL, 'middle-east', 'United Arab Emirates', 'NBSHAEAS', 1, 60, '2026-05-31 23:35:19', '2026-05-31 23:35:19'),
-(281, 'United Arab Bank (UAB)', NULL, 'middle-east', 'United Arab Emirates', 'UNBEAEAA', 1, 60, '2026-05-31 23:35:56', '2026-05-31 23:35:56'),
-(282, 'Abu Dhabi Islamic Bank (ADIB)', NULL, 'middle-east', 'United Arab Emirates', 'ABDIAEAD', 1, 60, '2026-05-31 23:37:57', '2026-05-31 23:37:57'),
-(283, 'Al Hilal Bank', NULL, 'middle-east', 'United Arab Emirates', 'HLALAEAA', 1, 60, '2026-05-31 23:39:01', '2026-05-31 23:39:01'),
-(284, 'Al Maryah Community Bank', NULL, 'middle-east', 'United Arab Emirates', 'E097AEXX', 1, 60, '2026-05-31 23:39:59', '2026-05-31 23:39:59'),
-(285, 'Emirates Islamic', NULL, 'middle-east', 'United Arab Emirates', 'MEBLAEAD', 1, 60, '2026-05-31 23:41:13', '2026-05-31 23:41:13'),
-(286, 'Ajman Bank', NULL, 'middle-east', 'United Arab Emirates', 'AJMNAEAJ', 1, 60, '2026-05-31 23:42:30', '2026-05-31 23:42:30');
+(274, 'Standard Chartered Bank', NULL, 'middle-east', 'Oman', '', 1, 60, '2026-02-24 13:49:40', '2026-02-24 13:49:40');
 
 -- --------------------------------------------------------
 
@@ -1568,14 +1283,6 @@ CREATE TABLE `email_verification_tokens` (
   `created_at` timestamp NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Dumping data for table `email_verification_tokens`
---
-
-INSERT INTO `email_verification_tokens` (`id`, `user_id`, `token`, `expires_at`, `used`, `created_at`) VALUES
-(136, 134, '30b8fffccd79fd4395af94b4078d07a40bdf07293aeceaec8579fe7d53b84496', '2026-06-01 01:22:17', 1, '2026-05-31 01:22:17'),
-(137, 135, '28fa96d91234c03c487c6ded6418cc3418bc53c4db8bf6ab60cf0ed955dd006b', '2026-06-01 22:38:33', 1, '2026-05-31 22:38:33');
-
 -- --------------------------------------------------------
 
 --
@@ -1623,7 +1330,7 @@ INSERT INTO `exchange_rates` (`id`, `from_currency`, `to_currency`, `rate`, `upd
 (30, 'USD', 'BWP', 13.4877, '2026-02-04 23:47:49'),
 (31, 'USD', 'BYN', 2.8617, '2026-02-04 23:47:49'),
 (32, 'USD', 'BZD', 2.0000, '2026-02-04 23:47:49'),
-(33, 'USD', 'CAD', 1.3651, '2026-02-04 23:47:49'),
+(33, 'USD', 'CAD', 1.3978, '2026-06-12 13:17:24'),
 (34, 'USD', 'CDF', 2199.2680, '2026-02-04 23:47:49'),
 (35, 'USD', 'CHF', 0.7764, '2026-02-04 23:47:49'),
 (36, 'USD', 'CLF', 0.0219, '2026-02-04 23:47:49'),
@@ -1732,7 +1439,7 @@ INSERT INTO `exchange_rates` (`id`, `from_currency`, `to_currency`, `rate`, `upd
 (141, 'USD', 'STN', 20.7471, '2026-02-04 23:47:49'),
 (142, 'USD', 'SYP', 112.3150, '2026-02-04 23:47:49'),
 (143, 'USD', 'SZL', 15.9641, '2026-02-04 23:47:49'),
-(144, 'USD', 'THB', 31.5765, '2026-02-04 23:47:49'),
+(144, 'USD', 'THB', 32.9390, '2026-06-23 12:08:08'),
 (145, 'USD', 'TJS', 9.3272, '2026-02-04 23:47:49'),
 (146, 'USD', 'TMT', 3.5000, '2026-02-04 23:47:49'),
 (147, 'USD', 'TND', 2.8593, '2026-02-04 23:47:49'),
@@ -1763,16 +1470,10 @@ INSERT INTO `exchange_rates` (`id`, `from_currency`, `to_currency`, `rate`, `upd
 (358, 'USD', 'ZWG', 25.6451, '2026-02-04 23:47:49'),
 (413, 'GBP', 'NGN', 1805.1732, '2026-03-19 09:56:31'),
 (414, 'GBP', 'USD', 1.3408, '2026-04-13 02:54:14'),
-(420, 'CAD', 'USD', 0.7251, '2026-05-31 02:47:13'),
+(420, 'CAD', 'USD', 0.7154, '2026-06-12 13:17:49'),
 (421, 'CAD', 'NGN', 1010.5161, '2026-05-30 22:07:24'),
-(422, 'AED', 'CAD', 0.3767, '2026-06-02 22:23:28'),
-(423, 'CAD', 'AED', 2.6549, '2026-06-02 22:24:41'),
-(425, 'GBP', 'CAD', 1.8549, '2026-05-31 22:16:32'),
-(426, 'CAD', 'GBP', 0.5391, '2026-05-31 22:17:32'),
-(429, 'AUD', 'CAD', 0.9912, '2026-06-02 22:43:17'),
-(430, 'CAD', 'JPY', 115.3522, '2026-06-02 23:10:11'),
-(431, 'CAD', 'AUD', 1.0089, '2026-06-02 23:10:24'),
-(432, 'CAD', 'HKD', 5.6646, '2026-06-02 23:13:03');
+(422, 'AED', 'CAD', 0.3755, '2026-05-31 01:46:08'),
+(423, 'CAD', 'AED', 2.6630, '2026-05-31 02:46:19');
 
 -- --------------------------------------------------------
 
@@ -2021,7 +1722,7 @@ CREATE TABLE `kyc_verifications` (
 --
 
 INSERT INTO `kyc_verifications` (`id`, `user_id`, `account_type`, `full_legal_name`, `date_of_birth`, `ssn`, `residential_address`, `residential_city`, `residential_state`, `residential_country`, `residential_zip`, `id_type`, `id_number`, `id_issued_date`, `id_expiry_date`, `id_issued_state`, `id_issued_country`, `id_document_front`, `id_document_back`, `proof_of_address`, `signature_image`, `business_name`, `business_address`, `business_city`, `business_state`, `business_country`, `business_zip`, `ein`, `business_formation_doc`, `source_of_funds`, `account_purpose`, `extra_fields`, `status`, `verified_by`, `verified_at`, `rejection_reason`, `admin_notes`, `submitted_at`, `updated_at`) VALUES
-(36, 134, 'individual', 'carter tech', '1987-06-25', 'S0F2RmswT3RZcDI5dzdKN2t1NVo5UT09OjoOyQv7B9h/pNIpZdpaFijb', '177 Ago Palace Way,, Lagos , Lagos', 'Oshodi Isolo', 'Lagos', 'AE', '110224', 'drivers_license', '2455252', '2026-05-14', '2026-05-29', 'Lagos', 'Canada', 'kyc/6a1b91cb92388_1780191691_7HRYTw_3KdHHFaGStmHl9pqQEfPrA_sd.jpeg', 'kyc/6a1b91cb92625_1780191691_7HRYTw_3KdHHFaGStmHl9pqQEfPrA_sd.jpeg', 'kyc/6a1b91cb92848_1780191691_7HRYTw_3KdHHFaGStmHl9pqQEfPrA_sd.jpeg', 'kyc/6a1b91cb92a5f_1780191691_7HRYTw_3KdHHFaGStmHl9pqQEfPrA_sd.jpeg', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'weed', 'weed', NULL, 'verified', 3, '2026-05-31 01:42:15', NULL, '', '2026-05-31 01:41:31', '2026-05-31 01:42:15');
+(44, 150, 'individual', 'Sheehy Marion Elon Investment Fund', '1988-11-23', NULL, '2560 W Oak Ridge Rd, Orlando, FL 32809, United States', 'Orlando', 'florida', 'United States', '110224', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'verified', 3, '2026-08-12 18:52:31', NULL, 'Account verified by admin during user creation - no documents required', '2026-08-12 18:52:31', '2026-08-12 18:52:31');
 
 -- --------------------------------------------------------
 
@@ -2276,7 +1977,57 @@ INSERT INTO `login_attempts` (`id`, `email`, `ip_address`, `attempted_at`) VALUE
 (261, 'mingxiayuen@gmail.com', '102.90.45.35', '2026-04-30 10:12:49'),
 (262, 'Mingxiayuen@gmail.com', '102.90.45.35', '2026-04-30 10:14:51'),
 (263, 'Mingxiayuen@gmail.com', '102.90.45.35', '2026-04-30 10:20:50'),
-(264, 'rjsxgyofzKi@zolon.store', '46.28.65.4', '2026-06-01 20:45:29');
+(264, 'Mr.carter.tech07@gmail.com', '102.89.68.42', '2026-06-25 18:43:13'),
+(265, 'paul.stromae1985@gmail.com', '105.117.23.45', '2026-06-25 23:06:35'),
+(266, 'financemanege@gmail.com', '2607:fb91:8b24:4be0:ad4:1e51:4e0b:2294', '2026-06-26 00:02:33'),
+(267, 'financemanege@gmail.com', '2607:fb91:8b24:4be0:ad4:1e51:4e0b:2294', '2026-06-26 00:04:04'),
+(268, 'financemanege@gmail.com', '2607:fb91:8b24:4be0:ad4:1e51:4e0b:2294', '2026-06-26 00:05:06'),
+(269, 'lichen6677788@gmail.com', '105.118.3.150', '2026-07-06 09:37:15'),
+(270, 'keanureeves124690@gmail.com', '102.88.113.35', '2026-07-06 12:55:46'),
+(271, 'keanureeves124690@gmail.com', '102.88.113.35', '2026-07-06 12:56:05'),
+(272, 'therenwicks1@hotmail.com', '82.132.212.78', '2026-07-06 19:40:16'),
+(273, 'therenwicks3@hotmail.com', '82.132.212.78', '2026-07-06 19:42:42'),
+(274, 'Keanureeves124690@gmail.com', '2001:8004:c82:9b65:be94:2887:1ddb:6419', '2026-07-07 06:31:18'),
+(275, 'KeanuReeves@gmail.com', '82.132.212.158', '2026-07-07 07:40:06'),
+(276, 'KeanuReeves@gmail.com', '82.132.212.158', '2026-07-07 07:42:17'),
+(277, 'KeanuReeves@gmail.com', '82.132.212.158', '2026-07-07 07:44:21'),
+(278, 'Keanureaves@gmail.com', '82.132.212.158', '2026-07-07 07:49:30'),
+(279, 'keanureeves12469@gmail.com', '82.132.212.158', '2026-07-07 08:00:08'),
+(280, 'keanureeves12469@gmail.com', '82.132.212.158', '2026-07-07 08:00:08'),
+(281, 'keanureeves12469@gmail.com', '82.132.212.158', '2026-07-07 08:01:55'),
+(282, 'divinityintervention40@gmail.com', '2600:1012:b358:448f:c139:b0f6:584d:cf25', '2026-07-07 09:47:04'),
+(283, 'keanureeves124690@gmail.com', '82.132.212.111', '2026-07-07 16:33:27'),
+(284, 'keanureeves124690@gmail.com', '82.132.212.111', '2026-07-07 16:45:08'),
+(285, 'keanureeves124690@gmail.com', '82.132.212.111', '2026-07-07 17:25:45'),
+(286, 'keanureeves124690@gmail.com', '82.132.212.111', '2026-07-07 17:46:28'),
+(287, 'keanureeves124690@gmail.com', '82.132.212.111', '2026-07-07 17:49:17'),
+(288, 'lichen6677788@gmail.com', '105.118.5.5', '2026-07-11 11:08:08'),
+(289, 'Mr.carter.tech07@gmail.com', '102.88.55.71', '2026-07-12 12:38:36'),
+(290, 'Mr.carter.tech07@gmail.com', '102.88.55.71', '2026-07-12 12:39:34'),
+(291, 'Mr.carter.tech07@gmail.com', '102.88.55.71', '2026-07-12 13:15:02'),
+(292, 'mr.carter.tech07@gmail.com', '102.93.10.22', '2026-07-12 15:15:16'),
+(294, 'mr.carter.tech07@gmail.com', '102.93.10.22', '2026-07-12 18:08:04'),
+(295, 'mr.carter.tech07@gmail.com', '102.93.10.22', '2026-07-12 18:08:08'),
+(296, 'Mr.carter.tech07@gmail.com', '197.211.53.92', '2026-07-14 15:04:47'),
+(297, 'Mr.carter.tech07@gmail.com', '197.211.53.92', '2026-07-14 15:05:38'),
+(298, 'Mrcartertech07@gmail.com', '197.211.53.92', '2026-07-14 15:06:31'),
+(299, 'Mr.carter.tech07@gmail.com', '197.211.53.92', '2026-07-14 15:38:23'),
+(300, 'Mr.carter.tech07@gmail.com', '105.127.14.245', '2026-07-15 14:18:46'),
+(301, 'adamabdulrahman629@gmail.com', '102.91.92.33', '2026-07-15 19:32:58'),
+(302, 'keanureeves123690@gmail.com', '102.93.9.94', '2026-07-15 20:23:47'),
+(303, 'adamabdulrahman629@gmail.com', '102.92.24.50', '2026-07-16 13:51:03'),
+(304, 'lichen6677788@gmail.comi', '105.118.5.114', '2026-07-17 16:30:02'),
+(305, 'financemanege@gmail.com', '2601:541:300:8ab0:5807:96b5:ea29:6926', '2026-07-18 22:02:30'),
+(306, 'financemanege@gmail.com', '2601:541:300:8ab0:5807:96b5:ea29:6926', '2026-07-18 22:05:13'),
+(307, 'keanureeve061o@gmail.com', '102.88.113.255', '2026-07-27 21:20:10'),
+(308, 'lichen6677788@gmail.com', '197.211.63.175', '2026-08-08 02:09:18'),
+(309, 'lichen6677788@gmail.com', '197.211.63.175', '2026-08-08 02:10:44'),
+(310, 'lichen6677788@gmail.com', '197.211.63.175', '2026-08-08 02:12:50'),
+(311, 'lichen6677788@gmail.com', '105.112.105.150', '2026-08-09 15:53:56'),
+(312, 'lichen6677788@gmail.com', '105.112.105.150', '2026-08-09 15:54:37'),
+(313, 'ElonmuskEthereumportfolio@outlook.com', '50.54.168.36', '2026-08-12 22:31:05'),
+(314, 'hkr.fred@outlook.com', '172.59.184.55', '2026-08-16 23:40:27'),
+(315, 'hkr.fred@outlook.com', '172.59.184.55', '2026-08-16 23:41:46');
 
 -- --------------------------------------------------------
 
@@ -2301,7 +2052,7 @@ CREATE TABLE `notifications` (
 --
 
 INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `type`, `is_read`, `link`, `metadata`, `created_at`) VALUES
-(154, 134, 'KYC Verification Approved', 'Your KYC verification has been approved. You now have full access to all banking services.', 'success', 0, '/profile/kyc', NULL, '2026-05-31 01:42:15');
+(162, 150, 'KYC Verification Approved', 'Your KYC verification has been approved. You now have full access to all banking services.', 'success', 0, '/profile/kyc', NULL, '2026-08-12 18:52:31');
 
 -- --------------------------------------------------------
 
@@ -2340,7 +2091,10 @@ CREATE TABLE `schema_migrations` (
 --
 
 INSERT INTO `schema_migrations` (`id`, `version`, `migration_name`, `migration_file`, `applied_at`, `applied_by`, `status`, `error_message`) VALUES
-(1, '2026.03.19', 'safe_schema_upgrade', '2026_03_19_safe_schema_upgrade.sql', '2026-04-13 18:19:21', NULL, 'success', NULL);
+(1, '2026.03.19', 'safe_schema_upgrade', '2026_03_19_safe_schema_upgrade.sql', '2026-04-13 18:19:21', NULL, 'success', NULL),
+(2, '2026.06.04', 'safe_schema_upgrade', '2026_03_19_safe_schema_upgrade.sql', '2026-06-12 14:58:32', NULL, 'success', NULL),
+(3, '2026.06.05', 'safe_schema_upgrade', '2026_03_19_safe_schema_upgrade.sql', '2026-06-12 19:18:59', NULL, 'success', NULL),
+(4, '2026.07.07', 'safe_schema_upgrade', '2026_03_19_safe_schema_upgrade.sql', '2026-07-06 23:58:12', NULL, 'success', NULL);
 
 -- --------------------------------------------------------
 
@@ -2421,60 +2175,61 @@ CREATE TABLE `system_settings` (
 --
 
 INSERT INTO `system_settings` (`id`, `setting_key`, `setting_value`, `setting_type`, `description`, `updated_by`, `created_at`, `updated_at`) VALUES
-(1, 'site_name', 'First National Capital FN', 'string', 'Website name displayed throughout the site', 60, '2025-10-08 22:44:52', '2026-06-02 23:16:48'),
-(2, 'site_url', 'https://firstnationalfn.com', 'string', 'Website URL', 60, '2025-10-08 22:44:52', '2026-06-02 23:16:48'),
-(3, 'site_email', 'support@firstnationalfn.com', 'string', 'Primary contact email', 60, '2025-10-08 22:44:52', '2026-06-02 23:16:48'),
-(4, 'default_currency', 'CAD', 'string', 'Default system currency', 60, '2025-10-08 22:44:52', '2026-06-02 23:16:48'),
-(5, 'min_transfer_amount', '1', 'number', 'Minimum transfer amount', 60, '2025-10-08 22:44:52', '2026-06-02 23:16:48'),
-(6, 'max_transfer_amount', '5000000.12', 'number', 'Maximum transfer amount per transaction', 60, '2025-10-08 22:44:52', '2026-06-02 23:16:48'),
-(7, 'transfer_fee_domestic', '0', 'number', 'Domestic transfer fee (deprecated)', 60, '2025-10-08 22:44:52', '2026-06-02 23:16:48'),
-(8, 'transfer_fee_international', '0.5', 'number', 'International transfer fee (deprecated)', 60, '2025-10-08 22:44:52', '2026-06-02 23:16:48'),
-(9, 'interest_rate_savings', '2.5', 'number', 'Savings account interest rate percentage', 60, '2025-10-08 22:44:52', '2026-06-02 23:16:48'),
-(10, 'maintenance_mode', '0', 'boolean', 'Enable maintenance mode', 60, '2025-10-08 22:44:52', '2026-06-02 23:16:48'),
-(11, 'require_kyc', '0', 'boolean', 'Require KYC verification', 60, '2025-10-08 22:44:52', '2026-06-02 23:16:48'),
-(12, 'two_factor_required', '1', 'boolean', 'Force 2FA for all users', 60, '2025-10-08 22:44:52', '2026-06-02 23:16:48'),
-(13, 'allow_new_registrations', '1', 'boolean', 'Enable/disable new user registrations', 60, '2025-10-08 22:44:52', '2026-06-02 23:16:48'),
-(14, 'loan_service_enabled', '1', 'boolean', 'Enable/disable loan applications', 60, '2025-10-08 22:44:52', '2026-06-02 23:16:48'),
-(15, 'card_service_enabled', '1', 'boolean', 'Enable/disable card requests', 60, '2025-10-08 22:44:52', '2026-06-02 23:16:48'),
-(16, 'maintenance_message', 'System maintenance in progress', 'string', 'Maintenance mode message', 60, '2025-10-08 22:44:52', '2026-06-02 23:16:48'),
+(1, 'site_name', 'Zentropay Global', 'string', 'Website name displayed throughout the site', 3, '2025-10-08 22:44:52', '2026-08-24 21:48:17'),
+(2, 'site_url', 'https://app.zentropay-global.pro', 'string', 'Website URL', 3, '2025-10-08 22:44:52', '2026-08-24 21:48:17'),
+(3, 'site_email', 'app@zentropay-global.pro', 'string', 'Primary contact email', 3, '2025-10-08 22:44:52', '2026-08-24 21:48:17'),
+(4, 'default_currency', 'USD', 'string', 'Default system currency', 3, '2025-10-08 22:44:52', '2026-08-24 21:48:17'),
+(5, 'min_transfer_amount', '50', 'number', 'Minimum transfer amount', 3, '2025-10-08 22:44:52', '2026-08-24 21:48:17'),
+(6, 'max_transfer_amount', '100000000000', 'number', 'Maximum transfer amount per transaction', 3, '2025-10-08 22:44:52', '2026-08-24 21:48:17'),
+(7, 'transfer_fee_domestic', '0', 'number', 'Domestic transfer fee (deprecated)', 3, '2025-10-08 22:44:52', '2026-08-24 21:48:17'),
+(8, 'transfer_fee_international', '0.5', 'number', 'International transfer fee (deprecated)', 3, '2025-10-08 22:44:52', '2026-08-24 21:48:17'),
+(9, 'interest_rate_savings', '2.5', 'number', 'Savings account interest rate percentage', 3, '2025-10-08 22:44:52', '2026-08-24 21:48:17'),
+(10, 'maintenance_mode', '0', 'boolean', 'Enable maintenance mode', 3, '2025-10-08 22:44:52', '2026-08-24 21:48:17'),
+(11, 'require_kyc', '1', 'boolean', 'Require KYC verification', 3, '2025-10-08 22:44:52', '2026-08-24 21:48:17'),
+(12, 'two_factor_required', '1', 'boolean', 'Force 2FA for all users', 3, '2025-10-08 22:44:52', '2026-08-24 21:48:17'),
+(13, 'allow_new_registrations', '1', 'boolean', 'Enable/disable new user registrations', 3, '2025-10-08 22:44:52', '2026-08-24 21:48:17'),
+(14, 'loan_service_enabled', '1', 'boolean', 'Enable/disable loan applications', 3, '2025-10-08 22:44:52', '2026-08-24 21:48:17'),
+(15, 'card_service_enabled', '1', 'boolean', 'Enable/disable card requests', 3, '2025-10-08 22:44:52', '2026-08-24 21:48:17'),
+(16, 'maintenance_message', 'System maintenance in progress', 'string', 'Maintenance mode message', 3, '2025-10-08 22:44:52', '2026-08-24 21:48:17'),
 (17, 'max_daily_transfer_amount', '50000', 'number', 'Maximum daily transfer amount per user', 3, '2025-10-08 22:44:52', '2025-11-09 19:09:06'),
-(18, 'max_transaction_amount', '10000000', 'number', 'Maximum single transaction amount', 60, '2025-10-08 22:44:52', '2026-06-02 23:16:48'),
-(19, 'kyc_required_for_transfer', '1', 'boolean', 'Require KYC verification for transfers', 60, '2025-10-08 22:44:52', '2026-06-02 23:16:48'),
-(20, 'auto_flag_large_transactions', '0', 'boolean', 'Auto-flag transactions over threshold', 60, '2025-10-08 22:44:52', '2026-06-02 23:16:48'),
-(21, 'large_transaction_threshold', '10000', 'number', 'Amount threshold for flagging', 60, '2025-10-08 22:44:52', '2026-06-02 23:16:48'),
-(25, 'bank_operating_country', 'United Arab Emirates', 'string', 'Country where the bank operates', 60, '2025-10-14 00:00:00', '2026-06-02 23:16:48'),
+(18, 'max_transaction_amount', '10000000', 'number', 'Maximum single transaction amount', 3, '2025-10-08 22:44:52', '2026-08-24 21:48:17'),
+(19, 'kyc_required_for_transfer', '1', 'boolean', 'Require KYC verification for transfers', 3, '2025-10-08 22:44:52', '2026-08-24 21:48:17'),
+(20, 'auto_flag_large_transactions', '0', 'boolean', 'Auto-flag transactions over threshold', 3, '2025-10-08 22:44:52', '2026-08-24 21:48:17'),
+(21, 'large_transaction_threshold', '10000', 'number', 'Amount threshold for flagging', 3, '2025-10-08 22:44:52', '2026-08-24 21:48:17'),
+(25, 'bank_operating_country', 'United States', 'string', 'Country where the bank operates', 3, '2025-10-14 00:00:00', '2026-08-24 21:48:17'),
 (26, 'bank_operating_region', 'north-america', 'string', 'Region where the bank operates', 3, '2025-10-14 00:00:00', '2025-10-18 03:39:05'),
-(27, 'site_logo_url', 'https://firstnationalfn.com/assets/images/bank-logo.webp?v=1780429189', 'string', 'URL to site logo image', 60, '2025-10-14 00:00:00', '2026-06-02 23:16:48'),
-(28, 'site_tagline', 'Your Trusted Banking Partner', 'string', 'Site tagline/slogan', 60, '2025-10-14 00:00:00', '2026-06-02 23:16:48'),
-(29, 'site_description', 'Secure online banking with 24/7 access to your accounts', 'string', 'Site description for SEO', 60, '2025-10-14 00:00:00', '2026-06-02 23:16:48'),
-(30, 'support_phone', '+44882769***', 'string', 'Customer support phone number', 60, '2025-10-14 00:00:00', '2026-06-02 23:16:48'),
-(31, 'support_hours', 'Monday - Friday, 8:00 AM - 6:00 PM EST', 'string', 'Customer support hours', 60, '2025-10-14 00:00:00', '2026-06-02 23:16:48'),
-(32, 'bank_address', '2015 Northwest Hwy, Garland, TX 75041, London, United Kingdom ', 'string', 'Physical bank address', 60, '2025-10-14 00:00:00', '2026-06-02 23:16:48'),
-(34, 'interest_rate_checking', '0', 'number', 'Checking account interest rate percentage', 60, '2025-10-14 00:00:00', '2026-06-02 23:16:48'),
-(35, 'overdraft_fee', '35', 'number', 'Overdraft fee amount', 60, '2025-10-14 00:00:00', '2026-06-02 23:16:48'),
-(36, 'monthly_maintenance_fee', '0', 'number', 'Monthly account maintenance fee', 60, '2025-10-14 00:00:00', '2026-06-02 23:16:48'),
-(37, 'require_transfer_pin', '1', 'boolean', 'Require Transfer PIN for transactions', 60, '2025-10-14 00:00:00', '2026-06-02 23:16:48'),
-(38, 'max_login_attempts', '10', 'number', 'Maximum failed login attempts before lockout', 60, '2025-10-14 00:00:00', '2026-06-02 23:16:48'),
-(39, 'login_lockout_duration', '5', 'number', 'Login lockout duration in minutes', 60, '2025-01-15 10:00:00', '2026-06-02 23:16:48'),
-(40, 'session_timeout', '30', 'number', 'Session timeout in minutes', 60, '2025-10-14 00:00:00', '2026-06-02 23:16:48'),
-(41, 'email_on_transfer', '1', 'boolean', 'Send email notification on transfers', 60, '2025-10-14 00:00:00', '2026-06-02 23:16:48'),
-(42, 'email_on_login', '1', 'boolean', 'Send email notification on login', 60, '2025-10-14 00:00:00', '2026-06-02 23:16:48'),
-(43, 'site_favicon_url', 'https://firstnationalfn.com/favicon.png?v=1780428957', 'string', 'URL to site favicon', 60, '2025-10-14 00:00:00', '2026-06-02 23:16:48'),
+(27, 'site_logo_url', 'https://app.zentropay-global.pro/uploads/branding/site-logo.png?v=1783416669', 'string', 'URL to site logo image', 3, '2025-10-14 00:00:00', '2026-08-24 21:48:17'),
+(28, 'site_tagline', 'Your Trusted Banking Partner', 'string', 'Site tagline/slogan', 3, '2025-10-14 00:00:00', '2026-08-24 21:48:17'),
+(29, 'site_description', 'Secure online banking with 24/7 access to your accounts', 'string', 'Site description for SEO', 3, '2025-10-14 00:00:00', '2026-08-24 21:48:17'),
+(30, 'support_phone', '+44882769***', 'string', 'Customer support phone number', 3, '2025-10-14 00:00:00', '2026-08-24 21:48:17'),
+(31, 'support_hours', 'Monday - Friday, 8:00 AM - 6:00 PM EST', 'string', 'Customer support hours', 3, '2025-10-14 00:00:00', '2026-08-24 21:48:17'),
+(32, 'bank_address', '2015 Northwest Hwy, Garland, TX 75041, London, United Kingdom ', 'string', 'Physical bank address', 3, '2025-10-14 00:00:00', '2026-08-24 21:48:17'),
+(34, 'interest_rate_checking', '0', 'number', 'Checking account interest rate percentage', 3, '2025-10-14 00:00:00', '2026-08-24 21:48:17'),
+(35, 'overdraft_fee', '35', 'number', 'Overdraft fee amount', 3, '2025-10-14 00:00:00', '2026-08-24 21:48:17'),
+(36, 'monthly_maintenance_fee', '0', 'number', 'Monthly account maintenance fee', 3, '2025-10-14 00:00:00', '2026-08-24 21:48:17'),
+(37, 'require_transfer_pin', '1', 'boolean', 'Require Transfer PIN for transactions', 3, '2025-10-14 00:00:00', '2026-08-24 21:48:17'),
+(38, 'max_login_attempts', '10', 'number', 'Maximum failed login attempts before lockout', 3, '2025-10-14 00:00:00', '2026-08-24 21:48:17'),
+(39, 'login_lockout_duration', '5', 'number', 'Login lockout duration in minutes', 3, '2025-01-15 10:00:00', '2026-08-24 21:48:17'),
+(40, 'session_timeout', '30', 'number', 'Session timeout in minutes', 3, '2025-10-14 00:00:00', '2026-08-24 21:48:17'),
+(41, 'email_on_transfer', '1', 'boolean', 'Send email notification on transfers', 3, '2025-10-14 00:00:00', '2026-08-24 21:48:17'),
+(42, 'email_on_login', '1', 'boolean', 'Send email notification on login', 3, '2025-10-14 00:00:00', '2026-08-24 21:48:17'),
+(43, 'site_favicon_url', 'https://app.zentropay-global.pro/uploads/branding/favicon.png?v=1783416682', 'string', 'URL to site favicon', 3, '2025-10-14 00:00:00', '2026-08-24 21:48:17'),
 (44, 'transfer_internal_fee', '0', 'number', 'Internal transfer fee percentage', 3, '2025-10-14 00:00:00', '2025-10-18 03:39:05'),
 (45, 'transfer_domestic_fee', '0.5', 'number', 'Domestic transfer fee percentage', 3, '2025-10-14 00:00:00', '2025-10-18 03:39:05'),
 (46, 'transfer_international_fee', '2.5', 'number', 'International transfer fee percentage', 3, '2025-10-14 00:00:00', '2025-10-18 03:39:05'),
-(47, 'sms_on_transfer', '1', 'boolean', 'Send SMS notification on transfers', 60, '2025-10-14 00:00:00', '2026-06-02 23:16:48'),
-(48, 'daily_limit_checking', '500000', 'number', 'Daily transaction limit for Checking accounts', 60, '2025-11-03 02:27:47', '2026-06-02 23:16:48'),
-(49, 'daily_limit_savings', '500000', 'number', 'Daily transaction limit for Savings accounts', 60, '2025-11-03 02:27:47', '2026-06-02 23:16:48'),
-(50, 'daily_limit_business', '2000000', 'number', 'Daily transaction limit for Business accounts', 60, '2025-11-03 02:27:47', '2026-06-02 23:16:48'),
-(51, 'monthly_limit_checking', '12000000', 'number', 'Monthly transaction limit for Checking accounts', 60, '2025-11-03 02:27:47', '2026-06-02 23:16:48'),
-(52, 'monthly_limit_savings', '1000000000', 'number', 'Monthly transaction limit for Savings accounts', 60, '2025-11-03 02:27:47', '2026-06-02 23:16:48'),
-(53, 'monthly_limit_business', '20000000', 'number', 'Monthly transaction limit for Business accounts', 60, '2025-11-03 02:27:47', '2026-06-02 23:16:48'),
-(142, 'enable_currency_conversion', '1', 'boolean', 'Enable currency conversion. When enabled, users can view balances and amounts in their preferred currency. When disabled, all amounts are displayed in the site default currency.', 60, '2025-11-04 17:17:14', '2026-06-02 23:16:48'),
-(414, 'disable_2fa_entirely', '0', 'boolean', 'Disable 2FA entirely for all users. When enabled, users cannot enable 2FA and existing 2FA will be disabled. This overrides the \"Force 2FA\" setting.', 60, '2026-02-10 02:55:45', '2026-06-02 23:16:48'),
-(1415, 'force_security_setup', '1', 'boolean', 'When enabled, users must complete Login PIN and Transfer PIN (+ 2FA if required) before accessing the dashboard', 60, '2026-05-31 01:13:56', '2026-06-02 23:16:48'),
-(1416, 'kyc_use_custom_fields', '0', 'boolean', 'Use custom admin-defined KYC fields instead of country profile defaults', 60, '2026-05-31 01:13:56', '2026-06-02 23:16:48'),
-(1417, 'kyc_custom_fields', '[]', 'json', 'JSON array of custom KYC field definitions when kyc_use_custom_fields is enabled', 60, '2026-05-31 01:13:56', '2026-06-02 23:16:48');
+(47, 'sms_on_transfer', '1', 'boolean', 'Send SMS notification on transfers', 3, '2025-10-14 00:00:00', '2026-08-24 21:48:17'),
+(48, 'daily_limit_checking', '100000000000', 'number', 'Daily transaction limit for Checking accounts', 3, '2025-11-03 02:27:47', '2026-08-24 21:48:17'),
+(49, 'daily_limit_savings', '10000000000', 'number', 'Daily transaction limit for Savings accounts', 3, '2025-11-03 02:27:47', '2026-08-24 21:48:17'),
+(50, 'daily_limit_business', '10000000000', 'number', 'Daily transaction limit for Business accounts', 3, '2025-11-03 02:27:47', '2026-08-24 21:48:17'),
+(51, 'monthly_limit_checking', '100000000000', 'number', 'Monthly transaction limit for Checking accounts', 3, '2025-11-03 02:27:47', '2026-08-24 21:48:17'),
+(52, 'monthly_limit_savings', '100000000000', 'number', 'Monthly transaction limit for Savings accounts', 3, '2025-11-03 02:27:47', '2026-08-24 21:48:17'),
+(53, 'monthly_limit_business', '100000000000', 'number', 'Monthly transaction limit for Business accounts', 3, '2025-11-03 02:27:47', '2026-08-24 21:48:17'),
+(142, 'enable_currency_conversion', '1', 'boolean', 'Enable currency conversion. When enabled, users can view balances and amounts in their preferred currency. When disabled, all amounts are displayed in the site default currency.', 3, '2025-11-04 17:17:14', '2026-08-24 21:48:17'),
+(414, 'disable_2fa_entirely', '0', 'boolean', 'Disable 2FA entirely for all users. When enabled, users cannot enable 2FA and existing 2FA will be disabled. This overrides the \"Force 2FA\" setting.', 3, '2026-02-10 02:55:45', '2026-08-24 21:48:17'),
+(1415, 'force_security_setup', '1', 'boolean', 'When enabled, users must complete Login PIN and Transfer PIN (+ 2FA if required) before accessing the dashboard', 3, '2026-05-31 01:13:56', '2026-08-24 21:48:17'),
+(1416, 'kyc_use_custom_fields', '0', 'boolean', 'Use custom admin-defined KYC fields instead of country profile defaults', 3, '2026-05-31 01:13:56', '2026-08-24 21:48:17'),
+(1417, 'kyc_custom_fields', '[]', 'json', 'JSON array of custom KYC field definitions when kyc_use_custom_fields is enabled', 3, '2026-05-31 01:13:56', '2026-08-24 21:48:17'),
+(1517, 'ledger_aligned_to_site_default', '1', 'boolean', 'Ledger balances converted to site default_currency using exchange_rates', 3, '2026-06-12 19:18:37', '2026-08-24 21:48:17');
 
 -- --------------------------------------------------------
 
@@ -2527,7 +2282,7 @@ CREATE TABLE `transactions` (
   `account_id` int(11) NOT NULL,
   `transaction_type` enum('debit','credit') NOT NULL,
   `category` enum('transfer','payment','deposit','withdrawal','fee','interest','loan','card','other') NOT NULL,
-  `expense_category` enum('shopping','food','transport','bills','entertainment','healthcare','travel','education','salary','investment','rent','insurance','gift','personal','other') DEFAULT NULL,
+  `expense_category` enum('shopping','food','transport','bills','entertainment','healthcare','travel','education','salary','investment','rent','insurance','gift','personal','other','bonus','refund','utility') DEFAULT NULL,
   `amount` decimal(15,2) NOT NULL,
   `currency` varchar(10) DEFAULT 'USD',
   `balance_before` decimal(15,2) DEFAULT NULL,
@@ -2551,9 +2306,180 @@ CREATE TABLE `transactions` (
 --
 
 INSERT INTO `transactions` (`id`, `transaction_ref`, `user_id`, `account_id`, `transaction_type`, `category`, `expense_category`, `amount`, `currency`, `balance_before`, `balance_after`, `description`, `recipient_account`, `recipient_name`, `recipient_bank`, `status`, `payment_method`, `fee`, `exchange_rate`, `metadata`, `ip_address`, `created_at`, `completed_at`) VALUES
-(646, 'ADM20260530212637403', 134, 128, 'credit', 'deposit', '', 600.00, 'CAD', 0.00, 600.00, 'Transfer from pascal paul at wells Fargo', '35644775', 'pascal paul', 'wells Fargo', 'completed', NULL, 0.00, NULL, '{\"admin_id\":3,\"reason\":\"Administrative adjustment\",\"method\":\"domestic\",\"method_fields\":{\"recipient_bank\":\"wells Fargo\",\"recipient_account\":\"35644775\",\"recipient_name\":\"pascal paul\"},\"admin_action\":true}', '102.89.82.233', '2026-05-31 02:26:00', '2026-05-31 02:26:00'),
-(647, 'TXN6A1B924C3D7E3', 134, 128, 'debit', 'transfer', '', 234.17, 'CAD', 600.00, 365.84, 'Domestic Transfer to werty mum at Bank of Nova Scotia', '24252252', 'werty mum', 'Bank of Nova Scotia', 'completed', 'eft', 1.17, NULL, '{\"transfer_method\":\"eft\",\"transfer_method_label\":\"EFT\",\"country_code\":\"CA\",\"bank_name\":\"Bank of Nova Scotia\",\"account_number\":\"24252252\",\"transit_number\":\"24242\",\"institution_number\":\"424\",\"transaction_override\":\"normal\",\"failed_reason\":null}', '102.89.82.233', '2026-05-31 01:43:40', '2026-05-31 01:43:40'),
-(648, 'ADM20260531190117340', 135, 129, 'credit', 'transfer', '', 20000.00, 'CAD', 0.00, 20000.00, 'Admin balance update', '', 'Internal Transfer', 'First National Capital FN', 'completed', NULL, 0.00, NULL, '{\"admin_id\":60,\"reason\":\"Administrative adjustment\",\"method\":\"internal\",\"method_fields\":{\"recipient_account\":\"\",\"recipient_name\":\"Internal Transfer\",\"recipient_bank\":\"First National Capital FN\"},\"admin_action\":true}', '102.90.98.168', '2026-05-31 22:58:00', '2026-05-31 22:58:00');
+(1884, 'ADM20260812145615455', 150, 145, 'debit', 'withdrawal', '', 11900000.00, 'USD', 12000000.00, 100000.00, 'Domestic Transfer to paul pascal at Bank Of America', '4418293723', 'paul pascal', 'Bank Of America', 'completed', NULL, 0.00, NULL, '{\"admin_id\":3,\"reason\":\"Administrative adjustment\",\"method\":\"domestic\",\"method_fields\":{\"recipient_bank\":\"Bank Of America\",\"recipient_account\":\"4418293723\",\"recipient_name\":\"paul pascal\"},\"admin_action\":true,\"display_amount\":11900000,\"display_currency\":\"USD\",\"ledger_amount\":11900000,\"ledger_currency\":\"USD\"}', '102.88.113.241', '2026-08-10 19:55:00', '2026-08-10 19:55:00'),
+(1885, 'ADM20260812145747262', 150, 145, 'credit', 'deposit', '', 11250000.00, 'USD', 100000.00, 11350000.00, 'Transfer from Titan Core Assets Group LLC at wells Fargo', '868746356795', 'Titan Core Assets Group LLC', 'wells Fargo', 'completed', NULL, 0.00, NULL, '{\"admin_id\":3,\"reason\":\"Administrative adjustment\",\"method\":\"domestic\",\"method_fields\":{\"recipient_bank\":\"wells Fargo\",\"recipient_account\":\"868746356795\",\"recipient_name\":\"Titan Core Assets Group LLC\"},\"admin_action\":true,\"display_amount\":11250000,\"display_currency\":\"USD\",\"ledger_amount\":11250000,\"ledger_currency\":\"USD\"}', '102.88.113.241', '2026-08-02 10:00:00', '2026-08-02 10:00:00'),
+(1886, 'ADM20260812145903390', 150, 145, 'credit', 'deposit', '', 670000.00, 'USD', 11350000.00, 12020000.00, 'Transfer from Apex Growth Ventures Ltd at JPMorgan Chase Bank', 'US-CH-77451092', 'Apex Growth Ventures Ltd', 'JPMorgan Chase Bank', 'completed', NULL, 0.00, NULL, '{\"admin_id\":3,\"reason\":\"Administrative adjustment\",\"method\":\"domestic\",\"method_fields\":{\"recipient_bank\":\"JPMorgan Chase Bank\",\"recipient_account\":\"US-CH-77451092\",\"recipient_name\":\"Apex Growth Ventures Ltd\"},\"admin_action\":true,\"display_amount\":670000,\"display_currency\":\"USD\",\"ledger_amount\":670000,\"ledger_currency\":\"USD\"}', '102.88.113.241', '2026-08-04 19:58:00', '2026-08-04 19:58:00'),
+(1887, 'TXN6A7CF49560F29', 150, 145, 'debit', 'transfer', 'other', 10050.00, 'USD', 12020000.00, 12009950.00, 'Domestic Transfer to Han at Wells Fargo Bank', '776463991020', 'Han', 'Wells Fargo Bank', 'completed', 'wire', 50.00, NULL, '{\"transfer_scope\":\"domestic\",\"transfer_method\":\"wire\",\"transfer_method_label\":\"Wire Transfer\",\"country_code\":\"US\",\"bank_name\":\"Wells Fargo Bank\",\"account_number\":\"776463991020\",\"routing_number\":\"290556371\",\"swift\":\"WFBIUS6SXXX\",\"transaction_override\":\"normal\",\"failed_reason\":null,\"entry_amount\":10000,\"entry_currency\":\"USD\",\"entry_fee\":50,\"entry_total\":10050}', '151.240.91.169', '2026-08-12 22:32:53', '2026-08-12 22:32:53'),
+(1888, 'ADM20260824174624353', 150, 145, 'credit', 'deposit', '', 100000.00, 'USD', 12009950.00, 12109950.00, 'Transfer from Elexir Shell BP at Wellsfargo', '3566*******24424', 'Elexir Shell BP', 'Wellsfargo', 'completed', NULL, 0.00, NULL, '{\"admin_id\":3,\"reason\":\"Administrative adjustment\",\"method\":\"domestic\",\"method_fields\":{\"recipient_bank\":\"Wellsfargo\",\"recipient_account\":\"3566*******24424\",\"recipient_name\":\"Elexir Shell BP\"},\"admin_action\":true,\"display_amount\":100000,\"display_currency\":\"USD\",\"ledger_amount\":100000,\"ledger_currency\":\"USD\"}', '102.89.69.110', '2026-08-24 22:45:00', '2026-08-24 22:45:00');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `transaction_generation_batches`
+--
+
+CREATE TABLE `transaction_generation_batches` (
+  `id` int(11) NOT NULL,
+  `batch_id` varchar(64) NOT NULL,
+  `idempotency_key` varchar(128) NOT NULL,
+  `params_hash` char(64) NOT NULL,
+  `admin_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `account_id` int(11) NOT NULL,
+  `template_id` int(11) NOT NULL,
+  `engine_params` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`engine_params`)),
+  `plan_summary` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`plan_summary`)),
+  `density` enum('light','normal','heavy') NOT NULL DEFAULT 'normal',
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  `previous_balance` decimal(15,2) NOT NULL,
+  `history_impact` decimal(15,2) NOT NULL,
+  `target_final_balance` decimal(15,2) NOT NULL,
+  `opening_balance` decimal(15,2) NOT NULL,
+  `transaction_count` int(11) NOT NULL DEFAULT 0,
+  `replaced_previous` tinyint(1) NOT NULL DEFAULT 0,
+  `status` enum('completed','undone') NOT NULL DEFAULT 'completed',
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `transaction_generation_batches`
+--
+
+INSERT INTO `transaction_generation_batches` (`id`, `batch_id`, `idempotency_key`, `params_hash`, `admin_id`, `user_id`, `account_id`, `template_id`, `engine_params`, `plan_summary`, `density`, `start_date`, `end_date`, `previous_balance`, `history_impact`, `target_final_balance`, `opening_balance`, `transaction_count`, `replaced_previous`, `status`, `created_at`, `updated_at`) VALUES
+(1, '202606121902219b24e64d', 'gen-129-1781305317790-7ifc201x', '67dc402ba3b78565bd73a3ed7c480c8f3f7ac6926d53282d2f07d7856701bae1', 3, 135, 129, 1, NULL, NULL, 'heavy', '2018-07-25', '2026-06-11', 590000.03, 270234.00, 860234.03, 319766.03, 150, 0, 'completed', '2026-06-12 23:02:21', '2026-06-12 23:02:21'),
+(2, '2026061304580332cb0913', 'gen-130-1781341063110-3iupnm3r', 'ed3adb59293ef420a6492975bcccfe693f1dd57f433e0b70db1a455836669dd6', 3, 138, 130, 1, NULL, NULL, 'heavy', '2018-02-07', '2026-06-11', 0.00, 900000.00, 900000.00, -900000.00, 150, 0, 'undone', '2026-06-13 08:58:03', '2026-07-06 23:37:12'),
+(3, '202606211259343d2cdf94', 'gen-132-1782061166576-wm9usapy', '2448fc7aa0220ffce1095d17c7d3bdf1858660270efda9e04aec748d73ec2368', 3, 140, 132, 1, NULL, NULL, 'heavy', '2012-10-05', '2020-08-23', 0.00, 19453552.00, 19453552.00, -19453552.00, 150, 0, 'completed', '2026-06-21 16:59:34', '2026-06-21 16:59:34'),
+(4, '202606251540593756006c', 'gen-137-1782416445495-f457oakz', 'debda4a1bbe2f9eaf9934e87ad2a4505dad1a0c0f6ab8942141b067b69c7865a', 3, 143, 137, 1, NULL, NULL, 'normal', '2014-06-13', '2026-06-24', 0.00, 1200000.00, 1200000.00, -1200000.00, 70, 0, 'completed', '2026-06-25 19:40:59', '2026-06-25 19:40:59'),
+(5, '2026070509230432766202', 'gen-138-1783234187655-0nvsd8op', '0e9dabedc9cc2a5898fb4a1772d513a3e3d90c38930e94739e9a263774ea0c38', 3, 144, 138, 1, NULL, NULL, 'normal', '2026-04-06', '2026-07-04', 0.00, 13000000.00, 13000000.00, -13000000.00, 70, 0, 'undone', '2026-07-05 13:23:04', '2026-07-05 15:18:25'),
+(6, '20260705111825ad5256a4', 'gen-138-1783241066018-c2izzz43', '07edf3cd608865feb8882c302c6688145b43ce4e6c2eaa6683d4c8a64fc6dc23', 3, 144, 138, 1, NULL, NULL, 'heavy', '2023-02-09', '2025-12-24', 13000000.00, 200000.00, 13200000.00, 12800000.00, 150, 1, 'undone', '2026-07-05 15:18:25', '2026-07-06 12:37:17'),
+(7, '202607060837172bac4f20', 'gen-138-1783341410221-rf77nq4m', 'a4c00de3d0d58c0847e4cd143ca3c09cf0a8ee1e17db283fdfdcabc26f38d1ea', 3, 144, 138, 1, NULL, NULL, 'heavy', '2016-02-16', '2023-11-21', 0.00, 13200000.00, 13000000.00, -13400000.00, 150, 0, 'completed', '2026-07-06 12:37:17', '2026-07-06 12:37:17'),
+(8, '20260706084043d356f971', 'gen-140-1783341634722-k64rw053', 'b46eaa4a5f90042a448e551c7c3468444beeb671d3e88152c43d584583f5ebd8', 3, 146, 140, 1, NULL, NULL, 'heavy', '2019-02-14', '2023-11-24', 0.00, 50000000.00, 50000000.00, -50000000.00, 150, 0, 'completed', '2026-07-06 12:40:43', '2026-07-06 12:40:43'),
+(9, '202607062011052041e61f', 'gen-130-1783383045815-yqc6rahg', '9a74cda412a2b6c052182716062c0a877d3a4136677a2537b7dfe569234ff2df', 3, 138, 130, 0, '{\"account_style\":\"investor\",\"financial_behaviour\":\"intl_traveller\",\"volume\":\"high\",\"persona_id\":\"investor_uk\"}', '{\"domestic_transfers\":45,\"international_transfers\":66,\"incoming_credits\":40,\"card_payments\":21,\"bills\":10,\"salary_credits\":0,\"atm_withdrawals\":0,\"other\":0,\"total\":182,\"account_style\":\"investor\",\"financial_behaviour\":\"intl_traveller\",\"volume\":\"high\",\"persona_label\":\"Investor \\u2014 travel & dividends\",\"operating_country\":\"United States\"}', 'heavy', '2021-06-11', '2026-07-05', 0.00, 945000.00, 945000.00, -945000.00, 182, 0, 'completed', '2026-07-07 00:11:05', '2026-07-07 00:11:05');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `transaction_templates`
+--
+
+CREATE TABLE `transaction_templates` (
+  `id` int(11) NOT NULL,
+  `slug` varchar(100) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `account_type` varchar(50) DEFAULT 'checking',
+  `description` text DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `transaction_templates`
+--
+
+INSERT INTO `transaction_templates` (`id`, `slug`, `name`, `account_type`, `description`, `is_active`, `created_at`, `updated_at`) VALUES
+(1, 'default_checking', 'Default Checking History', 'checking', 'Realistic mixed credit/debit history derived from Andy seed reference pack.', 1, '2026-06-12 22:59:08', '2026-06-12 22:59:08');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `transaction_template_items`
+--
+
+CREATE TABLE `transaction_template_items` (
+  `id` int(11) NOT NULL,
+  `template_id` int(11) NOT NULL,
+  `sort_order` int(11) NOT NULL DEFAULT 0,
+  `transaction_type` enum('debit','credit') NOT NULL,
+  `category` enum('transfer','payment','deposit','withdrawal','fee','interest','loan','card','other') NOT NULL,
+  `expense_category` enum('shopping','food','transport','bills','entertainment','healthcare','travel','education','salary','investment','rent','insurance','gift','personal','other','bonus','refund','utility') DEFAULT NULL,
+  `base_amount` decimal(15,2) NOT NULL,
+  `description` text DEFAULT NULL,
+  `recipient_account` varchar(255) DEFAULT NULL,
+  `recipient_name` varchar(255) DEFAULT NULL,
+  `recipient_bank` varchar(255) DEFAULT NULL,
+  `status` enum('pending','processing','completed','failed','reversed') NOT NULL DEFAULT 'completed',
+  `fee` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `weight` int(11) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `transaction_template_items`
+--
+
+INSERT INTO `transaction_template_items` (`id`, `template_id`, `sort_order`, `transaction_type`, `category`, `expense_category`, `base_amount`, `description`, `recipient_account`, `recipient_name`, `recipient_bank`, `status`, `fee`, `weight`) VALUES
+(1, 1, 1, 'credit', 'deposit', 'salary', 2350000.00, 'Transfer from Salary Payment – ACADEMI PMC at wells Fargo', '44182937', 'Salary Payment – ACADEMI PMC', 'wells Fargo', 'completed', 0.00, 1),
+(2, 1, 2, 'debit', 'withdrawal', NULL, 7000000.00, 'Domestic Transfer to pascal paul at citi bank', '22353563', 'pascal paul', 'citi bank', 'completed', 0.00, 1),
+(3, 1, 3, 'debit', 'withdrawal', NULL, 185000.00, 'International Transfer to James Thornton at HSBC UK', 'GB72HBUK40127612345678', 'James Thornton', 'HSBC UK', 'completed', 0.00, 1),
+(4, 1, 4, 'debit', 'withdrawal', NULL, 27500.00, 'Domestic Transfer to Michael Rodriguez at Chase Bank', '463817492', 'Michael Rodriguez', 'Chase Bank', 'failed', 0.00, 1),
+(5, 1, 5, 'debit', 'withdrawal', NULL, 27500.00, 'Domestic Transfer to Michael Rodriguez at Chase Bank', '463817492', 'Michael Rodriguez', 'Chase Bank', 'completed', 0.00, 1),
+(6, 1, 6, 'credit', 'deposit', NULL, 9842.00, 'IRS Tax Refund Adjustment', '009283514', 'Internal Revenue Service', 'U.S. Treasury Department', 'completed', 0.00, 1),
+(7, 1, 7, 'debit', 'withdrawal', NULL, 62900.00, 'International Transfer to Cobus Van Der West at Standard Bank South Africa', '128476395', 'Cobus Van Der West', 'Standard Bank South Africa', 'completed', 0.00, 1),
+(8, 1, 8, 'debit', 'withdrawal', NULL, 3120.00, 'Domestic Transfer to Amazon Web Services at JPMorgan Payments', '875341209', 'Amazon Web Services', 'JPMorgan Payments', 'completed', 0.00, 1),
+(9, 1, 9, 'credit', 'deposit', NULL, 2350000.00, 'Transfer from ACADEMI PMC at wells Fargo', '4418293723', 'ACADEMI PMC', 'wells Fargo', 'completed', 0.00, 1),
+(10, 1, 10, 'credit', 'deposit', NULL, 2350000.00, 'Transfer from ACADEMI PMC at wells Fargo', '4418293723', 'ACADEMI PMC', 'wells Fargo', 'completed', 0.00, 1),
+(11, 1, 11, 'debit', 'transfer', NULL, 8492.25, 'Domestic Transfer to Matts Anderson at Wells Fargo Bank', '6272883838', 'Matts Anderson', 'Wells Fargo Bank', 'completed', 42.25, 1),
+(12, 1, 12, 'debit', 'withdrawal', NULL, 35700.00, 'Domestic Transfer to James Thornton at HSBC UK', '3647687970809', 'James Thornton', 'HSBC UK', 'completed', 0.00, 1),
+(13, 1, 13, 'debit', 'transfer', NULL, 4600.00, 'Domestic Transfer to Leave@academi at JPMorgan Chase Bank', '26273741639', 'Leave@academi', 'JPMorgan Chase Bank', 'failed', 22.96, 1),
+(14, 1, 14, 'credit', 'deposit', 'insurance', 7097129.00, 'Transfer from Titan Core Assets Group LLC at wells Fargo', '4418293723', 'Titan Core Assets Group LLC', 'wells Fargo', 'completed', 0.00, 1),
+(15, 1, 15, 'debit', 'withdrawal', NULL, 9100.00, 'Domestic Transfer to Academi@Admin at JPMorgan Chase Bank', '868746356795', 'Academi@Admin', 'JPMorgan Chase Bank', 'failed', 0.00, 1),
+(16, 1, 16, 'debit', 'withdrawal', NULL, 2300.00, 'Card payment to Academi@Clinic', '868746356795', 'Academi@Clinic', 'JPMorgan Chase Bank', 'completed', 0.00, 1),
+(17, 1, 17, 'debit', 'withdrawal', NULL, 49500.00, 'Domestic Transfer to Wright Caleb at wells Fargo', 'US-CH-77451092', 'Wright Caleb', 'wells Fargo', 'completed', 0.00, 1),
+(18, 1, 18, 'credit', 'transfer', 'other', 27150.00, 'BKK Gesund – health allowance Q3 2023', NULL, 'BKK Gesund', 'DZ Bank Ndl. Frankfurt', 'completed', 0.00, 1),
+(19, 1, 19, 'debit', 'payment', 'bills', 17.30, 'Telekom Deutschland – Oct 2023 invoice', NULL, 'Telekom Deutschland GmbH', NULL, 'completed', 0.00, 1),
+(20, 1, 20, 'debit', 'payment', 'shopping', 550.00, 'Nike.com e-gift card order', NULL, 'Nike E-Commerce', NULL, 'completed', 0.00, 1),
+(21, 1, 21, 'debit', 'payment', 'shopping', 182.00, 'Shopify store – online purchase', NULL, 'Shopify Payments', NULL, 'completed', 0.00, 1),
+(22, 1, 22, 'debit', 'payment', 'bills', 17.67, 'Vodafone GmbH – mobile & landline Nov', NULL, 'Vodafone GmbH', NULL, 'completed', 0.00, 1),
+(23, 1, 23, 'credit', 'transfer', 'other', 55955.00, 'Verpflegungspauschale Nov 2023', NULL, 'Muster GmbH HR', 'Landesbank Hessen-Thüringen', 'completed', 0.00, 1),
+(24, 1, 24, 'debit', 'payment', 'bills', 17.45, 'O2 Rechnung – December 2023', NULL, 'O2 Germany', NULL, 'completed', 0.00, 1),
+(25, 1, 25, 'debit', 'payment', 'shopping', 3280.00, 'Wilma wunder – Wiesbaden store', NULL, 'Wilma wunder Einzelhandel', NULL, 'completed', 0.00, 1),
+(26, 1, 26, 'debit', 'payment', 'other', 2800.00, 'Heiliggeist Apotheke – prescription & OTC', NULL, 'Heiliggeist Apotheke', NULL, 'completed', 0.00, 1),
+(27, 1, 27, 'debit', 'payment', 'bills', 17.67, '1&1 Versatel – Jan 2024 broadband', NULL, '1&1 Versatel GmbH', NULL, 'completed', 0.00, 1),
+(28, 1, 28, 'credit', 'transfer', 'salary', 1450000.00, 'Gehalt Nov 2023 – Muster GmbH', NULL, 'Muster GmbH Payroll', 'Commerzbank AG', 'completed', 0.00, 1),
+(29, 1, 29, 'debit', 'payment', 'bills', 17.85, 'Congstar – Feb 2024 mobile', NULL, 'Congstar GmbH', NULL, 'completed', 0.00, 1),
+(30, 1, 30, 'debit', 'payment', 'bills', 17.20, 'E.ON Strom – March 2024', NULL, 'E.ON Energie Deutschland', NULL, 'completed', 0.00, 1),
+(31, 1, 31, 'debit', 'payment', 'shopping', 1625.00, 'Fitshop Wiesbaden – sports gear', NULL, 'Fitshop Wiesbaden', NULL, 'completed', 0.00, 1),
+(32, 1, 32, 'debit', 'payment', 'bills', 17.67, 'Stadtwerke Wiesbaden – April utilities', NULL, 'Stadtwerke Wiesbaden', NULL, 'completed', 0.00, 1),
+(33, 1, 33, 'debit', 'payment', 'bills', 17.60, 'Vodafone – May 2024 mobile', NULL, 'Vodafone GmbH', NULL, 'completed', 0.00, 1),
+(34, 1, 34, 'debit', 'payment', 'bills', 17.70, 'O2 Rechnung – June 2024', NULL, 'O2 Germany', NULL, 'completed', 0.00, 1),
+(35, 1, 35, 'debit', 'transfer', 'other', 5000.00, 'Wire to Paul Hartman – Ref WH-60924', NULL, 'Paul Hartman', 'Deutsche Bank AG', 'completed', 0.00, 1),
+(36, 1, 36, 'debit', 'payment', 'bills', 17.67, '1&1 – July 2024 broadband', NULL, '1&1 Versatel GmbH', NULL, 'completed', 0.00, 1),
+(37, 1, 37, 'debit', 'payment', 'bills', 17.47, 'Congstar – Aug 2024', NULL, 'Congstar GmbH', NULL, 'completed', 0.00, 1),
+(38, 1, 38, 'debit', 'payment', 'shopping', 1320.00, 'Amazon.de – treadmill order', NULL, 'Amazon EU S.à r.l.', NULL, 'completed', 0.00, 1),
+(39, 1, 39, 'credit', 'transfer', 'other', 32250.00, 'DAK Zuschuss – health allowance Aug 2024', NULL, 'DAK-Gesundheit', 'Sparkasse KölnBonn', 'completed', 0.00, 1),
+(40, 1, 40, 'debit', 'payment', 'bills', 17.85, 'E.ON Strom – September 2024', NULL, 'E.ON Energie Deutschland', NULL, 'completed', 0.00, 1),
+(41, 1, 41, 'debit', 'payment', 'bills', 17.65, 'Telekom Deutschland – Oct 2024', NULL, 'Telekom Deutschland GmbH', NULL, 'completed', 0.00, 1),
+(42, 1, 42, 'debit', 'payment', 'bills', 17.25, 'Vodafone – Nov 2024', NULL, 'Vodafone GmbH', NULL, 'completed', 0.00, 1),
+(43, 1, 43, 'credit', 'transfer', 'other', 59700.00, 'Verpflegungspauschale Nov 2024 – Muster GmbH', NULL, 'Muster GmbH HR', 'ING-DiBa AG', 'completed', 0.00, 1),
+(44, 1, 44, 'debit', 'payment', 'bills', 17.46, 'O2 Rechnung – Dec 2024', NULL, 'O2 Germany', NULL, 'completed', 0.00, 1),
+(45, 1, 45, 'debit', 'payment', 'shopping', 18270.00, 'Amazon.de – year-end order', NULL, 'Amazon EU S.à r.l.', NULL, 'completed', 0.00, 1),
+(46, 1, 46, 'debit', 'payment', 'bills', 17.38, '1&1 – Jan 2025', NULL, '1&1 Versatel GmbH', NULL, 'completed', 0.00, 1),
+(47, 1, 47, 'credit', 'transfer', 'salary', 1330000.00, 'Gehalt Dez 2024 – Muster GmbH', NULL, 'Muster GmbH Payroll', 'Commerzbank AG', 'completed', 0.00, 1),
+(48, 1, 48, 'debit', 'payment', 'bills', 17.67, 'Congstar – Feb 2025', NULL, 'Congstar GmbH', NULL, 'completed', 0.00, 1),
+(49, 1, 49, 'debit', 'payment', 'bills', 17.86, 'E.ON Strom – March 2025', NULL, 'E.ON Energie Deutschland', NULL, 'completed', 0.00, 1),
+(50, 1, 50, 'debit', 'payment', 'gift', 7130.00, 'Galeria Kaufhof – gift & collection', NULL, 'Galeria Kaufhof', NULL, 'completed', 0.00, 1),
+(51, 1, 51, 'debit', 'payment', 'bills', 17.34, 'Stadtwerke – April 2025', NULL, 'Stadtwerke Wiesbaden', NULL, 'completed', 0.00, 1),
+(52, 1, 52, 'debit', 'payment', 'bills', 17.75, 'Vodafone – May 2025', NULL, 'Vodafone GmbH', NULL, 'completed', 0.00, 1),
+(53, 1, 53, 'debit', 'payment', 'bills', 17.55, 'O2 Rechnung – June 2025', NULL, 'O2 Germany', NULL, 'completed', 0.00, 1),
+(54, 1, 54, 'debit', 'transfer', 'other', 17000.00, 'Wire to Kendra Nielsen – Ref WN-62725', NULL, 'Kendra Nielsen', 'Erste Bank Wien', 'completed', 0.00, 1),
+(55, 1, 55, 'debit', 'payment', 'bills', 17.82, 'Telekom Deutschland – July 2025', NULL, 'Telekom Deutschland GmbH', NULL, 'completed', 0.00, 1),
+(56, 1, 56, 'debit', 'payment', 'bills', 17.22, '1&1 – August 2025', NULL, '1&1 Versatel GmbH', NULL, 'completed', 0.00, 1),
+(57, 1, 57, 'credit', 'transfer', 'other', 37925.00, 'AOK Zuschuss – health Aug 2025', NULL, 'AOK Rheinland/Hamburg', 'Postbank Ndl. Bonn', 'completed', 0.00, 1),
+(58, 1, 58, 'debit', 'payment', 'bills', 17.27, 'Congstar – Sept 2025', NULL, 'Congstar GmbH', NULL, 'completed', 0.00, 1),
+(59, 1, 59, 'debit', 'payment', 'shopping', 5500.00, 'Parfümerie Hussong oHG – Wiesbaden', NULL, 'Parfümerie Hussong oHG', NULL, 'completed', 0.00, 1),
+(60, 1, 60, 'debit', 'payment', 'bills', 17.66, 'E.ON Strom – Oct 2025', NULL, 'E.ON Energie Deutschland', NULL, 'completed', 0.00, 1),
+(61, 1, 61, 'debit', 'payment', 'bills', 17.52, 'Vodafone – Nov 2025', NULL, 'Vodafone GmbH', NULL, 'completed', 0.00, 1),
+(62, 1, 62, 'debit', 'payment', 'shopping', 6750.00, 'E-Bike Center Mainz – electric bike', NULL, 'E-Bike Center Mainz', NULL, 'completed', 0.00, 1),
+(63, 1, 63, 'debit', 'payment', 'bills', 17.79, 'O2 Rechnung – Dec 2025', NULL, 'O2 Germany', NULL, 'completed', 0.00, 1),
+(64, 1, 64, 'debit', 'payment', 'shopping', 6400.00, 'SportScheck – gym equipment', NULL, 'SportScheck GmbH', NULL, 'completed', 0.00, 1),
+(65, 1, 65, 'debit', 'payment', 'bills', 17.85, 'Telekom Deutschland – Jan 2026', NULL, 'Telekom Deutschland GmbH', NULL, 'completed', 0.00, 1),
+(66, 1, 66, 'credit', 'transfer', 'salary', 1680000.00, 'Gehalt Jan 2026 – Muster GmbH', NULL, 'Muster GmbH Payroll', 'Targobank AG', 'completed', 0.00, 1),
+(67, 1, 67, 'debit', 'payment', 'shopping', 28340.00, 'Ford Händler Mainz – accessories', NULL, 'Ford Autohaus Mainz', NULL, 'completed', 0.00, 1),
+(68, 1, 68, 'debit', 'payment', 'shopping', 3920.00, 'Shopify store – kiddies order (declined)', NULL, 'Shopify Payments', NULL, 'failed', 0.00, 1),
+(69, 1, 69, 'debit', 'payment', 'bills', 17.67, 'Congstar – Feb 2026 (declined)', NULL, 'Congstar GmbH', NULL, 'failed', 0.00, 1),
+(70, 1, 70, 'debit', 'transfer', 'other', 25000.00, 'Wire to Paul Hartman – Ref WH-22726 (declined)', NULL, 'Paul Hartman', 'UBS Switzerland', 'failed', 0.00, 1);
 
 -- --------------------------------------------------------
 
@@ -2577,10 +2503,16 @@ CREATE TABLE `two_factor_codes` (
 --
 
 INSERT INTO `two_factor_codes` (`id`, `user_id`, `code`, `method`, `used`, `expires_at`, `created_at`, `purpose`) VALUES
-(367, 134, '971842', 'email', 1, '2026-05-31 01:53:15', '2026-05-31 01:43:15', 'transfer'),
-(368, 135, '929293', 'email', 1, '2026-06-02 22:30:56', '2026-06-02 22:20:56', 'login'),
-(369, 135, '981022', 'email', 1, '2026-06-02 22:35:58', '2026-06-02 22:25:58', 'login'),
-(370, 135, '166049', 'email', 1, '2026-06-02 23:22:07', '2026-06-02 23:12:07', 'login');
+(527, 150, '736640', 'email', 1, '2026-08-12 19:21:33', '2026-08-12 19:11:33', 'login'),
+(528, 150, '885751', 'email', 1, '2026-08-12 22:38:02', '2026-08-12 22:28:02', 'login'),
+(529, 150, '967999', 'email', 1, '2026-08-12 22:42:31', '2026-08-12 22:32:31', 'transfer'),
+(530, 150, '365155', 'email', 1, '2026-08-12 22:43:50', '2026-08-12 22:33:50', 'login'),
+(531, 150, '869935', 'email', 1, '2026-08-13 00:31:23', '2026-08-13 00:21:23', 'login'),
+(532, 150, '365434', 'email', 1, '2026-08-13 15:55:36', '2026-08-13 15:45:36', 'login'),
+(533, 150, '271249', 'email', 1, '2026-08-13 18:43:54', '2026-08-13 18:33:54', 'login'),
+(535, 150, '828760', 'email', 1, '2026-08-17 01:52:31', '2026-08-17 01:42:31', 'login'),
+(536, 150, '458754', 'email', 1, '2026-08-17 20:53:58', '2026-08-17 20:43:58', 'login'),
+(537, 150, '774291', 'email', 1, '2026-08-21 16:26:13', '2026-08-21 16:16:13', 'login');
 
 -- --------------------------------------------------------
 
@@ -2667,10 +2599,8 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `email`, `password_hash`, `full_name`, `phone`, `date_of_birth`, `gender`, `address`, `city`, `state`, `country`, `postal_code`, `profile_picture`, `role`, `is_super_admin`, `status`, `kyc_status`, `kyc_prompt_dismissed`, `kyc_document_path`, `kyc_submitted_at`, `two_factor_enabled`, `two_factor_method`, `security_question_1`, `security_answer_1`, `security_question_2`, `security_answer_2`, `last_login`, `email_verified`, `phone_verified`, `notification_preferences`, `metadata`, `language`, `currency`, `investment_balance`, `transfer_pin`, `security_pin`, `login_pin`, `onboarding_completed`, `transaction_override`, `created_at`, `updated_at`, `currency_selection_shown`, `transfer_otp_required`, `imf_code`, `imf_required`, `federal_swift_code`, `federal_swift_required`, `vat_code`, `vat_required`, `tac_code`, `tac_required`, `tin_code`, `tin_required`) VALUES
-(3, 'admin@demo.com', '$2y$10$zmylYDB3CckAH1EVQuQ17uTeu.mPsyS5HcyUfgHOhGmEw6NGoUSmu', 'Admin User', '+1234567891', '1985-01-01', NULL, '456 Admin Avenue', 'Admin City', 'Admin State', 'United States', '54321', NULL, 'admin', 1, 'active', 'verified', 0, NULL, NULL, 0, 'email', NULL, NULL, NULL, NULL, '2026-05-31 03:10:46', 1, 0, NULL, NULL, 'en', 'USD', 0.00, '$2y$10$Q1PjPMemugsGthLoGy37GOFdWdbAKDyk9P8cnGHw3iotKzcR3Iaa6', '$2y$10$ASwi5xJx4ax.EBuEkJVfr.wa15SBxxNbIMQ42fWKvYE/fGB25TATK', '$2y$10$bZlUWmGoHKLIMvACEDK1muZ.b7gCp3lTClANesOuPE1nT8ATEYsD6', 1, 'normal', '2025-10-08 22:44:52', '2026-05-31 03:10:46', 0, 1, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0),
-(60, 'support@firstnationalfn.com', '$2y$12$41gAqMmSARORXxe8iqup2OBVNk1mzEC5.xveeCRP9Jqp37I2QH/5.', 'admin user', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '/uploads/profile-pictures/user_60_1773878315.jpeg', 'admin', 0, 'active', 'verified', 0, NULL, NULL, 0, 'email', NULL, NULL, NULL, NULL, '2026-06-02 23:11:50', 1, 0, NULL, '{\"timezone\":\"America\\/New_York\"}', 'en', 'GBP', 0.00, NULL, NULL, NULL, 0, 'normal', '2026-01-29 02:21:13', '2026-06-02 23:11:50', 0, 1, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0),
-(134, 'mr.carter.tech07@gmail.com', '$2y$12$UoMAjX65auLONnphd3D1qed.wKwv2avpQcqBbL83FurS7lcLS6NSe', 'carter tech', '+35391347593', '1987-06-25', 'male', '177 Ago Palace Way,, Lagos , Lagos', 'Oshodi Isolo', 'Lagos', 'AE', '110224', NULL, 'user', 0, 'active', 'verified', 0, NULL, '2026-05-31 01:41:31', 1, 'email', 'What city were you born in?', '$2y$12$fkoFmO8aaouTQf2Yyp8p3OPt1GG3lcbOVOlZrKKI.vtULYBWM4S1C', 'What was the name of your first pet?', '$2y$12$Rd4PyvMolIDX0xoxmMg1J.ES.GvYnxQI8XyPmDRNWVYQ0/AXVxUWC', '2026-05-31 01:23:18', 1, 0, '{\"email_notifications\":true,\"sms_notifications\":false,\"transaction_alerts\":true,\"login_alerts\":true,\"marketing_emails\":true}', '{\"timezone\":\"America\\/New_York\"}', 'en', 'AUD', 0.00, '$2y$10$RBdnBPuUDv2aTAzt9Mp7e.7XMcpt2N46QpODI3yeOh97DrakpTT7u', NULL, '$2y$10$xUuiGYaPbGnPiDqFNWVyM.6A0lD56L6ETz7HamLBGdIP/SVvAXjOq', 0, 'normal', '2026-05-31 01:22:17', '2026-06-02 23:10:22', 1, 1, '8520754522', 0, '8040899300', 0, '0754036616', 0, '4982540279', 0, '2786731439', 0),
-(135, 'simplyhiredremotejobs@gmail.com', '$2y$12$Z0J/PgyD.GRHyAY9lGkuIubL6XUwHcd2yeGoLgMJmfsWURCuKEoAe', 'Rayo valencano', '8085455457', '1997-05-16', 'male', 'Marina Bay, Dubai', 'Dubai', 'Dubai', 'AE', '353546', NULL, 'user', 0, 'pending', 'pending', 0, NULL, NULL, 1, 'email', 'What city were you born in?', '$2y$12$XuK4VEcrt/lTYq.Urr4BxeQvyoam9A8aHMUmnFAE4whA1y3txUJ9G', 'What was the name of your first pet?', '$2y$12$GZ7vXckD2epWIZo4x7mPa.xKI5lXDBv.geE15h65B8OljfP6a04EO', '2026-06-02 23:12:34', 1, 0, '{\"email_notifications\":true,\"sms_notifications\":false,\"transaction_alerts\":true,\"login_alerts\":true,\"marketing_emails\":true}', '{\"timezone\":\"America\\/New_York\"}', 'en', 'AED', 0.00, '$2y$10$U/AllVP.KZTIKrH4NLEPp.W8NcTAY62Vcb51sSDqPqFURFfAc1wt.', NULL, '$2y$10$9AZ.qt3HCW0E1FxLRryOve96GF2i9blXHa7/ZeMQpq3pimYh6jzoi', 0, 'normal', '2026-05-31 22:38:33', '2026-06-02 23:14:27', 1, 1, '0230761081', 0, '8147711250', 0, '8474568045', 0, '7823190659', 0, '0557398061', 0);
+(3, 'admin@demo.com', '$2y$12$vySF0Qua/n5QZwGl9qEFsupSmRsEkWaslKLGhtny.c1XlRyQq5mXC', 'Admin User', '+1234567891', '1985-01-01', NULL, '456 Admin Avenue', 'Admin City', 'Admin State', 'United States', '54321', NULL, 'admin', 1, 'active', 'verified', 0, NULL, NULL, 0, 'email', NULL, NULL, NULL, NULL, '2026-08-24 21:44:05', 1, 0, NULL, NULL, 'en', 'USD', 0.00, '$2y$10$Q1PjPMemugsGthLoGy37GOFdWdbAKDyk9P8cnGHw3iotKzcR3Iaa6', '$2y$10$ASwi5xJx4ax.EBuEkJVfr.wa15SBxxNbIMQ42fWKvYE/fGB25TATK', '$2y$10$bZlUWmGoHKLIMvACEDK1muZ.b7gCp3lTClANesOuPE1nT8ATEYsD6', 1, 'normal', '2025-10-08 22:44:52', '2026-08-24 21:44:05', 0, 1, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0),
+(150, 'ElonmuskEthereumportfolio@outlook.com', '$2y$12$XmZZ1pz7YXJtR9kl5zbrtea7P96ZHI8BWmRCXNKl3h6TH0j92rA6W', 'Sheehy Marion Elon Investment Fund', '+1 (803) 932-8491', '1988-11-23', 'other', '2560 W Oak Ridge Rd, Orlando, FL 32809, United States', 'Orlando', 'florida', 'United States', '110224', NULL, 'user', 0, 'active', 'verified', 0, NULL, '2026-08-12 18:52:31', 1, 'email', 'Admin created account', '$2y$12$PaX.FiYgmQ5SXqIQ0.ngG.haQcFuN66DbqO/uHam8rTNnqEG1yjcq', 'Admin created account', '$2y$12$/M0Oxzdi7vFYe8dLnMuhQuqGAvRHp46dwwSoIxtE1vdZyCfoOvoHS', '2026-08-21 16:18:37', 1, 0, '{\"email_notifications\":true,\"sms_notifications\":false,\"transaction_alerts\":true,\"login_alerts\":true,\"marketing_emails\":false}', NULL, 'en', 'USD', 0.00, '$2y$10$PA3EsG5PDFBxI4TMdna33e4w1/xPDANmh3iMXPruxeoRYB2MDccbq', NULL, '$2y$10$rCYtqTZR4SvrQgDk2/WgluLvOm22Eq17a.m.7UfSUZdFTSyXfqS4W', 0, 'normal', '2026-08-12 18:52:31', '2026-08-21 16:18:37', 1, 1, '1757640497', 1, '7844386020', 0, '2663940619', 0, '2936961112', 0, '8644502890', 0);
 
 -- --------------------------------------------------------
 
@@ -3082,6 +3012,32 @@ ALTER TABLE `transactions`
   ADD KEY `idx_transaction_status_created` (`status`,`created_at`);
 
 --
+-- Indexes for table `transaction_generation_batches`
+--
+ALTER TABLE `transaction_generation_batches`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `batch_id` (`batch_id`),
+  ADD UNIQUE KEY `idempotency_key` (`idempotency_key`),
+  ADD KEY `idx_params_hash` (`params_hash`),
+  ADD KEY `idx_account_status` (`account_id`,`status`),
+  ADD KEY `idx_user_account` (`user_id`,`account_id`);
+
+--
+-- Indexes for table `transaction_templates`
+--
+ALTER TABLE `transaction_templates`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `slug` (`slug`),
+  ADD KEY `idx_account_type` (`account_type`);
+
+--
+-- Indexes for table `transaction_template_items`
+--
+ALTER TABLE `transaction_template_items`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_template_sort` (`template_id`,`sort_order`);
+
+--
 -- Indexes for table `two_factor_codes`
 --
 ALTER TABLE `two_factor_codes`
@@ -3141,19 +3097,19 @@ ALTER TABLE `user_notes`
 -- AUTO_INCREMENT for table `accounts`
 --
 ALTER TABLE `accounts`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=130;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=146;
 
 --
 -- AUTO_INCREMENT for table `account_owners`
 --
 ALTER TABLE `account_owners`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `activity_logs`
 --
 ALTER TABLE `activity_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2193;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2510;
 
 --
 -- AUTO_INCREMENT for table `admin_audit_logs`
@@ -3165,7 +3121,7 @@ ALTER TABLE `admin_audit_logs`
 -- AUTO_INCREMENT for table `admin_logs`
 --
 ALTER TABLE `admin_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=258;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=293;
 
 --
 -- AUTO_INCREMENT for table `admin_sessions`
@@ -3177,7 +3133,7 @@ ALTER TABLE `admin_sessions`
 -- AUTO_INCREMENT for table `banks`
 --
 ALTER TABLE `banks`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=287;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=275;
 
 --
 -- AUTO_INCREMENT for table `beneficiaries`
@@ -3195,7 +3151,7 @@ ALTER TABLE `bill_payments`
 -- AUTO_INCREMENT for table `cards`
 --
 ALTER TABLE `cards`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
 
 --
 -- AUTO_INCREMENT for table `card_applications`
@@ -3237,19 +3193,19 @@ ALTER TABLE `email_simulation_templates`
 -- AUTO_INCREMENT for table `email_verification_tokens`
 --
 ALTER TABLE `email_verification_tokens`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=138;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=148;
 
 --
 -- AUTO_INCREMENT for table `exchange_rates`
 --
 ALTER TABLE `exchange_rates`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=433;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=429;
 
 --
 -- AUTO_INCREMENT for table `investment_funding`
 --
 ALTER TABLE `investment_funding`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
 -- AUTO_INCREMENT for table `investment_products`
@@ -3291,13 +3247,13 @@ ALTER TABLE `kyc_beneficial_owners`
 -- AUTO_INCREMENT for table `kyc_verifications`
 --
 ALTER TABLE `kyc_verifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
 
 --
 -- AUTO_INCREMENT for table `loans`
 --
 ALTER TABLE `loans`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
 -- AUTO_INCREMENT for table `loan_payments`
@@ -3309,25 +3265,25 @@ ALTER TABLE `loan_payments`
 -- AUTO_INCREMENT for table `login_attempts`
 --
 ALTER TABLE `login_attempts`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=265;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=316;
 
 --
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=155;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=163;
 
 --
 -- AUTO_INCREMENT for table `password_reset_tokens`
 --
 ALTER TABLE `password_reset_tokens`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=35;
 
 --
 -- AUTO_INCREMENT for table `schema_migrations`
 --
 ALTER TABLE `schema_migrations`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `support_messages`
@@ -3351,7 +3307,7 @@ ALTER TABLE `system_alerts`
 -- AUTO_INCREMENT for table `system_settings`
 --
 ALTER TABLE `system_settings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1717;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1677;
 
 --
 -- AUTO_INCREMENT for table `system_versions`
@@ -3369,13 +3325,31 @@ ALTER TABLE `system_version_info`
 -- AUTO_INCREMENT for table `transactions`
 --
 ALTER TABLE `transactions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=649;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1889;
+
+--
+-- AUTO_INCREMENT for table `transaction_generation_batches`
+--
+ALTER TABLE `transaction_generation_batches`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+
+--
+-- AUTO_INCREMENT for table `transaction_templates`
+--
+ALTER TABLE `transaction_templates`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `transaction_template_items`
+--
+ALTER TABLE `transaction_template_items`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=71;
 
 --
 -- AUTO_INCREMENT for table `two_factor_codes`
 --
 ALTER TABLE `two_factor_codes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=371;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=538;
 
 --
 -- AUTO_INCREMENT for table `update_logs`
@@ -3387,7 +3361,7 @@ ALTER TABLE `update_logs`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=136;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=151;
 
 --
 -- AUTO_INCREMENT for table `user_investments`
@@ -3569,6 +3543,12 @@ ALTER TABLE `system_alerts`
 ALTER TABLE `transactions`
   ADD CONSTRAINT `transactions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `transactions_ibfk_2` FOREIGN KEY (`account_id`) REFERENCES `accounts` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `transaction_template_items`
+--
+ALTER TABLE `transaction_template_items`
+  ADD CONSTRAINT `fk_template_items_template` FOREIGN KEY (`template_id`) REFERENCES `transaction_templates` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `two_factor_codes`

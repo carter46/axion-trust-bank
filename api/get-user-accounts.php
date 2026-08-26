@@ -69,7 +69,7 @@ try {
         throw new Exception('Invalid user ID');
     }
     
-    $sql = "SELECT id, account_number, account_type, balance, status 
+    $sql = "SELECT id, account_number, account_type, balance, currency, status 
             FROM accounts 
             WHERE user_id = ? AND status = 'active'
             ORDER BY account_type, created_at ASC";
@@ -81,6 +81,21 @@ try {
     }
     
     $accounts = $stmt->fetchAll();
+
+    $userStmt = $db->query("SELECT id, currency, currency_selection_shown FROM users WHERE id = ? LIMIT 1", [$userId]);
+    $userRow = $userStmt ? $userStmt->fetch() : null;
+    $displayCurrency = getUserDisplayCurrency($userRow ?: []);
+
+    foreach ($accounts as &$account) {
+        $ledgerBalance = (float)($account['balance'] ?? 0);
+        $ledgerCurrency = getAccountStoredCurrency($account);
+        $displayBalance = convertCurrencyAmount($ledgerBalance, $ledgerCurrency, $displayCurrency);
+        $account['ledger_currency'] = $ledgerCurrency;
+        $account['display_currency'] = $displayCurrency;
+        $account['display_balance'] = round((float)$displayBalance, 2);
+        $account['balance_formatted'] = formatCurrency($ledgerBalance, $displayCurrency, $ledgerCurrency);
+    }
+    unset($account);
     
     // Ensure clean JSON output
     if (ob_get_level() > 0) {
@@ -89,6 +104,7 @@ try {
     
     echo json_encode([
         'success' => true,
+        'display_currency' => $displayCurrency,
         'accounts' => $accounts
     ]);
     

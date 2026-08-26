@@ -250,6 +250,17 @@ function requireAdmin() {
             $_SESSION['error'] = 'Admin access required';
             redirect('/dashboard');
         }
+
+        // Apply pending DB auto-migrations on every admin page load (idempotent)
+        try {
+            require_once __DIR__ . '/database-auto-migrate.php';
+            runAdminDatabaseAutoMigrations((int)$userIdToCheck);
+        } catch (Throwable $migrateError) {
+            $_SESSION['auto_migration_errors'] = [
+                'Auto-migration runner failed: ' . $migrateError->getMessage()
+            ];
+            error_log('requireAdmin auto-migrate error: ' . $migrateError->getMessage());
+        }
     } catch (Exception $e) {
         error_log("Admin validation error: " . $e->getMessage());
         $_SESSION['error'] = 'Unable to verify admin access';
@@ -259,7 +270,7 @@ function requireAdmin() {
 
 /**
  * Check if user's security setup is incomplete
- * Returns true if user needs to complete security setup (Transfer PIN, Login PIN, 2FA)
+ * Returns true if user needs Login PIN / Transfer PIN (2FA is optional and never blocks access)
  */
 function isSecuritySetupIncomplete($userId = null) {
     if (!$userId && isLoggedIn()) {
@@ -272,52 +283,25 @@ function isSecuritySetupIncomplete($userId = null) {
     
     try {
         $db = Database::getInstance();
-        $stmt = $db->query("SELECT two_factor_enabled, transfer_pin, login_pin, role FROM users WHERE id = ?", [$userId]);
+        $stmt = $db->query("SELECT transfer_pin, login_pin, role FROM users WHERE id = ?", [$userId]);
         $user = $stmt->fetch();
         
         if (!$user) {
             return false;
         }
         
-        $has2FA = isset($user['two_factor_enabled']) && $user['two_factor_enabled'] == 1;
         $hasTransferPin = !empty($user['transfer_pin'] ?? '');
         $hasLoginPin = !empty($user['login_pin'] ?? '');
-        $role = strtolower(trim((string)($user['role'] ?? 'user')));
-        $isAdmin = ($role === 'admin');
-        $isStaff = $isAdmin || ($role === 'support') || !empty($user['is_super_admin'] ?? 0);
         
-        // Check if 2FA is required system-wide or disabled entirely
-        $twoFactorRequired = false;
-        $twoFactorDisabled = false;
-        try {
-            if (!class_exists('SystemSettings')) {
-                require_once __DIR__ . '/system-settings.php';
-            }
-            $systemSettings = SystemSettings::getInstance();
-            $twoFactorRequired = $systemSettings->is2FARequired();
-            $twoFactorDisabled = $systemSettings->get('disable_2fa_entirely', '0') === '1';
-        } catch (Exception $e) {
-            // If SystemSettings fails, assume 2FA is not required and not disabled
-            error_log("SystemSettings error in isSecuritySetupIncomplete: " . $e->getMessage());
-            $twoFactorRequired = false;
-            $twoFactorDisabled = false;
+        // 2FA is optional — incompleteness is Login PIN / Transfer PIN only
+        $incomplete = !$hasTransferPin || !$hasLoginPin;
+        if (!$incomplete) {
+            return false;
         }
-        
-        if ($isStaff) {
-            // Staff only need Transfer PIN and Login PIN (2FA is optional)
-            return !$hasTransferPin || !$hasLoginPin;
-        } else {
-            // Regular users need all three: Transfer PIN, 2FA (if required and not disabled), and Login PIN
-            $needs2FA = $twoFactorRequired && !$twoFactorDisabled && !$has2FA;
-            $incomplete = !$hasTransferPin || $needs2FA || !$hasLoginPin;
-            if (!$incomplete) {
-                return false;
-            }
-            if (!isForceSecuritySetupEnabled()) {
-                return false;
-            }
-            return true;
+        if (!isForceSecuritySetupEnabled()) {
+            return false;
         }
+        return true;
     } catch (Exception $e) {
         error_log("Security setup check error: " . $e->getMessage());
         return false;
@@ -365,7 +349,8 @@ function getAccountLimit($accountType, $limitType = 'daily') {
 }
 
 /**
- * Currency the user explicitly chose in the currency popup (not auto-assigned at registration).
+ * Admin-assigned (or otherwise set) display currency for a user.
+ * Prefers users.currency whenever present; falls back to site default.
  */
 function getUserDisplayCurrency($user = null) {
     if ($user === null && isLoggedIn()) {
@@ -375,11 +360,77 @@ function getUserDisplayCurrency($user = null) {
         $user = (new User())->findById($_SESSION['user_id']);
     }
 
-    if (is_array($user) && !empty($user['currency_selection_shown'])) {
-        return strtoupper(trim($user['currency'] ?? getSiteDefaultCurrency()));
+    if (is_array($user)) {
+        $code = strtoupper(trim((string)($user['currency'] ?? '')));
+        if (preg_match('/^[A-Z]{3}$/', $code)) {
+            return $code;
+        }
     }
 
     return getSiteDefaultCurrency();
+}
+
+/**
+ * Primary country name for a currency code (for flag / location sync when admin sets currency).
+ */
+function currencyToPrimaryCountry($currencyCode) {
+    $code = strtoupper(trim((string)$currencyCode));
+    $map = [
+        'USD' => 'United States',
+        'CAD' => 'Canada',
+        'MXN' => 'Mexico',
+        'GBP' => 'United Kingdom',
+        'EUR' => 'Germany',
+        'CHF' => 'Switzerland',
+        'SEK' => 'Sweden',
+        'NOK' => 'Norway',
+        'DKK' => 'Denmark',
+        'PLN' => 'Poland',
+        'CZK' => 'Czech Republic',
+        'HUF' => 'Hungary',
+        'RON' => 'Romania',
+        'BGN' => 'Bulgaria',
+        'AUD' => 'Australia',
+        'NZD' => 'New Zealand',
+        'JPY' => 'Japan',
+        'CNY' => 'China',
+        'HKD' => 'Hong Kong',
+        'TWD' => 'Taiwan',
+        'KRW' => 'South Korea',
+        'SGD' => 'Singapore',
+        'MYR' => 'Malaysia',
+        'THB' => 'Thailand',
+        'IDR' => 'Indonesia',
+        'PHP' => 'Philippines',
+        'VND' => 'Vietnam',
+        'INR' => 'India',
+        'PKR' => 'Pakistan',
+        'BDT' => 'Bangladesh',
+        'LKR' => 'Sri Lanka',
+        'NGN' => 'Nigeria',
+        'GHS' => 'Ghana',
+        'KES' => 'Kenya',
+        'ZAR' => 'South Africa',
+        'EGP' => 'Egypt',
+        'MAD' => 'Morocco',
+        'TND' => 'Tunisia',
+        'DZD' => 'Algeria',
+        'AED' => 'United Arab Emirates',
+        'SAR' => 'Saudi Arabia',
+        'QAR' => 'Qatar',
+        'KWD' => 'Kuwait',
+        'BRL' => 'Brazil',
+        'ARS' => 'Argentina',
+        'CLP' => 'Chile',
+        'COP' => 'Colombia',
+        'PEN' => 'Peru',
+        'TRY' => 'Turkey',
+        'ILS' => 'Israel',
+        'RUB' => 'Russia',
+        'XOF' => 'Senegal',
+        'ZMW' => 'Zambia',
+    ];
+    return $map[$code] ?? 'United States';
 }
 
 /**
@@ -418,10 +469,10 @@ function getCurrencyForOperatingCountry($country) {
 }
 
 /**
- * Currency users enter transfer amounts in — always the site default from admin settings.
+ * Currency users enter transfer amounts in — their admin-assigned display currency.
  */
-function getBankTransferEntryCurrency() {
-    return getSiteDefaultCurrency();
+function getBankTransferEntryCurrency($user = null) {
+    return getUserDisplayCurrency($user);
 }
 
 /**

@@ -334,20 +334,13 @@ include __DIR__ . '/../../includes/sidebar.php';
             </div>
         </div>
 
-        <!-- Currency Settings -->
+        <!-- Currency (admin-owned, read-only for user) -->
         <div class="settings-card">
-            <h3><i class="fas fa-dollar-sign"></i> Currency Preferences</h3>
-            <p>Set your default currency for account balances and transactions</p>
-            
+            <h3><i class="fas fa-dollar-sign"></i> Currency</h3>
+            <p>Your display currency is set by your bank administrator</p>
             <div class="form-group">
-                <label for="currency">Default Currency</label>
-                <select name="currency" id="currency" class="form-control">
-                    <?php foreach ($supportedCurrencies as $code => $name): ?>
-                        <option value="<?php echo $code; ?>" <?php echo $defaultCurrency === $code ? 'selected' : ''; ?>>
-                            <?php echo $name; ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
+                <label>Display Currency</label>
+                <input type="text" class="form-control" value="<?php echo htmlspecialchars(($supportedCurrencies[$defaultCurrency] ?? $defaultCurrency) . ' (' . $defaultCurrency . ')'); ?>" readonly disabled>
             </div>
         </div>
 

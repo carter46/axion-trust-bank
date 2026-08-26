@@ -1,13 +1,74 @@
 <?php
 /**
  * Single source of truth for exchange rates (ExchangeRate-API v6).
- * All conversions and rate lookups should go through this class.
+ * Resolution: fresh cache → live API → inverse/bridge → stale cache → static offline fallback.
+ * Never returns silent 1.0 across different currencies.
  */
 
 class ExchangeRates {
     private static $instance = null;
     private $db;
     private $cacheTime = 3600;
+
+    /**
+     * Approximate USD-based rates used when live API / cache are unavailable.
+     * Values are "units of currency per 1 USD" (e.g. EUR 0.92 means 1 USD = 0.92 EUR).
+     */
+    private static $staticUsdRates = [
+        'USD' => 1.0,
+        'EUR' => 0.92,
+        'GBP' => 0.79,
+        'JPY' => 149.0,
+        'CNY' => 7.25,
+        'INR' => 83.5,
+        'CAD' => 1.36,
+        'AUD' => 1.52,
+        'NZD' => 1.64,
+        'CHF' => 0.88,
+        'SEK' => 10.5,
+        'NOK' => 10.8,
+        'DKK' => 6.85,
+        'PLN' => 3.95,
+        'CZK' => 22.8,
+        'HUF' => 360.0,
+        'RON' => 4.55,
+        'BGN' => 1.80,
+        'RUB' => 92.0,
+        'TRY' => 32.0,
+        'ILS' => 3.70,
+        'HKD' => 7.82,
+        'SGD' => 1.34,
+        'MYR' => 4.70,
+        'THB' => 35.5,
+        'IDR' => 15800.0,
+        'PHP' => 56.5,
+        'VND' => 24500.0,
+        'KRW' => 1320.0,
+        'TWD' => 31.5,
+        'NGN' => 1550.0,
+        'GHS' => 15.5,
+        'KES' => 129.0,
+        'ZAR' => 18.5,
+        'EGP' => 48.0,
+        'MAD' => 10.0,
+        'TND' => 3.10,
+        'DZD' => 134.0,
+        'AED' => 3.67,
+        'SAR' => 3.75,
+        'QAR' => 3.64,
+        'KWD' => 0.31,
+        'BRL' => 5.10,
+        'MXN' => 17.2,
+        'ARS' => 870.0,
+        'CLP' => 920.0,
+        'COP' => 3950.0,
+        'PEN' => 3.75,
+        'PKR' => 278.0,
+        'BDT' => 110.0,
+        'LKR' => 300.0,
+        'XOF' => 605.0,
+        'ZMW' => 26.0,
+    ];
 
     private function __construct() {
         $this->db = Database::getInstance();
@@ -26,18 +87,31 @@ class ExchangeRates {
     }
 
     /**
-     * API key from config; falls back to legacy project key when env is unset.
+     * API key from system_settings, then config constant. No hardcoded project key.
      */
     public function getApiKey() {
+        try {
+            if (!class_exists('SystemSettings')) {
+                require_once __DIR__ . '/system-settings.php';
+            }
+            $fromSettings = trim((string)SystemSettings::getInstance()->get('exchange_rate_api_key', ''));
+            if ($fromSettings !== '' && $fromSettings !== 'your-api-key') {
+                return $fromSettings;
+            }
+        } catch (Exception $e) {
+            // fall through
+        }
+
         $key = defined('EXCHANGE_RATE_API_KEY') ? trim((string)EXCHANGE_RATE_API_KEY) : '';
         if ($key === '' || $key === 'your-api-key') {
-            return '237f6e67ee2389de0cc0e4f5';
+            return '';
         }
         return $key;
     }
 
     /**
      * Rate to multiply amount in $from to get amount in $to.
+     * Returns null when no rate can be resolved (callers must not invent 1.0).
      */
     public function getRate($fromCurrency, $toCurrency) {
         $from = self::normalizeCode($fromCurrency);
@@ -52,8 +126,8 @@ class ExchangeRates {
             return $rate;
         }
 
-        error_log("ExchangeRates: no rate for {$from} -> {$to}, refusing silent 1.0");
-        return 1.0;
+        error_log("ExchangeRates: no rate for {$from} -> {$to}");
+        return null;
     }
 
     public function convert($amount, $fromCurrency, $toCurrency) {
@@ -65,15 +139,27 @@ class ExchangeRates {
             return round($amount, 2);
         }
 
-        return round($amount * $this->getRate($from, $to), 2);
+        $rate = $this->getRate($from, $to);
+        if ($rate === null || $rate <= 0) {
+            error_log("ExchangeRates: convert failed {$from} -> {$to}, returning original amount");
+            return round($amount, 2);
+        }
+
+        return round($amount * $rate, 2);
     }
 
     /**
      * Refresh all rates from a base currency into exchange_rates cache.
      */
     public function refreshRates($baseCurrency = null) {
+        $apiKey = $this->getApiKey();
+        if ($apiKey === '') {
+            error_log('ExchangeRates: refresh skipped — no API key configured');
+            return false;
+        }
+
         $base = self::normalizeCode($baseCurrency ?? (defined('DEFAULT_CURRENCY') ? DEFAULT_CURRENCY : 'USD'));
-        $url = 'https://v6.exchangerate-api.com/v6/' . rawurlencode($this->getApiKey()) . '/latest/' . rawurlencode($base);
+        $url = 'https://v6.exchangerate-api.com/v6/' . rawurlencode($apiKey) . '/latest/' . rawurlencode($base);
 
         $data = $this->fetchJson($url);
         if (!$data || ($data['result'] ?? '') !== 'success' || empty($data['conversion_rates'])) {
@@ -136,7 +222,26 @@ class ExchangeRates {
             return 1.0 / $staleInverse;
         }
 
-        return null;
+        return $this->getStaticRate($from, $to);
+    }
+
+    /**
+     * Offline fallback: rates vs USD, bridge through USD for cross pairs.
+     */
+    private function getStaticRate($from, $to) {
+        $fromUsd = self::$staticUsdRates[$from] ?? null;
+        $toUsd = self::$staticUsdRates[$to] ?? null;
+
+        if ($fromUsd === null || $toUsd === null || $fromUsd <= 0 || $toUsd <= 0) {
+            return null;
+        }
+
+        // staticUsdRates: units of currency per 1 USD
+        // amount_to = amount_from * (toUsd / fromUsd)  when converting from→to
+        // e.g. USD→EUR: 1 * (0.92 / 1) = 0.92
+        // e.g. EUR→USD: 1 * (1 / 0.92) = 1.087
+        // e.g. EUR→GBP: 1 * (0.79 / 0.92)
+        return $toUsd / $fromUsd;
     }
 
     private function getCachedRate($from, $to, $allowStale) {
@@ -156,7 +261,12 @@ class ExchangeRates {
     }
 
     private function fetchPairFromAPI($from, $to) {
-        $url = 'https://v6.exchangerate-api.com/v6/' . rawurlencode($this->getApiKey())
+        $apiKey = $this->getApiKey();
+        if ($apiKey === '') {
+            return null;
+        }
+
+        $url = 'https://v6.exchangerate-api.com/v6/' . rawurlencode($apiKey)
             . '/pair/' . rawurlencode($from) . '/' . rawurlencode($to);
         $data = $this->fetchJson($url);
 

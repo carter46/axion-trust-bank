@@ -21,12 +21,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_user_currency'
     $newCurrency = Security::sanitize($_POST['currency'] ?? 'USD');
     
     if ($targetUserId > 0) {
-        $sql = "UPDATE users SET currency = ?, currency_selection_shown = 1 WHERE id = ?";
-        $result = $db->query($sql, [$newCurrency, $targetUserId]);
+        $country = currencyToPrimaryCountry($newCurrency);
+        $sql = "UPDATE users SET currency = ?, currency_selection_shown = 1, country = ? WHERE id = ?";
+        $result = $db->query($sql, [$newCurrency, $country, $targetUserId]);
         
         if ($result) {
             $successMessage = "User currency updated successfully!";
-            logActivity($userId, 'currency_updated', "Updated currency for user ID: $targetUserId to $newCurrency");
+            logActivity($userId, 'currency_updated', "Updated currency for user ID: $targetUserId to $newCurrency (country: $country)");
         } else {
             $errorMessage = "Failed to update user currency.";
         }

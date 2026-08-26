@@ -551,7 +551,6 @@ class AdminController {
                 'address' => Security::sanitize($_POST['address']),
                 'city' => Security::sanitize($_POST['city']),
                 'state' => Security::sanitize($_POST['state']),
-                'country' => Security::sanitize($_POST['country']),
                 'postal_code' => Security::sanitize($_POST['postal_code']),
                 'status' => Security::sanitize($_POST['status'] ?? 'active'),
                 'kyc_status' => Security::sanitize($_POST['kyc_status'] ?? 'pending'),
@@ -563,6 +562,10 @@ class AdminController {
                 'security_answer_2' => 'admin',
                 'role' => 'user' // Always set to 'user' - admins are created via admin-settings page
             ];
+            $data['currency'] = strtoupper(trim($data['currency'] ?: DEFAULT_CURRENCY));
+            // Prefer posted country; otherwise derive from display currency
+            $postedCountry = Security::sanitize($_POST['country'] ?? '');
+            $data['country'] = $postedCountry !== '' ? $postedCountry : currencyToPrimaryCountry($data['currency']);
             
             $userId = $this->adminModel->createUser($data);
             

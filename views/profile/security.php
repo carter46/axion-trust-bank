@@ -50,14 +50,8 @@ if (!$isAdmin) {
     }
 }
 
-if ($isAdmin) {
-    // Admins only need Transfer PIN and Login PIN (2FA is optional)
-    $needsSetup = !$hasTransferPin || !$hasLoginPin;
-} else {
-    // Regular users need all three: Transfer PIN, 2FA (if required and not disabled), and Login PIN
-    $needs2FA = $twoFactorRequired && !$twoFactorDisabled && !$has2FA;
-    $needsSetup = !$hasTransferPin || $needs2FA || !$hasLoginPin;
-}
+// Setup gate is Login PIN / Transfer PIN only — 2FA is optional
+$needsSetup = !$hasTransferPin || !$hasLoginPin;
 
 // Clear the flag if setup is now complete
 if (!$needsSetup) {
@@ -75,7 +69,7 @@ if ($isOnboardingWizard) {
     $_SESSION['security_onboarding'] = true;
 }
 
-$needs2FAStep = !$isAdmin && $twoFactorRequired && !$twoFactorDisabled && !$has2FA;
+$needs2FAStep = false;
 $showOnboardingWizard = $isOnboardingWizard;
 
 // Show security setup notice on first login OR when redirected (skip during guided wizard)
@@ -551,9 +545,6 @@ include __DIR__ . '/../../includes/sidebar.php';
             <ul style="margin: 0; padding-left: 20px; color: #374151;">
                 <?php if (!$hasTransferPin): ?>
                 <li style="margin-bottom: 8px;"><strong>Transfer PIN</strong> - Required for all money transfers</li>
-                <?php endif; ?>
-                <?php if ($twoFactorRequired && !$twoFactorDisabled && !$has2FA && !$isAdmin): ?>
-                <li style="margin-bottom: 8px;"><strong>Two-Factor Authentication (2FA)</strong> - Extra security layer</li>
                 <?php endif; ?>
                 <?php if (!$hasLoginPin): ?>
                 <li style="margin-bottom: 8px;"><strong>Login PIN</strong> - Quick and secure login option</li>

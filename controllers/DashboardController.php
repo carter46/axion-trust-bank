@@ -18,45 +18,17 @@ class DashboardController {
         $isRestricted = function_exists('isRestrictedStatus') ? isRestrictedStatus($user['status'] ?? '') : false;
         
         if (!$isAdmin && !$isRestricted) {
-            require_once __DIR__ . '/../includes/system-settings.php';
-            $systemSettings = SystemSettings::getInstance();
-            $twoFactorRequired = $systemSettings->is2FARequired();
-            
-            if ($twoFactorRequired && !$user['two_factor_enabled']) {
-                $_SESSION['warning'] = 'Two-Factor Authentication (2FA) is required for all users. Please enable 2FA in your security settings to continue.';
-                $_SESSION['security_setup_required'] = true; // Flag that security setup is required
-                // Check if this is a first login (redirected from login)
-                $redirectParam = isset($_GET['logged_in']) && $_GET['logged_in'] == '1' ? '?logged_in=1' : '';
-                redirect('/profile/security' . $redirectParam);
-            }
-            
-            // Check if security setup is incomplete (Transfer PIN, Login PIN, etc.)
+            // 2FA is optional — do not force-redirect when disabled.
+            // Check if security setup is incomplete (Transfer PIN, Login PIN only)
             if (isSecuritySetupIncomplete($userId)) {
-                $_SESSION['security_setup_required'] = true; // Flag that security setup is required
+                $_SESSION['security_setup_required'] = true;
                 redirect('/profile/security');
             }
         }
         
-        // Check if user needs to see currency selection popup
-        // Show if: currency_selection_shown is NULL or 0, and their current currency is the default
+        // Currency is admin-owned — never show the user currency selection popup
         $showCurrencyPopup = false;
         $detectedCurrency = null;
-        
-        if (empty($user['currency_selection_shown'])) {
-            require_once __DIR__ . '/../includes/currency-converter.php';
-            require_once __DIR__ . '/../config/config.php';
-            $converter = new CurrencyConverter();
-            $detectedCurrency = $converter->getCurrencyForUser();
-            
-            // Show popup if detected currency is different from current or if current is default
-            $currentCurrency = getUserDisplayCurrency($user);
-            if ($detectedCurrency !== $currentCurrency && $detectedCurrency !== DEFAULT_CURRENCY) {
-                $showCurrencyPopup = true;
-            } elseif ($currentCurrency === DEFAULT_CURRENCY && $detectedCurrency !== DEFAULT_CURRENCY) {
-                // Current is default, but we detected a different currency - show popup
-                $showCurrencyPopup = true;
-            }
-        }
         
         // Get account summary
         $accountModel = new Account();
