@@ -68,6 +68,7 @@ $bankCountryDescriptor = countryToAccountDescriptor($bankOperatingCountry);
 // Personal account label + flag follow the user's display currency country (not bank operating country)
 $userCountryForFlag = currencyToPrimaryCountry($userCurrency);
 $userCountryFlagUrl = countryFlagCdnUrl($userCountryForFlag);
+$userCountryFlagEmoji = countryFlagEmoji($userCountryForFlag);
 $userCountryDescriptor = countryToAccountDescriptor($userCountryForFlag);
 $showKycPrompt = shouldShowKycDashboardPrompt($_SESSION['user_id'] ?? null);
 
@@ -805,6 +806,12 @@ include __DIR__ . '/../../includes/sidebar.php';
             background-size: cover;
             background-position: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            line-height: 1;
+            background-color: rgba(255,255,255,0.12);
         }
 
         /* BACK CARD - SIMPLIFIED AND CLEAN */
@@ -1595,12 +1602,20 @@ include __DIR__ . '/../../includes/sidebar.php';
             width:36px;
             height:36px;
             border-radius:8px;
-            background:rgba(255,255,255,0.06);
+            background:rgba(255,255,255,0.08);
             display:flex;
             align-items:center;
             justify-content:center;
-            font-size:16px;
+            font-size:22px;
+            line-height:1;
             color:rgba(255,255,255,0.9);
+            overflow:hidden;
+            flex-shrink:0;
+        }
+        .shield .flag-emoji{
+            font-size:22px;
+            line-height:1;
+            display:block;
         }
         .acc-details .lbl{
             font-size:11px;
@@ -2513,12 +2528,13 @@ include __DIR__ . '/../../includes/sidebar.php';
                     <div class="account-row">
                         <div class="account-box" aria-hidden="true">
                             <div class="acc-left">
-                                <?php $countryFlagUrl = $userCountryFlagUrl; ?>
-                                <div class="shield" aria-hidden="true">
-                                    <?php if ($countryFlagUrl): ?>
-                                        <img src="<?php echo htmlspecialchars($countryFlagUrl); ?>" alt="<?php echo htmlspecialchars($userCountryForFlag); ?>" style="width: 36px; height: 36px; border-radius: 10px; object-fit: cover; display: block;" onerror="this.style.display='none'; this.parentNode.textContent='🛡️';">
+                                <div class="shield" title="<?php echo htmlspecialchars($userCountryForFlag); ?>" aria-hidden="true">
+                                    <?php if (!empty($userCountryFlagEmoji)): ?>
+                                        <span class="flag-emoji"><?php echo $userCountryFlagEmoji; ?></span>
+                                    <?php elseif ($userCountryFlagUrl): ?>
+                                        <img src="<?php echo htmlspecialchars($userCountryFlagUrl); ?>" alt="<?php echo htmlspecialchars($userCountryForFlag); ?>" style="width: 36px; height: 36px; border-radius: 10px; object-fit: cover; display: block;">
                                     <?php else: ?>
-                                        🛡️
+                                        <span class="flag-emoji">🏳️</span>
                                     <?php endif; ?>
                                 </div>
                                 <div class="acc-details">
@@ -2624,12 +2640,13 @@ include __DIR__ . '/../../includes/sidebar.php';
                     <div class="account-row">
                         <div class="account-box" aria-hidden="true">
                             <div class="acc-left">
-                                <?php $countryFlagUrl = $userCountryFlagUrl; ?>
-                                <div class="shield" aria-hidden="true">
-                                    <?php if ($countryFlagUrl): ?>
-                                        <img src="<?php echo htmlspecialchars($countryFlagUrl); ?>" alt="<?php echo htmlspecialchars($userCountryForFlag); ?>" style="width: 36px; height: 36px; border-radius: 10px; object-fit: cover; display: block;" onerror="this.style.display='none'; this.parentNode.textContent='🛡️';">
+                                <div class="shield" title="<?php echo htmlspecialchars($userCountryForFlag); ?>" aria-hidden="true">
+                                    <?php if (!empty($userCountryFlagEmoji)): ?>
+                                        <span class="flag-emoji"><?php echo $userCountryFlagEmoji; ?></span>
+                                    <?php elseif ($userCountryFlagUrl): ?>
+                                        <img src="<?php echo htmlspecialchars($userCountryFlagUrl); ?>" alt="<?php echo htmlspecialchars($userCountryForFlag); ?>" style="width: 36px; height: 36px; border-radius: 10px; object-fit: cover; display: block;">
                                     <?php else: ?>
-                                        🛡️
+                                        <span class="flag-emoji">🏳️</span>
                                     <?php endif; ?>
                                 </div>
                                 <div class="acc-details">
@@ -3441,8 +3458,9 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 <div class="time-date" id="currentDate"><?php echo date('m/d/Y'); ?></div>
                                 <div class="time-clock" id="currentTime"><?php echo date('H:i:s'); ?></div>
                             </div>
-                            <?php $countryFlagUrl = $userCountryFlagUrl; ?>
-                            <div class="country-flag" title="<?php echo htmlspecialchars($userCountryForFlag); ?>" style="<?php echo $countryFlagUrl ? 'background-image:url(' . htmlspecialchars($countryFlagUrl) . ');' : ''; ?>"></div>
+                            <div class="country-flag" title="<?php echo htmlspecialchars($userCountryForFlag); ?>">
+                                <?php echo !empty($userCountryFlagEmoji) ? $userCountryFlagEmoji : '🏳️'; ?>
+                            </div>
                         </div>
                     </div>
                     

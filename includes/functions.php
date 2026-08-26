@@ -943,6 +943,27 @@ function countryFlagCdnUrl($country) {
 }
 
 /**
+ * Unicode flag emoji for a country name/code (e.g. United States → 🇺🇸).
+ * Prefer this over CDN images — no network/CSP dependency.
+ */
+function countryFlagEmoji($country) {
+    $iso2 = countryToIso2($country);
+    if (!$iso2 || !preg_match('/^[A-Z]{2}$/', $iso2)) {
+        return null;
+    }
+
+    if (!function_exists('mb_chr')) {
+        return null;
+    }
+
+    $flag = '';
+    for ($i = 0; $i < 2; $i++) {
+        $flag .= mb_chr(127397 + ord($iso2[$i]), 'UTF-8');
+    }
+    return $flag !== '' ? $flag : null;
+}
+
+/**
  * Get daily transaction limit for account type from system settings
  */
 function getDailyLimitForAccountType($accountType) {
