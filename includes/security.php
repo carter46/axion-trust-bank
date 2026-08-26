@@ -8,51 +8,63 @@ class Security {
         // Regenerate session ID periodically
         if (!isset($_SESSION['last_regeneration'])) {
             $_SESSION['last_regeneration'] = time();
-        } else if (time() - $_SESSION['last_regeneration'] > 300) {
+        } elseif (time() - $_SESSION['last_regeneration'] > 300) {
             session_regenerate_id(true);
             $_SESSION['last_regeneration'] = time();
         }
         
         // Only check session timeout for logged-in users
-        // Public pages should not require authentication
-        if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
-            // CRITICAL SECURITY: Verify user account still exists on every request
-            // This catches account deletions/suspensions immediately
-            try {
-                $db = Database::getInstance();
-                $sql = "SELECT id, status FROM users WHERE id = ? LIMIT 1";
-                $stmt = $db->query($sql, [$_SESSION['user_id']]);
-                $user = $stmt->fetch();
-                
-                // If user doesn't exist, destroy session immediately
-                if (!$user) {
-                    session_unset();
-                    session_destroy();
-                    // Start new session for error message
-                    session_start();
-                    $_SESSION['error'] = 'Your account has been deleted or is no longer active.';
-                    if (!headers_sent()) {
-                        header("Location: " . SITE_URL . "/auth/login");
-                        exit;
-                    }
-                    return;
-                }
-                
-                // Suspended/blocked users are allowed to stay logged in (restricted mode).
-                // Financial actions are blocked elsewhere; do not destroy sessions here.
-            } catch (Exception $e) {
-                // Log error but don't break the site if DB has temporary issues
-                error_log("Security::initialize() - User validation error: " . $e->getMessage());
-                // Continue with normal flow if DB error occurs
-            }
-            
-            // Check session timeout only for authenticated users
-            if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > SESSION_LIFETIME)) {
-                session_unset();
-                session_destroy();
-                redirect('/auth/login?timeout=1');
-            }
+        if (!isset($_SESSION['user_id']) || empty($_SESSION['user_id'])) {
+            return;
+        }
+
+        // Idle timeout — same rules for admin and user sessions
+        if (!isset($_SESSION['last_activity'])) {
             $_SESSION['last_activity'] = time();
+        } elseif ((time() - (int)$_SESSION['last_activity']) > SESSION_LIFETIME) {
+            destroyAuthSession('Your session expired due to inactivity. Please log in again.');
+        }
+
+        // CRITICAL SECURITY: Verify user account still exists on every request
+        try {
+            $db = Database::getInstance();
+            $sql = "SELECT id, status FROM users WHERE id = ? LIMIT 1";
+            $stmt = $db->query($sql, [$_SESSION['user_id']]);
+            $user = $stmt->fetch();
+            
+            if (!$user) {
+                destroyAuthSession('Your account has been deleted or is no longer active.');
+            }
+        } catch (Exception $e) {
+            error_log("Security::initialize() - User validation error: " . $e->getMessage());
+        }
+
+        $_SESSION['last_activity'] = time();
+        self::refreshSessionCookie();
+    }
+
+    /**
+     * Keep the session cookie alive while the user is active (sliding idle window).
+     */
+    private static function refreshSessionCookie() {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            return;
+        }
+
+        $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || (!empty($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443)
+            || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+
+        if (PHP_VERSION_ID >= 70300) {
+            setcookie(session_name(), session_id(), [
+                'expires' => time() + SESSION_LIFETIME,
+                'path' => '/',
+                'secure' => $secure,
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]);
+        } else {
+            setcookie(session_name(), session_id(), time() + SESSION_LIFETIME, '/; samesite=Lax', '', $secure, true);
         }
     }
     
@@ -74,13 +86,10 @@ class Security {
     }
     
     public static function validatePassword($password) {
-        // Minimum 8 characters, at least one uppercase, one lowercase, one number
-        // Special characters are optional but allowed
         if (strlen($password) < 8) {
             return false;
         }
         
-        // Check for uppercase, lowercase, and number
         $hasUppercase = preg_match('/[A-Z]/', $password);
         $hasLowercase = preg_match('/[a-z]/', $password);
         $hasNumber = preg_match('/[0-9]/', $password);
@@ -110,128 +119,73 @@ class Security {
     public static function checkLoginAttempts($email) {
         $db = Database::getInstance();
         
-        // Get max login attempts from settings
         $settingsSql = "SELECT setting_value FROM system_settings WHERE setting_key = 'max_login_attempts'";
         $settingsStmt = $db->query($settingsSql);
         $settings = $settingsStmt->fetch();
-        $maxAttempts = $settings ? intval($settings['setting_value']) : MAX_LOGIN_ATTEMPTS; // Fallback to constant if not set
+        $maxAttempts = $settings ? intval($settings['setting_value']) : MAX_LOGIN_ATTEMPTS;
         
-        // Get lockout duration from settings
         $settingsSql = "SELECT setting_value FROM system_settings WHERE setting_key = 'login_lockout_duration'";
         $settingsStmt = $db->query($settingsSql);
         $settings = $settingsStmt->fetch();
-        $lockoutMinutes = $settings ? intval($settings['setting_value']) : 15;
+        $lockoutDuration = $settings ? intval($settings['setting_value']) * 60 : LOCKOUT_TIME;
         
         $sql = "SELECT COUNT(*) as attempts FROM login_attempts 
-                WHERE email = ? AND attempted_at > DATE_SUB(NOW(), INTERVAL ? MINUTE)";
-        
-        $stmt = $db->query($sql, [$email, $lockoutMinutes]);
+                WHERE email = ? AND success = 0 AND attempted_at > DATE_SUB(NOW(), INTERVAL ? SECOND)";
+        $stmt = $db->query($sql, [$email, $lockoutDuration]);
         $result = $stmt->fetch();
         
-        return $result['attempts'] >= $maxAttempts;
+        return ($result['attempts'] ?? 0) >= $maxAttempts;
     }
     
-    public static function recordLoginAttempt($email, $success = false) {
+    public static function recordLoginAttempt($email, $success) {
         $db = Database::getInstance();
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         
-        if ($success) {
-            // Clear failed attempts
-            $sql = "DELETE FROM login_attempts WHERE email = ?";
-            $db->query($sql, [$email]);
-        } else {
-            // Record failed attempt
-            $sql = "INSERT INTO login_attempts (email, ip_address, attempted_at) VALUES (?, ?, NOW())";
-            $db->query($sql, [$email, $_SERVER['REMOTE_ADDR']]);
-        }
+        $sql = "INSERT INTO login_attempts (email, ip_address, success, attempted_at) VALUES (?, ?, ?, NOW())";
+        $db->query($sql, [$email, $ip, $success ? 1 : 0]);
     }
     
-    public static function detectSuspiciousActivity($userId, $amount) {
-        // Simple fraud detection based on transaction patterns
+    public static function clearLoginAttempts($email) {
         $db = Database::getInstance();
-        
-        // Check for multiple large transactions in short time
-        $sql = "SELECT COUNT(*) as count, SUM(amount) as total 
-                FROM transactions 
-                WHERE user_id = ? 
-                AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
-                AND amount > 1000";
-        
-        $stmt = $db->query($sql, [$userId]);
-        $result = $stmt->fetch();
-        
-        if ($result['count'] > 3 || $result['total'] > 10000) {
-            // Log suspicious activity
-            logActivity($userId, 'SUSPICIOUS_ACTIVITY', "Multiple large transactions detected");
-            return true;
-        }
-        
-        return false;
+        $sql = "DELETE FROM login_attempts WHERE email = ?";
+        $db->query($sql, [$email]);
     }
-    
-    public static function validate2FA($userId, $code, $purpose = 'login') {
-        $db = Database::getInstance();
-        $result = null;
 
-        // Newer schema: purpose-aware
-        try {
-            $sql = "SELECT * FROM two_factor_codes 
-                    WHERE user_id = ? 
-                    AND code = ? 
-                    AND purpose = ?
-                    AND expires_at > NOW() 
-                    AND used = 0 
-                    ORDER BY created_at DESC 
-                    LIMIT 1";
-            $stmt = $db->query($sql, [$userId, $code, $purpose]);
-            $result = $stmt ? $stmt->fetch() : null;
-        } catch (Exception $e) {
-            // Older schema: no purpose column
-            $sql = "SELECT * FROM two_factor_codes 
-                    WHERE user_id = ? 
-                    AND code = ? 
-                    AND expires_at > NOW() 
-                    AND used = 0 
-                    ORDER BY created_at DESC 
-                    LIMIT 1";
-            $stmt = $db->query($sql, [$userId, $code]);
-            $result = $stmt ? $stmt->fetch() : null;
-        }
-        
-        if ($result) {
-            // Mark code as used
-            $updateSql = "UPDATE two_factor_codes SET used = 1 WHERE id = ?";
-            $db->query($updateSql, [$result['id']]);
-            return true;
-        }
-        
-        return false;
-    }
-    
     public static function generate2FACode($userId, $method = 'email', $purpose = 'login') {
-        $code = generateOTP(6);
         $db = Database::getInstance();
-        
-        // Store code in database
-        try {
-            $sql = "INSERT INTO two_factor_codes (user_id, code, method, purpose, expires_at, created_at) 
-                    VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE), NOW())";
-            $db->query($sql, [$userId, $code, $method, $purpose]);
-        } catch (Exception $e) {
-            // Older schema: no purpose column
-            $sql = "INSERT INTO two_factor_codes (user_id, code, method, expires_at, created_at) 
-                    VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE), NOW())";
-            $db->query($sql, [$userId, $code, $method]);
-        }
-        
+        $code = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $expiresAt = date('Y-m-d H:i:s', time() + 600);
+
+        $db->query(
+            "UPDATE two_factor_codes SET used = 1 WHERE user_id = ? AND purpose = ? AND used = 0",
+            [$userId, $purpose]
+        );
+
+        $db->query(
+            "INSERT INTO two_factor_codes (user_id, code, method, used, expires_at, purpose) VALUES (?, ?, ?, 0, ?, ?)",
+            [$userId, $code, $method, $expiresAt, $purpose]
+        );
+
         return $code;
     }
-    
-    public static function preventXSS($string) {
-        return htmlspecialchars($string, ENT_QUOTES, 'UTF-8');
-    }
-    
-    public static function preventSQLInjection($string) {
-        // PDO with prepared statements already handles this, but for extra safety
-        return addslashes($string);
+
+    public static function validate2FA($userId, $code, $purpose = 'login') {
+        $db = Database::getInstance();
+        $code = trim((string)$code);
+        if ($code === '') {
+            return false;
+        }
+
+        $sql = "SELECT id FROM two_factor_codes
+                WHERE user_id = ? AND code = ? AND purpose = ? AND used = 0 AND expires_at > NOW()
+                ORDER BY id DESC LIMIT 1";
+        $stmt = $db->query($sql, [$userId, $code, $purpose]);
+        $row = $stmt ? $stmt->fetch() : null;
+        if (!$row) {
+            return false;
+        }
+
+        $db->query("UPDATE two_factor_codes SET used = 1 WHERE id = ?", [$row['id']]);
+        return true;
     }
 }

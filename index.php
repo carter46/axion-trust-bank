@@ -96,10 +96,7 @@ spl_autoload_register(function ($class_name) {
     }
 });
 
-// Initialize security
-Security::initialize();
-
-// Get route from URL
+// Security initialized from config.php for all requests
 $route = isset($_GET['route']) ? $_GET['route'] : 'home';
 $route = Security::sanitize($route);
 

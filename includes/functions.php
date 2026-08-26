@@ -18,6 +18,114 @@ function isLoggedIn() {
     return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
 }
 
+/**
+ * True for /api/* routes and typical AJAX/fetch requests.
+ */
+function isApiOrAjaxRequest() {
+    $uri = $_SERVER['REQUEST_URI'] ?? '';
+    if (strpos($uri, '/api/') !== false) {
+        return true;
+    }
+    $accept = strtolower((string)($_SERVER['HTTP_ACCEPT'] ?? ''));
+    if (strpos($accept, 'application/json') !== false) {
+        return true;
+    }
+    $requestedWith = strtolower((string)($_SERVER['HTTP_X_REQUESTED_WITH'] ?? ''));
+    return $requestedWith === 'xmlhttprequest';
+}
+
+/**
+ * API scripts that are intentionally reachable without an authenticated session.
+ */
+function getPublicApiScripts() {
+    return [
+        'get-exchange-rate.php',
+        'refresh-exchange-rates.php',
+        'search-account.php',
+    ];
+}
+
+function isPublicApiRequest() {
+    $uri = $_SERVER['REQUEST_URI'] ?? '';
+    if (strpos($uri, '/api/') === false) {
+        return false;
+    }
+    $path = parse_url($uri, PHP_URL_PATH) ?: '';
+    $script = basename($path);
+    return in_array($script, getPublicApiScripts(), true);
+}
+
+/**
+ * For protected API routes, force a structured session-expired response instead of a bare Unauthorized.
+ */
+function enforceApiSession() {
+    $uri = $_SERVER['REQUEST_URI'] ?? '';
+    if (strpos($uri, '/api/') === false || isPublicApiRequest()) {
+        return;
+    }
+    if (!isLoggedIn()) {
+        destroyAuthSession('Session expired. Please log in again.');
+    }
+}
+
+/**
+ * Require login for API endpoints (JSON session_expired response).
+ */
+function requireApiLogin() {
+    if (!isLoggedIn()) {
+        destroyAuthSession('Session expired. Please log in again.');
+    }
+}
+
+/**
+ * Require admin for API endpoints.
+ */
+function requireApiAdmin() {
+    requireApiLogin();
+    if (($_SESSION['user_role'] ?? '') !== 'admin') {
+        if (!headers_sent()) {
+            header('Content-Type: application/json; charset=UTF-8');
+            http_response_code(403);
+        }
+        echo json_encode(['success' => false, 'message' => 'Forbidden']);
+        exit;
+    }
+}
+
+/**
+ * Destroy authenticated session and respond appropriately (JSON for API, redirect for pages).
+ */
+function destroyAuthSession($flashMessage = null) {
+    $_SESSION = [];
+    if (isset($_COOKIE[session_name()])) {
+        setcookie(session_name(), '', time() - 42000, '/');
+    }
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_destroy();
+    }
+
+    if (isApiOrAjaxRequest()) {
+        if (!headers_sent()) {
+            header('Content-Type: application/json; charset=UTF-8');
+            http_response_code(401);
+        }
+        echo json_encode([
+            'success' => false,
+            'message' => $flashMessage ?: 'Session expired. Please log in again.',
+            'session_expired' => true,
+            'redirect' => SITE_URL . '/auth/login?timeout=1',
+        ]);
+        exit;
+    }
+
+    session_start();
+    if ($flashMessage) {
+        $_SESSION['error'] = $flashMessage;
+    }
+    header('Location: ' . SITE_URL . '/auth/login?timeout=1');
+    exit;
+}
+
 function restrictedAccountMessage() {
     return 'Your account has been suspended or deactivated, Please contact the support for more details';
 }
@@ -116,6 +224,8 @@ function establishUserSession($user) {
     $_SESSION['user_name'] = $user['full_name'];
     $_SESSION['user_role'] = $user['role'];
     $_SESSION['session_domain'] = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
+    $_SESSION['last_activity'] = time();
+    $_SESSION['session_started_at'] = time();
     $profilePicture = $user['profile_picture'] ?? null;
     if ($profilePicture && defined('BASE_PATH') && file_exists(BASE_PATH . $profilePicture)) {
         $_SESSION['user_photo'] = $profilePicture;
@@ -145,6 +255,9 @@ function formatDisplayName($name) {
 
 function requireLogin() {
     if (!isLoggedIn()) {
+        if (isApiOrAjaxRequest()) {
+            destroyAuthSession('Session expired. Please log in again.');
+        }
         $_SESSION['redirect_after_login'] = $_SERVER['REQUEST_URI'];
         redirect('/auth/login');
     }

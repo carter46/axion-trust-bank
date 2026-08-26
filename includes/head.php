@@ -1511,6 +1511,77 @@
         include __DIR__ . '/translation.php';
     }
     ?>
+    <?php if (function_exists('isLoggedIn') && isLoggedIn()): ?>
+    <script>
+    (function () {
+        var SESSION_MS = <?php echo (int)SESSION_LIFETIME * 1000; ?>;
+        var LOGIN_URL = <?php echo json_encode(SITE_URL . '/auth/login?timeout=1'); ?>;
+        var lastActivity = Date.now();
+        var expired = false;
+
+        function redirectToLogin() {
+            if (expired) {
+                return;
+            }
+            expired = true;
+            window.location.replace(LOGIN_URL);
+        }
+
+        function bumpActivity() {
+            lastActivity = Date.now();
+        }
+
+        ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'].forEach(function (evt) {
+            document.addEventListener(evt, bumpActivity, { passive: true });
+        });
+
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'visible' && (Date.now() - lastActivity) >= SESSION_MS) {
+                redirectToLogin();
+            }
+        });
+
+        setInterval(function () {
+            if ((Date.now() - lastActivity) >= SESSION_MS) {
+                redirectToLogin();
+            }
+        }, 15000);
+
+        if (window.fetch) {
+            var nativeFetch = window.fetch;
+            window.fetch = function () {
+                return nativeFetch.apply(this, arguments).then(function (response) {
+                    if (response.status === 401) {
+                        return response.clone().json().then(function (data) {
+                            if (data && data.session_expired) {
+                                redirectToLogin();
+                            }
+                        }).catch(function () {}).then(function () {
+                            return response;
+                        });
+                    }
+                    return response;
+                });
+            };
+        }
+
+        var nativeXhrOpen = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function () {
+            this.addEventListener('load', function () {
+                if (this.status === 401) {
+                    try {
+                        var data = JSON.parse(this.responseText);
+                        if (data && data.session_expired) {
+                            redirectToLogin();
+                        }
+                    } catch (e) {}
+                }
+            });
+            return nativeXhrOpen.apply(this, arguments);
+        };
+    })();
+    </script>
+    <?php endif; ?>
     
 </head>
 <body>

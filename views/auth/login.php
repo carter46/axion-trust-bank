@@ -648,6 +648,11 @@ if (isLoggedIn()) {
           </div>
 
           <!-- Error/Success Messages -->
+          <?php if (!empty($_GET['timeout'])): ?>
+            <div class="error-message" role="alert">
+              Your session expired due to inactivity. Please log in again.
+            </div>
+          <?php endif; ?>
           <?php if (isset($_SESSION['error'])): ?>
             <div class="error-message" role="alert">
               <?php 
