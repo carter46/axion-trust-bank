@@ -429,6 +429,23 @@ function currencyToPrimaryCountry($currencyCode) {
         'RUB' => 'Russia',
         'XOF' => 'Senegal',
         'ZMW' => 'Zambia',
+        'DOP' => 'Dominican Republic',
+        'JMD' => 'Jamaica',
+        'BBD' => 'Barbados',
+        'BZD' => 'Belize',
+        'BND' => 'Brunei',
+        'FJD' => 'Fiji',
+        'GYD' => 'Guyana',
+        'LRD' => 'Liberia',
+        'SBD' => 'Solomon Islands',
+        'SRD' => 'Suriname',
+        'TTD' => 'Trinidad and Tobago',
+        'XCD' => 'Antigua and Barbuda',
+        'AWG' => 'Aruba',
+        'BMD' => 'Bermuda',
+        'BSD' => 'Bahamas',
+        'KYD' => 'Cayman Islands',
+        'ANG' => 'Curaçao',
     ];
     return $map[$code] ?? 'United States';
 }
@@ -859,15 +876,22 @@ function countryToIso2($country) {
         'SAUDI ARABIA' => 'SA',
         'QATAR' => 'QA',
         'KUWAIT' => 'KW',
+
+        'DOMINICAN REPUBLIC' => 'DO',
+        'JAMAICA' => 'JM',
+        'BAHAMAS' => 'BS',
+        'BARBADOS' => 'BB',
+        'TRINIDAD AND TOBAGO' => 'TT',
     ];
 
     return $map[$legacy] ?? null;
 }
 
 function countryToAccountDescriptor($country) {
-    $country = strtoupper(trim((string)$country));
-    if ($country === '') return '';
+    $raw = normalizeCountryInput($country);
+    if ($raw === '') return '';
 
+    $upper = strtoupper($raw);
     $map = [
         'UNITED STATES' => 'USA',
         'UNITED STATES OF AMERICA' => 'USA',
@@ -890,18 +914,25 @@ function countryToAccountDescriptor($country) {
         'AU' => 'Australian',
         'DE' => 'German',
         'FR' => 'French',
+        'DOMINICAN REPUBLIC' => 'Dominican',
+        'DO' => 'Dominican',
     ];
 
-    if (isset($map[$country])) {
-        return $map[$country];
+    if (isset($map[$upper])) {
+        return $map[$upper];
     }
 
-    $byCode = getCountryByCode($country);
+    $byCode = getCountryByCode($upper);
     if ($byCode) {
         return $byCode['name'];
     }
 
-    return normalizeCountryInput($country);
+    $byName = getCountryByName($raw);
+    if ($byName) {
+        return $byName['name'];
+    }
+
+    return $raw;
 }
 
 function countryFlagCdnUrl($country) {

@@ -65,11 +65,10 @@ $detectedCurrency = isset($detectedCurrency) ? $detectedCurrency : null;
 $bankOperatingCountry = SystemSettings::getInstance()->get('bank_operating_country', 'United States');
 $bankCountryFlagUrl = countryFlagCdnUrl($bankOperatingCountry);
 $bankCountryDescriptor = countryToAccountDescriptor($bankOperatingCountry);
-$userCountryForFlag = trim((string)($user['country'] ?? ''));
-if ($userCountryForFlag === '') {
-    $userCountryForFlag = $bankOperatingCountry;
-}
+// Personal account label + flag follow the user's display currency country (not bank operating country)
+$userCountryForFlag = currencyToPrimaryCountry($userCurrency);
 $userCountryFlagUrl = countryFlagCdnUrl($userCountryForFlag);
+$userCountryDescriptor = countryToAccountDescriptor($userCountryForFlag);
 $showKycPrompt = shouldShowKycDashboardPrompt($_SESSION['user_id'] ?? null);
 
 // Include head
@@ -1440,21 +1439,12 @@ include __DIR__ . '/../../includes/sidebar.php';
             font-size:18px;
             color:var(--navy);
         }
-        .chip.blue{
-            background: linear-gradient(90deg, #e6f0ff 0%, #f0f7ff 100%);
-            border:1px solid rgba(13, 27, 58, 0.12);
-        }
-        .chip.green{
-            background: linear-gradient(90deg,#f0fff6 0%,#ffffff 100%);
-            border:1px solid rgba(86,196,122,0.08);
-        }
-        .chip.pink{
-            background: linear-gradient(90deg,#fff6f8 0%,#ffffff 100%);
-            border:1px solid rgba(255,98,137,0.08);
-        }
+        .chip.blue,
+        .chip.green,
+        .chip.pink,
         .chip.purple{
-            background: linear-gradient(90deg,#faf5ff 0%,#ffffff 100%);
-            border:1px solid rgba(128,80,255,0.06);
+            background: #f3f4f6;
+            border:1px solid #e5e7eb;
         }
         .chip .icon{
             width:48px;
@@ -1463,14 +1453,18 @@ include __DIR__ . '/../../includes/sidebar.php';
             display:flex;
             align-items:center;
             justify-content:center;
-            box-shadow: inset 0 -8px 18px rgba(255,255,255,0.25);
+            box-shadow: none;
             font-size:18px;
             color:#fff;
+            background: #e5e7eb;
         }
-        .chip.blue .icon{ background: linear-gradient(135deg, var(--navy-light), var(--navy)); }
-        .chip.green .icon{ background: linear-gradient(135deg,#3ee59a,#00b572); color:#fff; }
-        .chip.pink .icon{ background: linear-gradient(135deg,#ff9bb3,#ff667f); }
-        .chip.purple .icon{ background: linear-gradient(135deg,#c07bff,#9b8bff); }
+        .chip.blue .icon,
+        .chip.green .icon,
+        .chip.pink .icon,
+        .chip.purple .icon{
+            background: #e5e7eb;
+            color: #334155;
+        }
         /* Main layout: left big card + right sidebar */
         .grid{
             display:grid;
@@ -1727,10 +1721,13 @@ include __DIR__ . '/../../includes/sidebar.php';
         }
         .stat .meta .label{ font-size:13px; color:var(--muted); }
         .stat .meta .value{ font-weight:700; margin-top:6px; font-size:15px; color:var(--navy); }
-        .icon.blue{ background: linear-gradient(135deg, var(--navy-light), var(--navy)); }
-        .icon.yellow{ background: linear-gradient(135deg,#ffd57a,#ffd34f); color:#222; }
-        .icon.green{ background: linear-gradient(135deg,#a8f5cf,#2bcf78); color:#0b60b3; }
-        .icon.purple{ background: linear-gradient(135deg,#eed0ff,#d6b6ff); }
+        .icon.blue,
+        .icon.yellow,
+        .icon.green,
+        .icon.purple{
+            background: #e5e7eb;
+            color: #334155;
+        }
         .actions-panel{
             background:var(--panel-bg);
             border-radius:12px;
@@ -2519,13 +2516,13 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 <?php $countryFlagUrl = $userCountryFlagUrl; ?>
                                 <div class="shield" aria-hidden="true">
                                     <?php if ($countryFlagUrl): ?>
-                                        <img src="<?php echo htmlspecialchars($countryFlagUrl); ?>" alt="" style="width: 36px; height: 36px; border-radius: 10px; object-fit: cover; display: block;">
+                                        <img src="<?php echo htmlspecialchars($countryFlagUrl); ?>" alt="<?php echo htmlspecialchars($userCountryForFlag); ?>" style="width: 36px; height: 36px; border-radius: 10px; object-fit: cover; display: block;" onerror="this.style.display='none'; this.parentNode.textContent='🛡️';">
                                     <?php else: ?>
                                         🛡️
                                     <?php endif; ?>
                                 </div>
                                 <div class="acc-details">
-                                    <div class="lbl">Your ( <?php echo htmlspecialchars($bankCountryDescriptor); ?> ) Account Number</div>
+                                    <div class="lbl">Your ( <?php echo htmlspecialchars($userCountryDescriptor); ?> ) Account Number</div>
                                     <div class="num" id="accountNumberDisplay"><?php echo htmlspecialchars($accountNumber); ?></div>
                                 </div>
                                 <div class="badge" style="margin-left:10px;background:rgba(0,255,128,0.12);color:#07b36a;">
@@ -2630,13 +2627,13 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 <?php $countryFlagUrl = $userCountryFlagUrl; ?>
                                 <div class="shield" aria-hidden="true">
                                     <?php if ($countryFlagUrl): ?>
-                                        <img src="<?php echo htmlspecialchars($countryFlagUrl); ?>" alt="" style="width: 36px; height: 36px; border-radius: 10px; object-fit: cover; display: block;">
+                                        <img src="<?php echo htmlspecialchars($countryFlagUrl); ?>" alt="<?php echo htmlspecialchars($userCountryForFlag); ?>" style="width: 36px; height: 36px; border-radius: 10px; object-fit: cover; display: block;" onerror="this.style.display='none'; this.parentNode.textContent='🛡️';">
                                     <?php else: ?>
                                         🛡️
                                     <?php endif; ?>
                                 </div>
                                 <div class="acc-details">
-                                    <div class="lbl">Your ( <?php echo htmlspecialchars($bankCountryDescriptor); ?> ) Account Number</div>
+                                    <div class="lbl">Your ( <?php echo htmlspecialchars($userCountryDescriptor); ?> ) Account Number</div>
                                     <div class="num" id="accountNumberDisplay2"><?php echo htmlspecialchars($accountNumber); ?></div>
                                 </div>
                                 <div class="badge" style="margin-left:10px;background:rgba(0,255,128,0.12);color:#07b36a;">
