@@ -318,7 +318,7 @@
             aspect-ratio: 1 / 1;
         }
 
-        .user-info {
+        .sidebar .user-info {
             white-space: nowrap;
             overflow: hidden;
             transition: opacity 0.3s ease;
