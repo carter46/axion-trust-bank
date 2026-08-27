@@ -76,13 +76,54 @@ function normalizeCountryCode($country) {
 
 /**
  * SEPA zone country codes (EU + associated).
+ * BIC is typically optional within SEPA; IBAN is the primary account identifier.
  */
 function getSepaCountryCodes() {
     return [
         'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU',
         'IS', 'IE', 'IT', 'LV', 'LI', 'LT', 'LU', 'MT', 'MC', 'NL', 'NO', 'PL', 'PT',
-        'RO', 'SM', 'SK', 'SI', 'ES', 'SE', 'CH', 'GB', 'AD', 'VA',
+        'RO', 'SM', 'SK', 'SI', 'ES', 'SE', 'CH', 'AD', 'VA', 'GI', 'ME', 'MD', 'RS',
+        'MK',
     ];
+}
+
+/**
+ * Countries / territories with an official IBAN format in the SWIFT ISO 13616 registry.
+ * Non-IBAN countries (US, CA, AU, NZ, CN, JP, IN, most of Asia/LatAm/Africa) must NOT show IBAN.
+ */
+function getIbanCountryCodes() {
+    return [
+        // Europe / SEPA-related
+        'AL', 'AD', 'AT', 'AZ', 'BA', 'BE', 'BG', 'BY', 'CH', 'CY', 'CZ', 'DE', 'DK',
+        'EE', 'ES', 'FI', 'FO', 'FR', 'GB', 'GE', 'GI', 'GL', 'GR', 'HR', 'HU', 'IE',
+        'IS', 'IT', 'XK', 'LI', 'LT', 'LU', 'LV', 'MC', 'MD', 'ME', 'MK', 'MT', 'NL',
+        'NO', 'PL', 'PT', 'RO', 'RS', 'SE', 'SI', 'SK', 'SM', 'UA', 'VA',
+        // Middle East
+        'AE', 'BH', 'IL', 'IQ', 'JO', 'KW', 'LB', 'OM', 'PS', 'QA', 'SA', 'TR', 'YE',
+        // Africa
+        'BI', 'DJ', 'DZ', 'EG', 'KM', 'LY', 'MR', 'SD', 'SN', 'SO', 'TD', 'TG', 'TN',
+        // Americas (IBAN adopters only)
+        'BR', 'CR', 'DO', 'GT', 'HN', 'LC', 'NI', 'SV', 'TT', 'VG',
+        // Asia (IBAN adopters only)
+        'KZ', 'MN', 'PK',
+        // Other
+        'FK',
+    ];
+}
+
+/**
+ * True when destination country uses IBAN (ISO 13616 / SWIFT registry).
+ */
+function countryUsesIban($countryCode) {
+    $code = strtoupper(trim((string)$countryCode));
+    return in_array($code, getIbanCountryCodes(), true);
+}
+
+/**
+ * True when destination country uses ABA-style routing numbers (United States).
+ */
+function countryUsesRoutingNumber($countryCode) {
+    return strtoupper(trim((string)$countryCode)) === 'US';
 }
 
 /**
@@ -93,8 +134,8 @@ function getTransferRailFieldTemplates() {
         'routing_number' => [
             'key' => 'routing_number',
             'label' => 'Routing Number',
-            'placeholder' => 'Enter 9-digit routing number',
-            'required' => true,
+            'placeholder' => 'Enter 9-digit routing number (optional)',
+            'required' => false,
             'pattern' => '^\d{9}$',
             'maxlength' => 9,
         ],
@@ -131,8 +172,8 @@ function getTransferRailFieldTemplates() {
         'iban' => [
             'key' => 'iban',
             'label' => 'IBAN',
-            'placeholder' => 'Enter IBAN',
-            'required' => true,
+            'placeholder' => 'Enter IBAN (optional)',
+            'required' => false,
             'minlength' => 15,
             'maxlength' => 34,
         ],
@@ -147,10 +188,17 @@ function getTransferRailFieldTemplates() {
         'bic' => [
             'key' => 'bic',
             'label' => 'BIC',
-            'placeholder' => 'Enter BIC code',
-            'required' => true,
+            'placeholder' => 'Enter BIC code (optional for SEPA)',
+            'required' => false,
             'pattern' => '^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$',
             'maxlength' => 11,
+        ],
+        'beneficiary_state' => [
+            'key' => 'beneficiary_state',
+            'label' => 'State / Province',
+            'placeholder' => 'Enter state or province (optional)',
+            'required' => false,
+            'maxlength' => 100,
         ],
         'interac_email' => [
             'key' => 'interac_email',
@@ -193,23 +241,65 @@ function getRailFieldCountryOverrides() {
             'iban' => [
                 'minlength' => 23,
                 'maxlength' => 23,
-                'placeholder' => '23 characters (AE + 21 digits)',
+                'placeholder' => '23 characters (optional)',
             ],
         ],
         'SA' => [
-            'iban' => ['minlength' => 24, 'maxlength' => 24],
+            'iban' => ['minlength' => 24, 'maxlength' => 24, 'placeholder' => '24 characters (optional)'],
         ],
         'QA' => [
-            'iban' => ['minlength' => 29, 'maxlength' => 29],
+            'iban' => ['minlength' => 29, 'maxlength' => 29, 'placeholder' => '29 characters (optional)'],
         ],
         'KW' => [
-            'iban' => ['minlength' => 30, 'maxlength' => 30],
+            'iban' => ['minlength' => 30, 'maxlength' => 30, 'placeholder' => '30 characters (optional)'],
         ],
         'BH' => [
-            'iban' => ['minlength' => 22, 'maxlength' => 22],
+            'iban' => ['minlength' => 22, 'maxlength' => 22, 'placeholder' => '22 characters (optional)'],
         ],
         'OM' => [
-            'iban' => ['minlength' => 23, 'maxlength' => 23],
+            'iban' => ['minlength' => 23, 'maxlength' => 23, 'placeholder' => '23 characters (optional)'],
+        ],
+        'DE' => [
+            'iban' => ['minlength' => 22, 'maxlength' => 22, 'placeholder' => '22 characters (optional)'],
+        ],
+        'FR' => [
+            'iban' => ['minlength' => 27, 'maxlength' => 27, 'placeholder' => '27 characters (optional)'],
+        ],
+        'GB' => [
+            'iban' => ['minlength' => 22, 'maxlength' => 22, 'placeholder' => '22 characters (optional)'],
+        ],
+        'ES' => [
+            'iban' => ['minlength' => 24, 'maxlength' => 24, 'placeholder' => '24 characters (optional)'],
+        ],
+        'IT' => [
+            'iban' => ['minlength' => 27, 'maxlength' => 27, 'placeholder' => '27 characters (optional)'],
+        ],
+        'NL' => [
+            'iban' => ['minlength' => 18, 'maxlength' => 18, 'placeholder' => '18 characters (optional)'],
+        ],
+        'CH' => [
+            'iban' => ['minlength' => 21, 'maxlength' => 21, 'placeholder' => '21 characters (optional)'],
+        ],
+        'TR' => [
+            'iban' => ['minlength' => 26, 'maxlength' => 26, 'placeholder' => '26 characters (optional)'],
+        ],
+        'EG' => [
+            'iban' => ['minlength' => 29, 'maxlength' => 29, 'placeholder' => '29 characters (optional)'],
+        ],
+        'BR' => [
+            'iban' => ['minlength' => 29, 'maxlength' => 29, 'placeholder' => '29 characters (optional)'],
+        ],
+        'DO' => [
+            'iban' => ['minlength' => 28, 'maxlength' => 28, 'placeholder' => '28 characters (optional)'],
+        ],
+        'PK' => [
+            'iban' => ['minlength' => 24, 'maxlength' => 24, 'placeholder' => '24 characters (optional)'],
+        ],
+        'NO' => [
+            'iban' => ['minlength' => 15, 'maxlength' => 15, 'placeholder' => '15 characters (optional)'],
+        ],
+        'BE' => [
+            'iban' => ['minlength' => 16, 'maxlength' => 16, 'placeholder' => '16 characters (optional)'],
         ],
     ];
 }
@@ -231,8 +321,10 @@ function getDomesticAccountNumberRules($countryCode) {
 
 /**
  * Resolve field keys to full field definitions.
+ *
+ * @param string $context 'domestic' or 'international'
  */
-function resolveRailFieldDefinitions(array $fieldKeys, $countryCode = null) {
+function resolveRailFieldDefinitions(array $fieldKeys, $countryCode = null, $context = 'international') {
     $templates = getTransferRailFieldTemplates();
     $overrides = getRailFieldCountryOverrides();
     $code = $countryCode ? strtoupper(trim((string)$countryCode)) : null;
@@ -248,9 +340,37 @@ function resolveRailFieldDefinitions(array $fieldKeys, $countryCode = null) {
                 unset($field['pattern']);
             }
         }
+
+        // Domestic US transfers still need ABA routing; international keeps it optional
+        if ($key === 'routing_number' && $context === 'domestic' && $code === 'US') {
+            $field['required'] = true;
+            $field['placeholder'] = 'Enter 9-digit routing number';
+        }
+
         $fields[] = $field;
     }
     return $fields;
+}
+
+/**
+ * Expand raw rail config into API-ready structure with resolved field definitions.
+ */
+function expandRailConfig(array $config, $countryCode, $context = 'international') {
+    $methods = [];
+    foreach ($config['methods'] as $methodKey => $method) {
+        $methods[$methodKey] = [
+            'label' => $method['label'],
+            'receipt_label' => $method['receipt_label'] ?? $method['label'],
+            'fields' => resolveRailFieldDefinitions($method['fields'], $countryCode, $context),
+        ];
+    }
+
+    return [
+        'country_code' => $countryCode,
+        'country_name' => $config['country_name'] ?? $countryCode,
+        'default_method' => $config['default_method'],
+        'methods' => $methods,
+    ];
 }
 
 /**
@@ -449,32 +569,51 @@ function getDefaultDomesticRailConfig($countryCode) {
 
 /**
  * International rail config keyed by ISO country code.
+ * Field visibility follows real-world payment rails:
+ * - IBAN only for SWIFT IBAN-registry countries
+ * - Routing number only for United States
+ * - SWIFT/BIC for cross-border wire identification (BIC optional inside SEPA)
  */
 function getInternationalRailConfigByCode() {
-    $sepaFields = ['iban', 'bic'];
-    $swiftFields = ['swift', 'iban'];
-
-    $sepaMethods = [
-        'sepa' => [
-            'label' => 'SEPA',
-            'receipt_label' => 'SEPA',
-            'fields' => $sepaFields,
-        ],
-        'swift' => [
-            'label' => 'SWIFT Wire',
-            'receipt_label' => 'SWIFT',
-            'fields' => $swiftFields,
-        ],
-    ];
-
     $config = [];
+
+    // SEPA: IBAN (optional) + BIC (optional). No ABA routing.
     foreach (getSepaCountryCodes() as $code) {
         $config[$code] = [
             'default_method' => 'sepa',
-            'methods' => $sepaMethods,
+            'methods' => [
+                'sepa' => [
+                    'label' => 'SEPA',
+                    'receipt_label' => 'SEPA',
+                    'fields' => ['iban', 'bic', 'beneficiary_state'],
+                ],
+                'swift' => [
+                    'label' => 'SWIFT Wire',
+                    'receipt_label' => 'SWIFT',
+                    'fields' => ['swift', 'iban', 'beneficiary_state'],
+                ],
+            ],
         ];
     }
 
+    // Other IBAN countries (non-SEPA): SWIFT + optional IBAN. No routing number.
+    foreach (getIbanCountryCodes() as $code) {
+        if (isset($config[$code])) {
+            continue;
+        }
+        $config[$code] = [
+            'default_method' => 'swift',
+            'methods' => [
+                'swift' => [
+                    'label' => 'SWIFT Wire',
+                    'receipt_label' => 'SWIFT',
+                    'fields' => ['swift', 'iban', 'beneficiary_state'],
+                ],
+            ],
+        ];
+    }
+
+    // Country-specific overrides for non-IBAN / special domestic identifiers
     $overrides = [
         'US' => [
             'default_method' => 'wire',
@@ -482,12 +621,13 @@ function getInternationalRailConfigByCode() {
                 'ach' => [
                     'label' => 'ACH (International)',
                     'receipt_label' => 'ACH',
-                    'fields' => ['routing_number'],
+                    // US does not use IBAN; routing is optional
+                    'fields' => ['routing_number', 'beneficiary_state'],
                 ],
                 'wire' => [
                     'label' => 'SWIFT Wire',
                     'receipt_label' => 'SWIFT',
-                    'fields' => ['swift', 'routing_number'],
+                    'fields' => ['swift', 'routing_number', 'beneficiary_state'],
                 ],
             ],
         ],
@@ -497,12 +637,13 @@ function getInternationalRailConfigByCode() {
                 'fps' => [
                     'label' => 'Faster Payments',
                     'receipt_label' => 'Faster Payments',
-                    'fields' => ['sort_code'],
+                    'fields' => ['sort_code', 'beneficiary_state'],
                 ],
                 'swift' => [
                     'label' => 'SWIFT Wire',
                     'receipt_label' => 'SWIFT',
-                    'fields' => ['swift', 'sort_code', 'iban'],
+                    // UK uses IBAN for international; routing number is US-only
+                    'fields' => ['swift', 'sort_code', 'iban', 'beneficiary_state'],
                 ],
             ],
         ],
@@ -512,22 +653,13 @@ function getInternationalRailConfigByCode() {
                 'eft' => [
                     'label' => 'EFT',
                     'receipt_label' => 'EFT',
-                    'fields' => ['transit_number', 'institution_number'],
+                    'fields' => ['transit_number', 'institution_number', 'beneficiary_state'],
                 ],
                 'wire' => [
                     'label' => 'SWIFT Wire',
                     'receipt_label' => 'SWIFT',
-                    'fields' => ['swift', 'transit_number', 'institution_number'],
-                ],
-            ],
-        ],
-        'AE' => [
-            'default_method' => 'swift',
-            'methods' => [
-                'swift' => [
-                    'label' => 'SWIFT Wire',
-                    'receipt_label' => 'SWIFT',
-                    'fields' => ['swift', 'iban'],
+                    // Canada does not use IBAN or ABA routing
+                    'fields' => ['swift', 'transit_number', 'institution_number', 'beneficiary_state'],
                 ],
             ],
         ],
@@ -537,7 +669,8 @@ function getInternationalRailConfigByCode() {
                 'swift' => [
                     'label' => 'SWIFT Wire',
                     'receipt_label' => 'SWIFT',
-                    'fields' => ['swift', 'ifsc'],
+                    // India does not use IBAN
+                    'fields' => ['swift', 'ifsc', 'beneficiary_state'],
                 ],
             ],
         ],
@@ -547,34 +680,144 @@ function getInternationalRailConfigByCode() {
                 'swift' => [
                     'label' => 'SWIFT Wire',
                     'receipt_label' => 'SWIFT',
-                    'fields' => ['swift', 'bsb'],
+                    // Australia does not use IBAN
+                    'fields' => ['swift', 'bsb', 'beneficiary_state'],
+                ],
+            ],
+        ],
+        'NZ' => [
+            'default_method' => 'swift',
+            'methods' => [
+                'swift' => [
+                    'label' => 'SWIFT Wire',
+                    'receipt_label' => 'SWIFT',
+                    'fields' => ['swift', 'beneficiary_state'],
+                ],
+            ],
+        ],
+        'JP' => [
+            'default_method' => 'swift',
+            'methods' => [
+                'swift' => [
+                    'label' => 'SWIFT Wire',
+                    'receipt_label' => 'SWIFT',
+                    'fields' => ['swift', 'beneficiary_state'],
+                ],
+            ],
+        ],
+        'CN' => [
+            'default_method' => 'swift',
+            'methods' => [
+                'swift' => [
+                    'label' => 'SWIFT Wire',
+                    'receipt_label' => 'SWIFT',
+                    'fields' => ['swift', 'beneficiary_state'],
+                ],
+            ],
+        ],
+        'KR' => [
+            'default_method' => 'swift',
+            'methods' => [
+                'swift' => [
+                    'label' => 'SWIFT Wire',
+                    'receipt_label' => 'SWIFT',
+                    'fields' => ['swift', 'beneficiary_state'],
+                ],
+            ],
+        ],
+        'MX' => [
+            'default_method' => 'swift',
+            'methods' => [
+                'swift' => [
+                    'label' => 'SWIFT Wire',
+                    'receipt_label' => 'SWIFT',
+                    'fields' => ['swift', 'beneficiary_state'],
+                ],
+            ],
+        ],
+        'NG' => [
+            'default_method' => 'swift',
+            'methods' => [
+                'swift' => [
+                    'label' => 'SWIFT Wire',
+                    'receipt_label' => 'SWIFT',
+                    'fields' => ['swift', 'beneficiary_state'],
+                ],
+            ],
+        ],
+        'SG' => [
+            'default_method' => 'swift',
+            'methods' => [
+                'swift' => [
+                    'label' => 'SWIFT Wire',
+                    'receipt_label' => 'SWIFT',
+                    'fields' => ['swift', 'beneficiary_state'],
+                ],
+            ],
+        ],
+        'HK' => [
+            'default_method' => 'swift',
+            'methods' => [
+                'swift' => [
+                    'label' => 'SWIFT Wire',
+                    'receipt_label' => 'SWIFT',
+                    'fields' => ['swift', 'beneficiary_state'],
+                ],
+            ],
+        ],
+        'PH' => [
+            'default_method' => 'swift',
+            'methods' => [
+                'swift' => [
+                    'label' => 'SWIFT Wire',
+                    'receipt_label' => 'SWIFT',
+                    'fields' => ['swift', 'beneficiary_state'],
+                ],
+            ],
+        ],
+        'TH' => [
+            'default_method' => 'swift',
+            'methods' => [
+                'swift' => [
+                    'label' => 'SWIFT Wire',
+                    'receipt_label' => 'SWIFT',
+                    'fields' => ['swift', 'beneficiary_state'],
+                ],
+            ],
+        ],
+        'MY' => [
+            'default_method' => 'swift',
+            'methods' => [
+                'swift' => [
+                    'label' => 'SWIFT Wire',
+                    'receipt_label' => 'SWIFT',
+                    'fields' => ['swift', 'beneficiary_state'],
+                ],
+            ],
+        ],
+        'ID' => [
+            'default_method' => 'swift',
+            'methods' => [
+                'swift' => [
+                    'label' => 'SWIFT Wire',
+                    'receipt_label' => 'SWIFT',
+                    'fields' => ['swift', 'beneficiary_state'],
+                ],
+            ],
+        ],
+        'ZA' => [
+            'default_method' => 'swift',
+            'methods' => [
+                'swift' => [
+                    'label' => 'SWIFT Wire',
+                    'receipt_label' => 'SWIFT',
+                    'fields' => ['swift', 'beneficiary_state'],
                 ],
             ],
         ],
     ];
 
     return array_merge($config, $overrides);
-}
-
-/**
- * Expand raw rail config into API-ready structure with resolved field definitions.
- */
-function expandRailConfig(array $config, $countryCode) {
-    $methods = [];
-    foreach ($config['methods'] as $methodKey => $method) {
-        $methods[$methodKey] = [
-            'label' => $method['label'],
-            'receipt_label' => $method['receipt_label'] ?? $method['label'],
-            'fields' => resolveRailFieldDefinitions($method['fields'], $countryCode),
-        ];
-    }
-
-    return [
-        'country_code' => $countryCode,
-        'country_name' => $config['country_name'] ?? $countryCode,
-        'default_method' => $config['default_method'],
-        'methods' => $methods,
-    ];
 }
 
 /**
@@ -589,7 +832,7 @@ function getDomesticRailFields($operatingCountry) {
             ? $operatingCountry
             : $code;
     }
-    return expandRailConfig($config, $code);
+    return expandRailConfig($config, $code, 'domestic');
 }
 
 /**
@@ -598,19 +841,35 @@ function getDomesticRailFields($operatingCountry) {
 function getInternationalRailFields($destCountry) {
     $code = normalizeCountryCode($destCountry);
     $configs = getInternationalRailConfigByCode();
-    $defaultConfig = [
-        'default_method' => 'swift',
-        'methods' => [
-            'swift' => [
-                'label' => 'SWIFT Wire',
-                'receipt_label' => 'SWIFT',
-                'fields' => ['swift', 'iban'],
+
+    // Default for unknown / non-IBAN countries: SWIFT only (no IBAN, no routing)
+    if (countryUsesIban($code)) {
+        $defaultConfig = [
+            'default_method' => 'swift',
+            'methods' => [
+                'swift' => [
+                    'label' => 'SWIFT Wire',
+                    'receipt_label' => 'SWIFT',
+                    'fields' => ['swift', 'iban', 'beneficiary_state'],
+                ],
             ],
-        ],
-    ];
+        ];
+    } else {
+        $defaultConfig = [
+            'default_method' => 'swift',
+            'methods' => [
+                'swift' => [
+                    'label' => 'SWIFT Wire',
+                    'receipt_label' => 'SWIFT',
+                    'fields' => ['swift', 'beneficiary_state'],
+                ],
+            ],
+        ];
+    }
+
     $config = $configs[$code] ?? $defaultConfig;
     $config['country_name'] = is_string($destCountry) && strlen($destCountry) > 2 ? $destCountry : $code;
-    return expandRailConfig($config, $code);
+    return expandRailConfig($config, $code, 'international');
 }
 
 /**
@@ -842,7 +1101,7 @@ function getReceiptFields($transaction) {
             }
         }
 
-        foreach (['transit_number', 'institution_number', 'sort_code', 'bsb', 'ifsc', 'interac_email', 'interac_phone'] as $extraKey) {
+        foreach (['transit_number', 'institution_number', 'sort_code', 'bsb', 'ifsc', 'interac_email', 'interac_phone', 'beneficiary_state', 'iban', 'routing_number'] as $extraKey) {
             if (empty($metadata[$extraKey])) {
                 continue;
             }

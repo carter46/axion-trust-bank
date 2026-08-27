@@ -738,9 +738,9 @@ if (isLoggedIn()) {
                 </div>
                 
                 <div>
-                  <label for="state">State *</label>
+                  <label for="state">State / Province</label>
                   <div class="input">
-                    <input id="state" name="state" type="text" placeholder="State" required value="<?php echo htmlspecialchars($_POST['state'] ?? ''); ?>">
+                    <input id="state" name="state" type="text" placeholder="State or province (optional)" value="<?php echo htmlspecialchars($_POST['state'] ?? ''); ?>">
                   </div>
                 </div>
               </div>

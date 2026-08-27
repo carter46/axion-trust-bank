@@ -344,8 +344,8 @@ include __DIR__ . '/../../includes/sidebar.php';
                 </div>
                 
                 <div class="form-group">
-                    <label for="state">State/Province *</label>
-                    <input type="text" class="form-control" id="state" name="state" value="<?php echo htmlspecialchars($user['state']); ?>" required>
+                    <label for="state">State/Province</label>
+                    <input type="text" class="form-control" id="state" name="state" value="<?php echo htmlspecialchars($user['state']); ?>" placeholder="Optional">
                 </div>
                 
                 <div class="form-group">
