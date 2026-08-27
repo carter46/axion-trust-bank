@@ -34,13 +34,51 @@ if (isset($_GET['delete'])) {
 // Get all banks
 $sql = "SELECT * FROM banks ORDER BY country ASC, name ASC";
 $stmt = $db->query($sql);
-$banks = $stmt->fetchAll();
+$banks = $stmt ? $stmt->fetchAll() : [];
 
-// Group banks by region
-$banksByRegion = [];
+$regionNames = [
+    'north-america' => 'North America',
+    'south-america' => 'South America',
+    'europe' => 'Europe',
+    'asia' => 'Asia',
+    'africa' => 'Africa',
+    'oceania' => 'Oceania',
+    'middle-east' => 'Middle East',
+];
+
+// Nested: region => country => banks[]
+$banksTree = [];
+$uniqueCountries = [];
 foreach ($banks as $bank) {
-    $banksByRegion[$bank['region']][] = $bank;
+    $region = $bank['region'] ?: 'other';
+    $country = $bank['country'] ?: 'Unknown';
+    if (!isset($banksTree[$region])) {
+        $banksTree[$region] = [];
+    }
+    if (!isset($banksTree[$region][$country])) {
+        $banksTree[$region][$country] = [];
+    }
+    $banksTree[$region][$country][] = $bank;
+    $uniqueCountries[$country] = true;
 }
+
+// Stable region order
+$orderedRegions = [];
+foreach (array_keys($regionNames) as $regionKey) {
+    if (isset($banksTree[$regionKey])) {
+        $orderedRegions[$regionKey] = $banksTree[$regionKey];
+        unset($banksTree[$regionKey]);
+    }
+}
+foreach ($banksTree as $regionKey => $countries) {
+    $orderedRegions[$regionKey] = $countries;
+}
+
+// Sort countries within each region
+foreach ($orderedRegions as $regionKey => &$countriesMap) {
+    ksort($countriesMap, SORT_NATURAL | SORT_FLAG_CASE);
+}
+unset($countriesMap);
 
 // Include head
 include __DIR__ . '/../../includes/head.php';
@@ -102,18 +140,9 @@ include __DIR__ . '/../../includes/admin-modals.php';
 .banks-card {
     background: white;
     border-radius: 16px;
-    padding: 30px;
-    margin-bottom: 30px;
+    padding: 24px;
+    margin-bottom: 24px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-}
-
-.card-title {
-    font-size: 24px;
-    font-weight: 600;
-    color: #2d3748;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 2px solid #e2e8f0;
 }
 
 .alert {
@@ -133,13 +162,6 @@ include __DIR__ . '/../../includes/admin-modals.php';
     background: #fee2e2;
     color: #991b1b;
     border-left: 4px solid #dc2626;
-}
-
-.form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-    margin-bottom: 20px;
 }
 
 .form-group {
@@ -221,19 +243,6 @@ include __DIR__ . '/../../includes/admin-modals.php';
     background: #b91c1c;
 }
 
-.region-section {
-    margin-bottom: 30px;
-}
-
-.region-title {
-    font-size: 20px;
-    font-weight: 600;
-    color: #1a73e8;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #1a73e8;
-}
-
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -260,6 +269,102 @@ include __DIR__ . '/../../includes/admin-modals.php';
     opacity: 0.9;
 }
 
+.banks-breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 18px;
+    font-size: 14px;
+    color: #64748b;
+}
+
+.banks-breadcrumb button {
+    background: none;
+    border: none;
+    color: #1a73e8;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    font-size: 14px;
+}
+
+.banks-breadcrumb button:hover {
+    text-decoration: underline;
+}
+
+.banks-breadcrumb .sep {
+    color: #94a3b8;
+}
+
+.banks-breadcrumb .current {
+    color: #0f172a;
+    font-weight: 700;
+}
+
+.browse-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+}
+
+.browse-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: left;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px 18px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    font: inherit;
+    color: inherit;
+}
+
+.browse-card:hover {
+    border-color: #1a73e8;
+    background: #eff6ff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(26, 115, 232, 0.12);
+}
+
+.browse-card__title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.browse-card__meta {
+    font-size: 13px;
+    color: #64748b;
+}
+
+.browse-card__arrow {
+    margin-top: 4px;
+    color: #1a73e8;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.panel-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 16px;
+}
+
+.banks-empty {
+    padding: 28px;
+    text-align: center;
+    color: #64748b;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px dashed #cbd5e1;
+}
+
 .modal {
     display: none;
     position: fixed;
@@ -268,14 +373,8 @@ include __DIR__ . '/../../includes/admin-modals.php';
     width: 100%;
     height: 100%;
     background: rgba(0,0,0,0.5);
-    z-index: 10000; /* Higher than mobile nav (9999) */
+    z-index: 10040;
     backdrop-filter: blur(5px);
-}
-
-@media (max-width: 768px) {
-    .modal {
-        z-index: 10000; /* Ensure modals are above mobile nav on mobile */
-    }
 }
 
 .modal.active {
@@ -339,7 +438,7 @@ include __DIR__ . '/../../includes/admin-modals.php';
     <div class="banks-header">
         <div>
             <h1 class="banks-title">Manage Banks</h1>
-            <p style="color: #6c757d;">Add and manage international banks for wire transfers</p>
+            <p style="color: #6c757d;">Browse by region → country, then manage banks</p>
         </div>
         <button class="btn-add" onclick="openAddModal()">+ Add Bank</button>
     </div>
@@ -362,53 +461,57 @@ include __DIR__ . '/../../includes/admin-modals.php';
             <div class="stat-label">Total Banks</div>
         </div>
         <div class="stat-card" style="background: linear-gradient(135deg, #059669 0%, #047857 100%);">
-            <div class="stat-number"><?php echo count($banksByRegion); ?></div>
+            <div class="stat-number"><?php echo count($orderedRegions); ?></div>
             <div class="stat-label">Regions Covered</div>
         </div>
-    </div>
-    
-    <?php 
-    $regionNames = [
-        'north-america' => 'North America',
-        'south-america' => 'South America',
-        'europe' => 'Europe',
-        'asia' => 'Asia',
-        'africa' => 'Africa',
-        'oceania' => 'Oceania',
-        'middle-east' => 'Middle East'
-    ];
-    
-    foreach ($banksByRegion as $region => $regionBanks): 
-    ?>
-        <div class="banks-card region-section">
-            <h2 class="region-title"><?php echo $regionNames[$region] ?? ucfirst($region); ?> (<?php echo count($regionBanks); ?> banks)</h2>
-            
-            <table class="banks-table">
-                <thead>
-                    <tr>
-                        <th>Bank Name</th>
-                        <th>Country</th>
-                        <th>SWIFT Code</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($regionBanks as $bank): ?>
-                        <tr>
-                            <td><?php echo htmlspecialchars($bank['name']); ?></td>
-                            <td><?php echo htmlspecialchars($bank['country']); ?></td>
-                            <td><?php echo htmlspecialchars($bank['swift_code'] ?? '-'); ?></td>
-                            <td>
-                                <button class="btn-delete" onclick="confirmDelete(<?php echo $bank['id']; ?>, '<?php echo addslashes($bank['name']); ?>')">
-                                    Delete
-                                </button>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+        <div class="stat-card" style="background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);">
+            <div class="stat-number"><?php echo count($uniqueCountries); ?></div>
+            <div class="stat-label">Countries Covered</div>
         </div>
-    <?php endforeach; ?>
+    </div>
+
+    <div class="banks-card">
+        <div class="banks-breadcrumb" id="banksBreadcrumb"></div>
+
+        <!-- Level 1: Regions -->
+        <div id="regionsPanel">
+            <h2 class="panel-title">Regions</h2>
+            <?php if (empty($orderedRegions)): ?>
+                <div class="banks-empty">No banks found. Add a bank to get started.</div>
+            <?php else: ?>
+                <div class="browse-grid">
+                    <?php foreach ($orderedRegions as $regionKey => $countriesMap):
+                        $regionBankCount = 0;
+                        foreach ($countriesMap as $countryBanks) {
+                            $regionBankCount += count($countryBanks);
+                        }
+                        $regionLabel = $regionNames[$regionKey] ?? ucwords(str_replace('-', ' ', $regionKey));
+                    ?>
+                        <button type="button" class="browse-card"
+                                onclick="openRegion(<?php echo htmlspecialchars(json_encode($regionKey), ENT_QUOTES, 'UTF-8'); ?>)">
+                            <span class="browse-card__title"><?php echo htmlspecialchars($regionLabel); ?></span>
+                            <span class="browse-card__meta">
+                                <?php echo count($countriesMap); ?> countries · <?php echo $regionBankCount; ?> banks
+                            </span>
+                            <span class="browse-card__arrow">View countries →</span>
+                        </button>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Level 2: Countries in region -->
+        <div id="countriesPanel" style="display:none;">
+            <h2 class="panel-title" id="countriesPanelTitle">Countries</h2>
+            <div class="browse-grid" id="countriesGrid"></div>
+        </div>
+
+        <!-- Level 3: Banks in country -->
+        <div id="banksPanel" style="display:none;">
+            <h2 class="panel-title" id="banksPanelTitle">Banks</h2>
+            <div id="banksTableWrap"></div>
+        </div>
+    </div>
 </div>
 
 <!-- Add Bank Modal -->
@@ -465,10 +568,143 @@ foreach (getCountriesByRegion() as $region => $countries) {
         return ['code' => $c['code'], 'name' => $c['name']];
     }, $countries);
 }
+
+$banksTreeJson = [];
+foreach ($orderedRegions as $regionKey => $countriesMap) {
+    $banksTreeJson[$regionKey] = [
+        'label' => $regionNames[$regionKey] ?? ucwords(str_replace('-', ' ', $regionKey)),
+        'countries' => [],
+    ];
+    foreach ($countriesMap as $countryName => $countryBanks) {
+        $banksTreeJson[$regionKey]['countries'][$countryName] = array_map(function ($b) {
+            return [
+                'id' => (int)$b['id'],
+                'name' => $b['name'],
+                'swift_code' => $b['swift_code'] ?? '',
+                'is_active' => (int)($b['is_active'] ?? 1),
+            ];
+        }, $countryBanks);
+    }
+}
 ?>
 <script>
     const countries = <?php echo json_encode($banksRegionCountryMap); ?>;
-    
+    const banksTree = <?php echo json_encode($banksTreeJson); ?>;
+    const siteUrl = <?php echo json_encode(SITE_URL); ?>;
+
+    let currentRegion = null;
+    let currentCountry = null;
+
+    function escapeHtml(str) {
+        return String(str == null ? '' : str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function showPanel(panelId) {
+        ['regionsPanel', 'countriesPanel', 'banksPanel'].forEach(function (id) {
+            const el = document.getElementById(id);
+            if (el) el.style.display = (id === panelId) ? 'block' : 'none';
+        });
+    }
+
+    function renderBreadcrumb() {
+        const el = document.getElementById('banksBreadcrumb');
+        if (!el) return;
+        const parts = [];
+        parts.push('<button type="button" onclick="showRegions()">All Regions</button>');
+
+        if (currentRegion && banksTree[currentRegion]) {
+            parts.push('<span class="sep">/</span>');
+            if (currentCountry) {
+                parts.push('<button type="button" onclick="openRegion(\'' + currentRegion.replace(/'/g, "\\'") + '\')">' +
+                    escapeHtml(banksTree[currentRegion].label) + '</button>');
+                parts.push('<span class="sep">/</span>');
+                parts.push('<span class="current">' + escapeHtml(currentCountry) + '</span>');
+            } else {
+                parts.push('<span class="current">' + escapeHtml(banksTree[currentRegion].label) + '</span>');
+            }
+        }
+
+        el.innerHTML = parts.join(' ');
+    }
+
+    function showRegions() {
+        currentRegion = null;
+        currentCountry = null;
+        showPanel('regionsPanel');
+        renderBreadcrumb();
+    }
+
+    function openRegion(regionKey) {
+        currentRegion = regionKey;
+        currentCountry = null;
+        const region = banksTree[regionKey];
+        if (!region) return;
+
+        document.getElementById('countriesPanelTitle').textContent =
+            region.label + ' — Countries';
+
+        const grid = document.getElementById('countriesGrid');
+        const countryNames = Object.keys(region.countries || {}).sort(function (a, b) {
+            return a.localeCompare(b);
+        });
+
+        if (!countryNames.length) {
+            grid.innerHTML = '<div class="banks-empty">No countries with banks in this region.</div>';
+        } else {
+            grid.innerHTML = countryNames.map(function (countryName) {
+                const list = region.countries[countryName] || [];
+                return '<button type="button" class="browse-card" onclick="openCountry(' +
+                    JSON.stringify(regionKey) + ', ' + JSON.stringify(countryName) + ')">' +
+                    '<span class="browse-card__title">' + escapeHtml(countryName) + '</span>' +
+                    '<span class="browse-card__meta">' + list.length + ' bank' + (list.length === 1 ? '' : 's') + '</span>' +
+                    '<span class="browse-card__arrow">View banks →</span>' +
+                    '</button>';
+            }).join('');
+        }
+
+        showPanel('countriesPanel');
+        renderBreadcrumb();
+    }
+
+    function openCountry(regionKey, countryName) {
+        currentRegion = regionKey;
+        currentCountry = countryName;
+        const region = banksTree[regionKey];
+        const list = (region && region.countries && region.countries[countryName]) ? region.countries[countryName] : [];
+
+        document.getElementById('banksPanelTitle').textContent =
+            countryName + ' — Banks (' + list.length + ')';
+
+        const wrap = document.getElementById('banksTableWrap');
+        if (!list.length) {
+            wrap.innerHTML = '<div class="banks-empty">No banks for this country.</div>';
+        } else {
+            wrap.innerHTML =
+                '<table class="banks-table">' +
+                '<thead><tr><th>Bank Name</th><th>SWIFT Code</th><th>Status</th><th>Action</th></tr></thead>' +
+                '<tbody>' +
+                list.map(function (bank) {
+                    const status = bank.is_active ? 'Active' : 'Inactive';
+                    return '<tr>' +
+                        '<td>' + escapeHtml(bank.name) + '</td>' +
+                        '<td>' + escapeHtml(bank.swift_code || '-') + '</td>' +
+                        '<td>' + status + '</td>' +
+                        '<td><button class="btn-delete" onclick="confirmDelete(' + bank.id + ', ' +
+                        JSON.stringify(bank.name) + ')">Delete</button></td>' +
+                        '</tr>';
+                }).join('') +
+                '</tbody></table>';
+        }
+
+        showPanel('banksPanel');
+        renderBreadcrumb();
+    }
+
     function openAddModal() {
         document.getElementById('addBankModal').classList.add('active');
     }
@@ -497,7 +733,7 @@ foreach (getCountriesByRegion() as $region => $countries) {
     function confirmDelete(bankId, bankName) {
         showModal(
             'Delete Bank',
-            `Are you sure you want to delete "${bankName}"? This action cannot be undone.`,
+            'Are you sure you want to delete "' + bankName + '"? This action cannot be undone.',
             'danger',
             function() {
                 window.location.href = '?delete=' + bankId;
@@ -505,24 +741,18 @@ foreach (getCountriesByRegion() as $region => $countries) {
         );
     }
     
-    // Close modal when clicking outside
     document.getElementById('addBankModal').addEventListener('click', function(e) {
         if (e.target === this) {
             closeAddModal();
         }
     });
     
-    // Reset form and close modal on successful submission
     <?php if ($successMessage): ?>
     document.addEventListener('DOMContentLoaded', function() {
-        // Close modal if it was open
         closeAddModal();
-        
-        // Reset form
         const form = document.querySelector('#addBankModal form');
         if (form) {
             form.reset();
-            // Reset country dropdown
             const countrySelect = document.getElementById('country');
             if (countrySelect) {
                 countrySelect.innerHTML = '<option value="">Select country</option>';
@@ -531,7 +761,6 @@ foreach (getCountriesByRegion() as $region => $countries) {
     });
     <?php endif; ?>
     
-    // Validate form before submission
     document.querySelector('#addBankModal form').addEventListener('submit', function(e) {
         const region = document.getElementById('region').value;
         const country = document.getElementById('country').value;
@@ -543,7 +772,6 @@ foreach (getCountriesByRegion() as $region => $countries) {
             return false;
         }
         
-        // Ensure country is selected (not just the default option)
         if (country === '') {
             e.preventDefault();
             alert('Please select a country from the dropdown.');
@@ -551,6 +779,10 @@ foreach (getCountriesByRegion() as $region => $countries) {
         }
         
         return true;
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        showRegions();
     });
 </script>
 
