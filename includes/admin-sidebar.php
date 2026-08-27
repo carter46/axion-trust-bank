@@ -253,6 +253,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }, 100); // Debounce resize events
     });
-});
+    });
 </script>
+
+<?php include __DIR__ . '/session-monitor.php'; ?>
 
