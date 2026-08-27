@@ -17,9 +17,9 @@ return [
         '/^uploads\//',
         
         // Third-party integrations and site-specific includes
-        '/^includes\/livechat\.php$/', // Live chat API keys (Smartsupp, Tawk.to, etc.)
         '/^includes\/translation\.php$/', // Translation widget settings (GTranslate, etc.)
         '/^includes\/currency-converter\.php$/', // Currency API keys (Open Exchange Rates, etc.)
+        // Live chat script is stored in system_settings.live_chat_script (Admin → System Settings → Other)
         // Add any other site-specific files here:
         // '/^includes\/custom-integration\.php$/',
         
@@ -64,7 +64,7 @@ return [
         '/^models\//',
         '/^views\//',
         '/^api\//',
-        '/^includes\//', // except livechat.php (handled by exclude)
+        '/^includes\//', // live chat embed is in system_settings, not hardcoded keys
         '/^assets\//',
         '/^cron\//',
         '/^index\.php$/',

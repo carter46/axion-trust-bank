@@ -225,9 +225,9 @@ try {
         'excluded_files' => [
             'config/config.php', // CRITICAL: Fully excluded - each site keeps its own DB/SMTP configuration
             'config/database.php', // Fully excluded - database connection stays protected
-            'includes/livechat.php', // Live chat API keys
             'includes/translation.php', // Translation widget settings
             'includes/currency-converter.php', // Currency API keys
+            // Live chat embed is managed via system_settings.live_chat_script
             '.env', // Environment variables
             '.htaccess', // Server configuration
             'uploads/', // User-generated content

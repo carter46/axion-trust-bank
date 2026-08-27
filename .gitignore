@@ -1,9 +1,6 @@
 # Site-specific configuration (credentials, SMTP, encryption keys)
 config/config.php
 
-# Live chat widget script (Smartsupp, Tawk.to, etc. — per-site API keys)
-includes/livechat.php
-
 # User/server uploads — live files stay on the server; git pull must not overwrite them
 # (uploads/images/ is NOT ignored — static marketing assets for the public site stay in git)
 uploads/kyc/*

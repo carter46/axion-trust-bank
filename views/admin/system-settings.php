@@ -242,6 +242,11 @@ $criticalSettings = [
         'value' => '[]',
         'type' => 'json',
         'description' => 'KYC: JSON array of custom field definitions (key, label, type, required, pattern, step)'
+    ],
+    'live_chat_script' => [
+        'value' => '',
+        'type' => 'string',
+        'description' => 'Live chat widget script (paste full Tawk.to, Crisp, Smartsupp, etc. embed code). Shown on home, contact, help center, and customer dashboard/transfer pages.'
     ]
 ];
 
@@ -285,7 +290,9 @@ foreach ($allSettings as $setting) {
         continue;
     }
     
-    if (strpos($desc, 'Website') !== false || strpos($desc, 'Site') !== false || strpos($desc, 'contact') !== false || strpos($desc, 'support') !== false || strpos($desc, 'logo') !== false || strpos($desc, 'tagline') !== false || strpos($desc, 'address') !== false || strpos($desc, 'phone') !== false) {
+    if ($key === 'live_chat_script') {
+        $settingsGroups['Other'][] = $setting;
+    } elseif (strpos($desc, 'Website') !== false || strpos($desc, 'Site') !== false || strpos($desc, 'contact') !== false || strpos($desc, 'support') !== false || strpos($desc, 'logo') !== false || strpos($desc, 'tagline') !== false || strpos($desc, 'address') !== false || strpos($desc, 'phone') !== false) {
         $settingsGroups['Site Branding & Identity'][] = $setting;
     } elseif (strpos($desc, 'bank') !== false && (strpos($desc, 'operates') !== false || strpos($desc, 'operating') !== false)
         || $key === 'bank_operating_country' || $key === 'bank_operating_region') {
@@ -719,6 +726,16 @@ include __DIR__ . '/../../includes/admin-sidebar.php';
                                                value="<?php echo htmlspecialchars($setting['setting_value']); ?>"
                                                placeholder="ExchangeRate-API key"
                                                autocomplete="new-password">
+                                    <?php elseif ($setting['setting_key'] === 'live_chat_script'): ?>
+                                        <textarea
+                                            name="setting_<?php echo $setting['setting_key']; ?>"
+                                            rows="6"
+                                            style="width:100%;min-height:140px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;line-height:1.45;padding:10px 12px;border:1px solid #dadce0;border-radius:8px;resize:vertical;"
+                                            placeholder="&lt;script&gt;...&lt;/script&gt;"
+                                        ><?php echo htmlspecialchars((string)$setting['setting_value']); ?></textarea>
+                                        <small style="display:block;margin-top:6px;color:#666;">
+                                            Paste the full embed from your chat provider. Leave empty to disable the widget.
+                                        </small>
                                     <?php else: ?>
                                         <input type="text" 
                                                name="setting_<?php echo $setting['setting_key']; ?>" 

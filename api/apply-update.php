@@ -966,9 +966,9 @@ try {
             // Special handling for files with API keys - preserve existing keys
             // Note: These files are also excluded from packages, but this provides extra protection
             $protectedApiKeyFiles = [
-                'includes/livechat.php',
                 'includes/translation.php',
                 'includes/currency-converter.php'
+                // livechat.php is no longer protected — widget script lives in system_settings
             ];
             
             if (in_array($relativePath, $protectedApiKeyFiles)) {
