@@ -524,17 +524,25 @@ class AdminController {
         requireAdmin();
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $email = strtolower(trim((string)Security::sanitize($_POST['email'] ?? '')));
+            $gender = Security::sanitize($_POST['gender'] ?? '');
+            $gender = in_array($gender, ['male', 'female', 'other'], true) ? $gender : null;
+            $phone = trim((string)Security::sanitize($_POST['phone'] ?? ''));
+            if (strlen($phone) > 20) {
+                $phone = substr($phone, 0, 20);
+            }
+
             $data = [
-                'full_name' => Security::sanitize($_POST['full_name']),
-                'email' => Security::sanitize($_POST['email']),
-                'phone' => Security::sanitize($_POST['phone']),
-                'password' => $_POST['password'],
-                'date_of_birth' => Security::sanitize($_POST['date_of_birth']),
-                'gender' => Security::sanitize($_POST['gender'] ?? null),
-                'address' => Security::sanitize($_POST['address']),
-                'city' => Security::sanitize($_POST['city']),
-                'state' => Security::sanitize($_POST['state']),
-                'postal_code' => Security::sanitize($_POST['postal_code']),
+                'full_name' => Security::sanitize($_POST['full_name'] ?? ''),
+                'email' => $email,
+                'phone' => $phone,
+                'password' => $_POST['password'] ?? '',
+                'date_of_birth' => Security::sanitize($_POST['date_of_birth'] ?? ''),
+                'gender' => $gender,
+                'address' => Security::sanitize($_POST['address'] ?? ''),
+                'city' => Security::sanitize($_POST['city'] ?? ''),
+                'state' => Security::sanitize($_POST['state'] ?? ''),
+                'postal_code' => Security::sanitize($_POST['postal_code'] ?? ''),
                 'status' => Security::sanitize($_POST['status'] ?? 'active'),
                 'kyc_status' => Security::sanitize($_POST['kyc_status'] ?? 'pending'),
                 'currency' => Security::sanitize($_POST['currency'] ?? DEFAULT_CURRENCY),
@@ -549,6 +557,28 @@ class AdminController {
             // Prefer posted country; otherwise derive from display currency
             $postedCountry = Security::sanitize($_POST['country'] ?? '');
             $data['country'] = $postedCountry !== '' ? $postedCountry : currencyToPrimaryCountry($data['currency']);
+
+            if ($email === '' || $data['full_name'] === '' || $data['password'] === '') {
+                $_SESSION['error'] = 'Full name, email, and password are required.';
+                redirect('/admin/user-create');
+            }
+
+            if (!Security::validateEmail($email)) {
+                $_SESSION['error'] = 'Please enter a valid email address.';
+                redirect('/admin/user-create');
+            }
+
+            if (strlen($data['password']) < 8) {
+                $_SESSION['error'] = 'Password must be at least 8 characters long.';
+                redirect('/admin/user-create');
+            }
+
+            // Clear duplicate-email failure before DB unique constraint
+            $existing = (new User())->findByEmail($email);
+            if ($existing) {
+                $_SESSION['error'] = 'A user with this email already exists.';
+                redirect('/admin/user-create');
+            }
             
             $userId = $this->adminModel->createUser($data);
             
@@ -617,7 +647,7 @@ class AdminController {
                 $_SESSION['success'] = 'User created successfully';
                 redirect('/admin/user-view/' . $userId);
             } else {
-                $_SESSION['error'] = 'Failed to create user';
+                $_SESSION['error'] = 'Failed to create user. Please check the details and try again.';
                 redirect('/admin/user-create');
             }
         }

@@ -446,13 +446,28 @@ $logoUrl = isset($logoUrl) ? $logoUrl : getSiteLogo();
     // Auto-focus code input
     document.getElementById('code').focus();
 
-    // Format code input
+    // Format code input — single submit only (auto-submit can race with button click)
     const codeInput = document.getElementById('code');
+    const verifyForm = codeInput.closest('form');
+    let verifySubmitting = false;
+    if (verifyForm) {
+      verifyForm.addEventListener('submit', function (e) {
+        if (verifySubmitting) {
+          e.preventDefault();
+          return false;
+        }
+        verifySubmitting = true;
+        const btn = verifyForm.querySelector('button[type="submit"]');
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = 'Verifying...';
+        }
+      });
+    }
     codeInput.addEventListener('input', function(e) {
       this.value = this.value.replace(/\D/g, ''); // Only numbers
-      if (this.value.length === 6) {
-        // Auto-submit when 6 digits entered
-        this.form.submit();
+      if (this.value.length === 6 && !verifySubmitting && verifyForm) {
+        verifyForm.requestSubmit ? verifyForm.requestSubmit() : verifyForm.submit();
       }
     });
 

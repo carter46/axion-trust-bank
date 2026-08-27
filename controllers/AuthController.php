@@ -111,14 +111,20 @@ class AuthController {
                 // Generate 2FA code
                 $twoFactorMethod = $user['two_factor_method'] ?? 'email';
                 $code = Security::generate2FACode($user['id'], $twoFactorMethod, 'login');
+
+                if ($code === false || $code === null || $code === '') {
+                    $_SESSION['error'] = 'Unable to generate verification code. Please try again.';
+                    redirect('/auth/login');
+                }
                 
                 // Send code
-                if ($twoFactorMethod === 'email') {
+                if ($twoFactorMethod === 'email' || $twoFactorMethod === 'app' || empty($twoFactorMethod)) {
                     require_once __DIR__ . '/../includes/email-template.php';
                     $emailTemplate = new EmailTemplate();
                     $emailContent = $emailTemplate->twoFactorEmail($user['full_name'], $code, 10);
                     $siteName = getSiteName() ?? 'SecureBank';
                     sendEmail($user['email'], 'Two-Factor Authentication Code - ' . $siteName, $emailContent);
+                    $twoFactorMethod = 'email';
                 } else if ($twoFactorMethod === 'sms') {
                     sendSMS($user['phone'], "Your SecureBank verification code is: $code");
                 }
@@ -324,7 +330,8 @@ class AuthController {
         }
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $code = Security::sanitize($_POST['code']);
+            // Do not htmlspecialchars OTP digits — validate2FA normalizes to digits only
+            $code = preg_replace('/\D+/', '', (string)($_POST['code'] ?? ''));
             $userId = $_SESSION['temp_user_id'];
             
             if (Security::validate2FA($userId, $code, 'login')) {
@@ -370,17 +377,23 @@ class AuthController {
         }
         
         // Generate new 2FA code
-        $code = Security::generate2FACode($userId, $user['two_factor_method'], 'login');
+        $method = $user['two_factor_method'] ?? 'email';
+        $code = Security::generate2FACode($userId, $method, 'login');
+        if ($code === false || $code === null || $code === '') {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Unable to generate verification code']);
+            exit;
+        }
         
         // Send code
-        if ($user['two_factor_method'] === 'email') {
+        if ($method === 'sms') {
+            sendSMS($user['phone'], "Your SecureBank verification code is: $code");
+        } else {
             require_once __DIR__ . '/../includes/email-template.php';
             $emailTemplate = new EmailTemplate();
             $emailContent = $emailTemplate->twoFactorEmail($user['full_name'], $code, 10);
             $siteName = getSiteName() ?? 'SecureBank';
             sendEmail($user['email'], 'Two-Factor Authentication Code - ' . $siteName, $emailContent);
-        } else if ($user['two_factor_method'] === 'sms') {
-            sendSMS($user['phone'], "Your SecureBank verification code is: $code");
         }
         
         echo json_encode(['success' => true, 'message' => 'Code resent successfully']);

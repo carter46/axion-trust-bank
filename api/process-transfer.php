@@ -381,6 +381,15 @@ try {
             $_SESSION['transfer_otp_verified'] = $verifiedMap;
 
             $otpCode = Security::generate2FACode($userId, 'email', 'transfer');
+            if ($otpCode === false || $otpCode === null || $otpCode === '') {
+                http_response_code(500);
+                echo json_encode([
+                    'success' => false,
+                    'error_type' => 'otp_required',
+                    'message' => 'Unable to generate OTP right now. Please try again.'
+                ]);
+                exit;
+            }
             try {
                 $emailTemplate = new EmailTemplate();
                 $emailContent = $emailTemplate->twoFactorEmail($userStatus['full_name'] ?? 'Customer', $otpCode, 10);

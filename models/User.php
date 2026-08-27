@@ -47,17 +47,27 @@ class User {
         $hashedPassword = Security::hashPassword($data['password']);
         $hashedAnswer1 = Security::hashPassword($data['security_answer_1']);
         $hashedAnswer2 = Security::hashPassword($data['security_answer_2']);
+
+        // Empty string is invalid for ENUM gender — store NULL instead
+        $gender = $data['gender'] ?? null;
+        if ($gender === '' || $gender === null) {
+            $gender = null;
+        } elseif (!in_array($gender, ['male', 'female', 'other'], true)) {
+            $gender = null;
+        }
+
+        $phone = isset($data['phone']) ? substr((string)$data['phone'], 0, 20) : null;
         
         $result = $this->db->query($sql, [
             $data['email'],
             $hashedPassword,
             $data['full_name'],
-            $data['phone'],
-            $data['date_of_birth'],
-            $data['gender'] ?? null,
+            $phone,
+            $data['date_of_birth'] !== '' ? $data['date_of_birth'] : null,
+            $gender,
             $data['address'],
             $data['city'],
-            $data['state'],
+            $data['state'] !== '' ? $data['state'] : null,
             $data['country'],
             $data['postal_code'],
             $data['security_question_1'],

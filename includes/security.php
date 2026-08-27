@@ -176,25 +176,54 @@ class Security {
     public static function generate2FACode($userId, $method = 'email', $purpose = 'login') {
         $db = Database::getInstance();
         $code = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        $expiresAt = date('Y-m-d H:i:s', time() + 600);
+        $purpose = preg_replace('/[^a-z0-9_\-]/i', '', (string)$purpose) ?: 'login';
+        $method = strtolower(trim((string)$method));
+        if (!in_array($method, ['email', 'sms', 'app'], true)) {
+            $method = 'email';
+        }
 
-        $db->query(
+        // Invalidate prior unused codes for this purpose
+        $invalidate = $db->query(
             "UPDATE two_factor_codes SET used = 1 WHERE user_id = ? AND purpose = ? AND used = 0",
             [$userId, $purpose]
         );
+        if ($invalidate === false) {
+            // Older schemas without purpose column
+            $db->query(
+                "UPDATE two_factor_codes SET used = 1 WHERE user_id = ? AND used = 0",
+                [$userId]
+            );
+        }
 
-        $db->query(
-            "INSERT INTO two_factor_codes (user_id, code, method, used, expires_at, purpose) VALUES (?, ?, ?, 0, ?, ?)",
-            [$userId, $code, $method, $expiresAt, $purpose]
+        // Expiry must use MySQL NOW() so PHP/MySQL timezone skew cannot invalidate fresh codes
+        $inserted = $db->query(
+            "INSERT INTO two_factor_codes (user_id, code, method, used, expires_at, purpose)
+             VALUES (?, ?, ?, 0, DATE_ADD(NOW(), INTERVAL 10 MINUTE), ?)",
+            [$userId, $code, $method, $purpose]
         );
+
+        if ($inserted === false) {
+            $inserted = $db->query(
+                "INSERT INTO two_factor_codes (user_id, code, method, used, expires_at)
+                 VALUES (?, ?, ?, 0, DATE_ADD(NOW(), INTERVAL 10 MINUTE))",
+                [$userId, $code, $method]
+            );
+        }
+
+        if ($inserted === false) {
+            error_log("generate2FACode failed to store code for user_id={$userId} purpose={$purpose}");
+            return false;
+        }
 
         return $code;
     }
 
     public static function validate2FA($userId, $code, $purpose = 'login') {
         $db = Database::getInstance();
-        $code = trim((string)$code);
-        if ($code === '') {
+        // Digits only — ignore spaces/dashes pasted from email clients
+        $code = preg_replace('/\D+/', '', (string)$code);
+        $purpose = preg_replace('/[^a-z0-9_\-]/i', '', (string)$purpose) ?: 'login';
+        if ($code === '' || strlen($code) < 4) {
             return false;
         }
 
@@ -203,6 +232,18 @@ class Security {
                 ORDER BY id DESC LIMIT 1";
         $stmt = $db->query($sql, [$userId, $code, $purpose]);
         $row = $stmt ? $stmt->fetch() : null;
+
+        // Fallback for installs without purpose column
+        if (!$row) {
+            $stmt = $db->query(
+                "SELECT id FROM two_factor_codes
+                 WHERE user_id = ? AND code = ? AND used = 0 AND expires_at > NOW()
+                 ORDER BY id DESC LIMIT 1",
+                [$userId, $code]
+            );
+            $row = $stmt ? $stmt->fetch() : null;
+        }
+
         if (!$row) {
             return false;
         }

@@ -186,6 +186,11 @@ include __DIR__ . '/../../includes/admin-sidebar.php';
             </div>
         </a>
         
+        <?php
+        // Hidden for now — set to true to show Simulation Flash Test / Simulation Settings again
+        $showEmailSimulationTools = false;
+        if ($showEmailSimulationTools):
+        ?>
         <a href="<?php echo SITE_URL; ?>/admin/email/simulation-test" class="sub-nav-item">
             <div class="menu-item-left">
                 <div class="menu-item-icon">
@@ -215,6 +220,7 @@ include __DIR__ . '/../../includes/admin-sidebar.php';
                 <i class="fas fa-chevron-right"></i>
             </div>
         </a>
+        <?php endif; ?>
     </div>
 </div>
 

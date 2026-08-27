@@ -191,7 +191,7 @@ include __DIR__ . '/../../includes/admin-modals.php';
 </div>
 
 <div class="card">
-    <form method="POST" action="<?php echo SITE_URL; ?>/admin/userCreate" id="createUserForm">
+    <form method="POST" action="<?php echo SITE_URL; ?>/admin/user-create" id="createUserForm">
         
         <!-- Personal Information -->
         <div class="form-section">

@@ -490,4 +490,18 @@ document.addEventListener('keydown', function(e) {
         closeModal();
     }
 });
+
+// Surface PHP flash messages as toasts on all admin pages
+document.addEventListener('DOMContentLoaded', function () {
+    <?php if (!empty($_SESSION['success'])): ?>
+    if (typeof showToast === 'function') {
+        showToast(<?php echo json_encode((string)$_SESSION['success']); ?>, 'success');
+    }
+    <?php unset($_SESSION['success']); endif; ?>
+    <?php if (!empty($_SESSION['error'])): ?>
+    if (typeof showToast === 'function') {
+        showToast(<?php echo json_encode((string)$_SESSION['error']); ?>, 'error');
+    }
+    <?php unset($_SESSION['error']); endif; ?>
+});
 </script>
