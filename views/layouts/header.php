@@ -893,21 +893,6 @@
         })();
     </script>
 
-    <?php if (isset($_SESSION['admin_impersonating']) && $_SESSION['admin_impersonating']): ?>
-    <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 12px 20px; text-align: center; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: relative; z-index: 1000;">
-        <div style="max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <i class="fas fa-user-shield" style="font-size: 18px;"></i>
-                <span>You are logged in as <strong><?php echo htmlspecialchars($_SESSION['user_name']); ?></strong> (Admin: <?php echo htmlspecialchars($_SESSION['admin_original_name']); ?>)</span>
-            </div>
-            <a href="<?php echo SITE_URL; ?>/admin/stop-impersonating" 
-               style="background: rgba(255,255,255,0.2); color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 600; transition: all 0.3s; border: 1px solid rgba(255,255,255,0.3);"
-               onmouseover="this.style.background='rgba(255,255,255,0.3)'"
-               onmouseout="this.style.background='rgba(255,255,255,0.2)'">
-                <i class="fas fa-sign-out-alt"></i> Switch Back to Admin
-            </a>
-        </div>
-    </div>
-    <?php endif; ?>
+    <?php include __DIR__ . '/../../includes/impersonation-banner.php'; ?>
     
     <main class="main-content"><?php

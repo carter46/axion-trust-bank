@@ -110,6 +110,7 @@ function getCountriesData() {
             'MK' => 'North Macedonia',
             'BA' => 'Bosnia and Herzegovina',
             'XK' => 'Kosovo',
+            'RU' => 'Russia',
         ],
         'asia' => [
             'CN' => 'China',

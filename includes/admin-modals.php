@@ -35,7 +35,7 @@
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 10000; /* Higher than mobile nav (9999) */
+    z-index: 10040; /* Below toast (20050), above page chrome */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -44,7 +44,7 @@
 
 @media (max-width: 768px) {
     .modal-overlay {
-        z-index: 10000; /* Ensure modals are above mobile nav on mobile */
+        z-index: 10040;
     }
 }
 
@@ -169,10 +169,15 @@
     position: fixed;
     top: 20px;
     right: 20px;
-    z-index: 10000;
+    z-index: 20050; /* Above all admin modals / overlays */
     display: flex;
     flex-direction: column;
     gap: 10px;
+    pointer-events: none;
+}
+
+.toast-container .toast {
+    pointer-events: auto;
 }
 
 .toast {
@@ -417,22 +422,14 @@ function confirmModalAction() {
 function showToast(message, type = 'info', title = null) {
     let container = document.getElementById('toastContainer');
     
-    // Create container if it doesn't exist
+    // Always mount toasts on document.body so they sit above modals/overlays
     if (!container) {
         container = document.createElement('div');
         container.id = 'toastContainer';
         container.className = 'toast-container';
-        // Try to append to body or main content area
-        const mainContent = document.querySelector('.content-area') || document.querySelector('main') || document.body;
-        if (mainContent) {
-            mainContent.appendChild(container);
-        } else if (document.body) {
-            document.body.appendChild(container);
-        } else {
-            // Fallback: use alert if we can't create toast
-            alert(message);
-            return;
-        }
+        (document.body || document.documentElement).appendChild(container);
+    } else if (container.parentElement !== document.body && document.body) {
+        document.body.appendChild(container);
     }
     
     const toast = document.createElement('div');
@@ -471,6 +468,14 @@ function removeToast(closeBtn) {
         }
     }, 300);
 }
+
+// Keep toast container on body so it never stacks under modals
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('toastContainer');
+    if (container && document.body && container.parentElement !== document.body) {
+        document.body.appendChild(container);
+    }
+});
 
 // Close modal when clicking outside
 document.addEventListener('click', function(e) {

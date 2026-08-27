@@ -504,79 +504,32 @@ function getUserDisplayCurrency($user = null) {
  */
 function currencyToPrimaryCountry($currencyCode) {
     $code = strtoupper(trim((string)$currencyCode));
-    $map = [
+    if (!function_exists('getCountryPrimaryCurrencyMap')) {
+        require_once __DIR__ . '/country-currencies.php';
+    }
+    if (!function_exists('getCountriesData')) {
+        require_once __DIR__ . '/countries.php';
+    }
+
+    // Prefer an exact reverse lookup from the country→currency map
+    foreach (getCountryPrimaryCurrencyMap() as $iso2 => $currency) {
+        if ($currency === $code) {
+            $info = getCountryByCode($iso2);
+            if ($info && !empty($info['name'])) {
+                return $info['name'];
+            }
+        }
+    }
+
+    $legacy = [
         'USD' => 'United States',
-        'CAD' => 'Canada',
-        'MXN' => 'Mexico',
-        'GBP' => 'United Kingdom',
         'EUR' => 'Germany',
-        'CHF' => 'Switzerland',
-        'SEK' => 'Sweden',
-        'NOK' => 'Norway',
-        'DKK' => 'Denmark',
-        'PLN' => 'Poland',
-        'CZK' => 'Czech Republic',
-        'HUF' => 'Hungary',
-        'RON' => 'Romania',
-        'BGN' => 'Bulgaria',
-        'AUD' => 'Australia',
-        'NZD' => 'New Zealand',
-        'JPY' => 'Japan',
-        'CNY' => 'China',
-        'HKD' => 'Hong Kong',
-        'TWD' => 'Taiwan',
-        'KRW' => 'South Korea',
-        'SGD' => 'Singapore',
-        'MYR' => 'Malaysia',
-        'THB' => 'Thailand',
-        'IDR' => 'Indonesia',
-        'PHP' => 'Philippines',
-        'VND' => 'Vietnam',
-        'INR' => 'India',
-        'PKR' => 'Pakistan',
-        'BDT' => 'Bangladesh',
-        'LKR' => 'Sri Lanka',
-        'NGN' => 'Nigeria',
-        'GHS' => 'Ghana',
-        'KES' => 'Kenya',
-        'ZAR' => 'South Africa',
-        'EGP' => 'Egypt',
-        'MAD' => 'Morocco',
-        'TND' => 'Tunisia',
-        'DZD' => 'Algeria',
-        'AED' => 'United Arab Emirates',
-        'SAR' => 'Saudi Arabia',
-        'QAR' => 'Qatar',
-        'KWD' => 'Kuwait',
-        'BRL' => 'Brazil',
-        'ARS' => 'Argentina',
-        'CLP' => 'Chile',
-        'COP' => 'Colombia',
-        'PEN' => 'Peru',
-        'TRY' => 'Turkey',
-        'ILS' => 'Israel',
-        'RUB' => 'Russia',
-        'XOF' => 'Senegal',
-        'ZMW' => 'Zambia',
-        'DOP' => 'Dominican Republic',
-        'JMD' => 'Jamaica',
-        'BBD' => 'Barbados',
-        'BZD' => 'Belize',
-        'BND' => 'Brunei',
-        'FJD' => 'Fiji',
-        'GYD' => 'Guyana',
-        'LRD' => 'Liberia',
-        'SBD' => 'Solomon Islands',
-        'SRD' => 'Suriname',
-        'TTD' => 'Trinidad and Tobago',
         'XCD' => 'Antigua and Barbuda',
-        'AWG' => 'Aruba',
-        'BMD' => 'Bermuda',
-        'BSD' => 'Bahamas',
-        'KYD' => 'Cayman Islands',
-        'ANG' => 'Curaçao',
+        'XOF' => 'Senegal',
+        'XAF' => 'Cameroon',
+        'XPF' => 'French Polynesia',
     ];
-    return $map[$code] ?? 'United States';
+    return $legacy[$code] ?? 'United States';
 }
 
 /**

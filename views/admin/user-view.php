@@ -442,7 +442,7 @@ include __DIR__ . '/../../includes/admin-modals.php';
     .modal {
       display: none;
       position: fixed;
-      z-index: 2000;
+      z-index: 10040;
       left: 0;
       top: 0;
       width: 100%;
@@ -462,6 +462,34 @@ include __DIR__ . '/../../includes/admin-modals.php';
       box-shadow: 0 20px 40px rgba(0,0,0,0.2);
     max-height: 90vh;
     overflow-y: auto;
+    position: relative;
+    z-index: 1;
+    }
+
+    .balance-modal-alert {
+      display: none;
+      margin: 0 0 16px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.45;
+      font-weight: 500;
+    }
+
+    .balance-modal-alert.is-visible {
+      display: block;
+    }
+
+    .balance-modal-alert.is-error {
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+
+    .balance-modal-alert.is-success {
+      background: #ecfdf5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
     }
 
     .modal-header {
@@ -947,6 +975,7 @@ include __DIR__ . '/../../includes/admin-modals.php';
             <span class="close" onclick="closeBalanceModal()">&times;</span>
           </div>
           <div class="modal-body">
+            <div id="balanceModalAlert" class="balance-modal-alert" role="alert"></div>
             <div class="balance-adjustment-form">
                     <!-- NEW: Adjustment Type Selection (External vs Internal) -->
                     <div class="form-group">
@@ -1325,6 +1354,31 @@ function updateToAccountOptions() {
         document.body.style.overflow = '';
       }
     }
+
+    function showBalanceModalAlert(message, type = 'error') {
+      const alertEl = document.getElementById('balanceModalAlert');
+      if (!alertEl) {
+        if (typeof showToast === 'function') {
+          showToast(message, type);
+        }
+        return;
+      }
+      alertEl.textContent = message || 'Something went wrong';
+      alertEl.className = 'balance-modal-alert is-visible ' + (type === 'success' ? 'is-success' : 'is-error');
+      try {
+        alertEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } catch (e) {}
+      if (typeof showToast === 'function') {
+        showToast(message, type);
+      }
+    }
+
+    function clearBalanceModalAlert() {
+      const alertEl = document.getElementById('balanceModalAlert');
+      if (!alertEl) return;
+      alertEl.textContent = '';
+      alertEl.className = 'balance-modal-alert';
+    }
     
     function toggleStatusField() {
       const adjustType = document.getElementById('adjustType').value;
@@ -1437,10 +1491,11 @@ function updateToAccountOptions() {
     }
     
     function submitBalanceAdjustment() {
+    clearBalanceModalAlert();
     const adjustmentMode = document.getElementById('adjustmentMode').value;
     
     if (!adjustmentMode) {
-        showToast('Please select adjustment type', 'error');
+        showBalanceModalAlert('Please select adjustment type', 'error');
         return;
     }
     
@@ -1465,18 +1520,18 @@ function handleInternalAdjustment() {
     
     // Validation
     if (!fromAccount || !toAccount || !amount || !category || !transactionDate || !transactionTime) {
-        showToast('Please fill in all required fields', 'error');
+        showBalanceModalAlert('Please fill in all required fields', 'error');
         return;
     }
     
     if (fromAccount === toAccount) {
-        showToast('From Account and To Account must be different', 'error');
+        showBalanceModalAlert('From Account and To Account must be different', 'error');
         return;
     }
     
     const amountNum = parseFloat(amount);
     if (isNaN(amountNum) || amountNum <= 0) {
-        showToast('Please enter a valid amount greater than 0', 'error');
+        showBalanceModalAlert('Please enter a valid amount greater than 0', 'error');
         return;
     }
     
@@ -1508,16 +1563,16 @@ function handleInternalAdjustment() {
                 closeBalanceModal();
                 setTimeout(() => window.location.reload(), 1500);
             } else {
-                showToast(data.message || 'Failed to process internal transfer', 'error');
+                showBalanceModalAlert(data.message || 'Failed to process internal transfer', 'error');
             }
         } catch (e) {
             console.error('JSON parse error:', e);
-            showToast('Error parsing server response', 'error');
+            showBalanceModalAlert('Error parsing server response', 'error');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        showToast('An error occurred while processing internal transfer', 'error');
+        showBalanceModalAlert('An error occurred while processing internal transfer', 'error');
     });
 }
 
@@ -1533,24 +1588,24 @@ function handleExternalAdjustment() {
       const description = document.getElementById('transactionDescription').value;
       
       if (!amount || !targetAccount || !transactionType || !expenseCategory || !adjustType) {
-        showToast('Please fill in all required fields', 'error');
+        showBalanceModalAlert('Please fill in all required fields', 'error');
         return;
       }
       
       const amountNum = parseFloat(amount);
       if (isNaN(amountNum) || amountNum <= 0) {
-        showToast('Please enter a valid amount greater than 0', 'error');
+        showBalanceModalAlert('Please enter a valid amount greater than 0', 'error');
         return;
       }
       
       const accountIdNum = parseInt(targetAccount);
       if (isNaN(accountIdNum) || accountIdNum <= 0) {
-        showToast('Please select a valid account', 'error');
+        showBalanceModalAlert('Please select a valid account', 'error');
         return;
       }
       
       if (adjustType === 'debit' && !transactionStatus) {
-        showToast('Please select transaction status for debit transactions', 'error');
+        showBalanceModalAlert('Please select transaction status for debit transactions', 'error');
         return;
       }
       
@@ -1566,7 +1621,7 @@ function handleExternalAdjustment() {
           recipientName = document.getElementById('domesticName').value;
           recipientBank = document.getElementById('domesticBank').value;
           if (!recipientAccount || !recipientName || !recipientBank) {
-            showToast('Please fill in all required fields for domestic transfer', 'error');
+            showBalanceModalAlert('Please fill in all required fields for domestic transfer', 'error');
             return;
           }
           break;
@@ -1577,7 +1632,7 @@ function handleExternalAdjustment() {
           swift = document.getElementById('swift').value;
           iban = document.getElementById('iban').value;
           if (!recipientAccount || !recipientName || !recipientBank) {
-            showToast('Please fill in all required fields for international transfer', 'error');
+            showBalanceModalAlert('Please fill in all required fields for international transfer', 'error');
             return;
           }
           break;
@@ -1622,16 +1677,16 @@ function handleExternalAdjustment() {
             closeBalanceModal();
                 setTimeout(() => window.location.reload(), 1500);
           } else {
-            showToast(data.message, 'error');
+            showBalanceModalAlert(data.message || 'Failed to adjust balance', 'error');
           }
         } catch (e) {
           console.error('JSON parse error:', e);
-          showToast('Error parsing server response', 'error');
+          showBalanceModalAlert('Error parsing server response', 'error');
         }
       })
     .catch(error => {
         console.error('Error:', error);
-        showToast('An error occurred while adjusting balance', 'error');
+        showBalanceModalAlert('An error occurred while adjusting balance', 'error');
       });
     }
 

@@ -1,3 +1,4 @@
+<?php include __DIR__ . '/impersonation-banner.php'; ?>
 <div class="dashboard-container">
     <!-- Collapsible Sidebar -->
     <div class="sidebar" id="sidebar">
@@ -64,6 +65,12 @@
             </div>
             
             <div class="user-actions">
+                <?php if (!empty($_SESSION['admin_impersonating'])): ?>
+                <a href="<?php echo SITE_URL; ?>/admin/stop-impersonating" class="user-action" style="color:#b45309;font-weight:700;">
+                    <i class="fas fa-user-shield"></i>
+                    <span>Back to Admin</span>
+                </a>
+                <?php endif; ?>
                 <a href="<?php echo SITE_URL; ?>/help-center" class="user-action">
                     <i class="fas fa-question-circle"></i>
                     <span>Help Center</span>
