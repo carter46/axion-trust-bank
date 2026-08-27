@@ -158,13 +158,21 @@ class User {
     public function findByEmail($email) {
         $sql = "SELECT * FROM users WHERE email = ?";
         $stmt = $this->db->query($sql, [$email]);
-        return $stmt->fetch();
+        if (!$stmt) {
+            return null;
+        }
+        $user = $stmt->fetch();
+        return $user ?: null;
     }
     
     public function findById($id) {
         $sql = "SELECT * FROM users WHERE id = ?";
         $stmt = $this->db->query($sql, [$id]);
-        return $stmt->fetch();
+        if (!$stmt) {
+            return null;
+        }
+        $user = $stmt->fetch();
+        return $user ?: null;
     }
     
     public function update($id, $data) {

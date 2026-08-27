@@ -12,6 +12,14 @@ class Security {
             session_regenerate_id(true);
             $_SESSION['last_regeneration'] = time();
         }
+
+        // Login POST must not be blocked by a stale authenticated cookie session
+        if (self::isAuthLoginPostRequest()) {
+            foreach (['user_id', 'user_email', 'user_name', 'user_role', 'user_photo', 'last_activity', 'session_started_at', 'session_domain', 'restricted_status', 'admin_impersonating', 'admin_original_id', 'admin_original_email', 'admin_original_name', 'admin_original_role', 'admin_original_photo'] as $authKey) {
+                unset($_SESSION[$authKey]);
+            }
+            return;
+        }
         
         // Only check session timeout for logged-in users
         if (!isset($_SESSION['user_id']) || empty($_SESSION['user_id'])) {
@@ -30,7 +38,7 @@ class Security {
             $db = Database::getInstance();
             $sql = "SELECT id, status FROM users WHERE id = ? LIMIT 1";
             $stmt = $db->query($sql, [$_SESSION['user_id']]);
-            $user = $stmt->fetch();
+            $user = $stmt ? $stmt->fetch() : null;
             
             if (!$user) {
                 destroyAuthSession('Your account has been deleted or is no longer active.');
@@ -41,6 +49,17 @@ class Security {
 
         $_SESSION['last_activity'] = time();
         self::refreshSessionCookie();
+    }
+
+    private static function isAuthLoginPostRequest() {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            return false;
+        }
+        $path = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '';
+        if (strpos($path, '/auth/login') !== false) {
+            return true;
+        }
+        return isset($_GET['route']) && $_GET['route'] === 'auth/login';
     }
 
     /**
@@ -121,17 +140,20 @@ class Security {
         
         $settingsSql = "SELECT setting_value FROM system_settings WHERE setting_key = 'max_login_attempts'";
         $settingsStmt = $db->query($settingsSql);
-        $settings = $settingsStmt->fetch();
+        $settings = $settingsStmt ? $settingsStmt->fetch() : null;
         $maxAttempts = $settings ? intval($settings['setting_value']) : MAX_LOGIN_ATTEMPTS;
         
         $settingsSql = "SELECT setting_value FROM system_settings WHERE setting_key = 'login_lockout_duration'";
         $settingsStmt = $db->query($settingsSql);
-        $settings = $settingsStmt->fetch();
+        $settings = $settingsStmt ? $settingsStmt->fetch() : null;
         $lockoutDuration = $settings ? intval($settings['setting_value']) * 60 : LOCKOUT_TIME;
         
         $sql = "SELECT COUNT(*) as attempts FROM login_attempts 
                 WHERE email = ? AND success = 0 AND attempted_at > DATE_SUB(NOW(), INTERVAL ? SECOND)";
         $stmt = $db->query($sql, [$email, $lockoutDuration]);
+        if (!$stmt) {
+            return false;
+        }
         $result = $stmt->fetch();
         
         return ($result['attempts'] ?? 0) >= $maxAttempts;

@@ -134,6 +134,9 @@ class JointAccount {
                 FROM joint_account_requests 
                 WHERE requesting_user_id = ? AND status = 'pending' AND expires_at > NOW()";
         $stmt = $this->db->query($sql, [$userId]);
+        if (!$stmt) {
+            return false;
+        }
         $result = $stmt->fetch();
         return ($result && $result['count'] > 0);
     }

@@ -14,6 +14,22 @@ function redirect($url) {
     exit();
 }
 
+/**
+ * Write an application log line to logs/app.log (and PHP error_log).
+ */
+function app_log($message, $context = []) {
+    $logDir = defined('LOG_PATH') ? LOG_PATH : (defined('BASE_PATH') ? BASE_PATH . '/logs' : sys_get_temp_dir());
+    if (!is_dir($logDir)) {
+        @mkdir($logDir, 0755, true);
+    }
+    $line = '[' . date('Y-m-d H:i:s') . '] ' . $message;
+    if (!empty($context)) {
+        $line .= ' ' . json_encode($context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    }
+    @file_put_contents($logDir . '/app.log', $line . PHP_EOL, FILE_APPEND | LOCK_EX);
+    error_log($message . (!empty($context) ? ' ' . json_encode($context) : ''));
+}
+
 function isLoggedIn() {
     return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
 }
@@ -1743,17 +1759,23 @@ function adminClearUserAccountHistory(Database $db, int $userId, int $accountId,
 }
 
 function logActivity($userId, $action, $details = null) {
-    $db = Database::getInstance();
-    $sql = "INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent, created_at) 
-            VALUES (?, ?, ?, ?, ?, NOW())";
-    
-    $db->query($sql, [
-        $userId,
-        $action,
-        $details,
-        $_SERVER['REMOTE_ADDR'],
-        $_SERVER['HTTP_USER_AGENT']
-    ]);
+    try {
+        $db = Database::getInstance();
+        $sql = "INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent, created_at) 
+                VALUES (?, ?, ?, ?, ?, NOW())";
+        $db->query($sql, [
+            $userId,
+            $action,
+            $details,
+            $_SERVER['REMOTE_ADDR'] ?? null,
+            $_SERVER['HTTP_USER_AGENT'] ?? null,
+        ]);
+    } catch (Throwable $e) {
+        app_log('logActivity failed: ' . $e->getMessage(), [
+            'user_id' => $userId,
+            'action' => $action,
+        ]);
+    }
 }
 
 function getExchangeRate($from, $to) {

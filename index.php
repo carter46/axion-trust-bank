@@ -208,9 +208,19 @@ try {
         $controllerObj->$action();
     }
     
-} catch (Exception $e) {
+} catch (Throwable $e) {
+    if (function_exists('app_log')) {
+        app_log('Router error: ' . $e->getMessage(), [
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'route' => $_GET['route'] ?? null,
+        ]);
+    }
     // Error handling
     $errorCode = $e->getCode() ?: 500;
+    if ($errorCode < 400 || $errorCode > 599) {
+        $errorCode = 500;
+    }
     http_response_code($errorCode);
     
     if ($errorCode == 404) {

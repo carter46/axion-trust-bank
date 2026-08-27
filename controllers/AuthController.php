@@ -11,6 +11,7 @@ class AuthController {
         }
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            try {
             $email = Security::sanitize($_POST['email']);
             $loginMethod = $_POST['login_method'] ?? 'password';
             
@@ -160,6 +161,17 @@ class AuthController {
             // Add login parameter to show loading screen after login
             $separator = strpos($redirectTo, '?') !== false ? '&' : '?';
             redirect($redirectTo . $separator . 'logged_in=1');
+            } catch (Throwable $e) {
+                app_log('Login POST failed: ' . $e->getMessage(), [
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'email' => $_POST['email'] ?? null,
+                ]);
+                $_SESSION['error'] = (defined('DEVELOPMENT_MODE') && DEVELOPMENT_MODE)
+                    ? 'Login error: ' . $e->getMessage()
+                    : 'Unable to sign in right now. Please try again.';
+                redirect('/auth/login');
+            }
         }
         
         include __DIR__ . '/../views/auth/login.php';
@@ -560,30 +572,7 @@ class AuthController {
     }
     
     private function createSession($user) {
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['user_email'] = $user['email'];
-        $_SESSION['user_name'] = $user['full_name'];
-        $_SESSION['user_role'] = $user['role'];
-        
-        // Mark session domain for domain migration detection
-        $_SESSION['session_domain'] = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
-        
-        // Check if profile picture exists before setting it
-        $profilePicture = $user['profile_picture'] ?? null;
-        if ($profilePicture && file_exists(BASE_PATH . $profilePicture)) {
-            $_SESSION['user_photo'] = $profilePicture;
-        } else {
-            $_SESSION['user_photo'] = null;
-        }
-        
-        // Update last login
-        $userModel = new User();
-        $userModel->updateLastLogin($user['id']);
-        
-        // Log activity
-        logActivity($user['id'], 'LOGIN', 'User logged in');
-        
-        // Login alert emails disabled (per admin request)
+        establishUserSession($user);
     }
     
     private function sendLoginAlert($user) {
