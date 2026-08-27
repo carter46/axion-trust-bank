@@ -488,7 +488,8 @@ include __DIR__ . '/../../includes/admin-modals.php';
                         $regionLabel = $regionNames[$regionKey] ?? ucwords(str_replace('-', ' ', $regionKey));
                     ?>
                         <button type="button" class="browse-card"
-                                onclick="openRegion(<?php echo htmlspecialchars(json_encode($regionKey), ENT_QUOTES, 'UTF-8'); ?>)">
+                                data-action="open-region"
+                                data-region="<?php echo htmlspecialchars($regionKey, ENT_QUOTES, 'UTF-8'); ?>">
                             <span class="browse-card__title"><?php echo htmlspecialchars($regionLabel); ?></span>
                             <span class="browse-card__meta">
                                 <?php echo count($countriesMap); ?> countries · <?php echo $regionBankCount; ?> banks
@@ -590,7 +591,6 @@ foreach ($orderedRegions as $regionKey => $countriesMap) {
 <script>
     const countries = <?php echo json_encode($banksRegionCountryMap); ?>;
     const banksTree = <?php echo json_encode($banksTreeJson); ?>;
-    const siteUrl = <?php echo json_encode(SITE_URL); ?>;
 
     let currentRegion = null;
     let currentCountry = null;
@@ -615,13 +615,15 @@ foreach ($orderedRegions as $regionKey => $countriesMap) {
         const el = document.getElementById('banksBreadcrumb');
         if (!el) return;
         const parts = [];
-        parts.push('<button type="button" onclick="showRegions()">All Regions</button>');
+        parts.push('<button type="button" data-action="show-regions">All Regions</button>');
 
         if (currentRegion && banksTree[currentRegion]) {
             parts.push('<span class="sep">/</span>');
             if (currentCountry) {
-                parts.push('<button type="button" onclick="openRegion(\'' + currentRegion.replace(/'/g, "\\'") + '\')">' +
-                    escapeHtml(banksTree[currentRegion].label) + '</button>');
+                parts.push(
+                    '<button type="button" data-action="open-region" data-region="' + escapeHtml(currentRegion) + '">' +
+                    escapeHtml(banksTree[currentRegion].label) + '</button>'
+                );
                 parts.push('<span class="sep">/</span>');
                 parts.push('<span class="current">' + escapeHtml(currentCountry) + '</span>');
             } else {
@@ -658,8 +660,9 @@ foreach ($orderedRegions as $regionKey => $countriesMap) {
         } else {
             grid.innerHTML = countryNames.map(function (countryName) {
                 const list = region.countries[countryName] || [];
-                return '<button type="button" class="browse-card" onclick="openCountry(' +
-                    JSON.stringify(regionKey) + ', ' + JSON.stringify(countryName) + ')">' +
+                return '<button type="button" class="browse-card" data-action="open-country" ' +
+                    'data-region="' + escapeHtml(regionKey) + '" ' +
+                    'data-country="' + escapeHtml(countryName) + '">' +
                     '<span class="browse-card__title">' + escapeHtml(countryName) + '</span>' +
                     '<span class="browse-card__meta">' + list.length + ' bank' + (list.length === 1 ? '' : 's') + '</span>' +
                     '<span class="browse-card__arrow">View banks →</span>' +
@@ -694,8 +697,8 @@ foreach ($orderedRegions as $regionKey => $countriesMap) {
                         '<td>' + escapeHtml(bank.name) + '</td>' +
                         '<td>' + escapeHtml(bank.swift_code || '-') + '</td>' +
                         '<td>' + status + '</td>' +
-                        '<td><button class="btn-delete" onclick="confirmDelete(' + bank.id + ', ' +
-                        JSON.stringify(bank.name) + ')">Delete</button></td>' +
+                        '<td><button type="button" class="btn-delete" data-action="delete-bank" ' +
+                        'data-bank-id="' + bank.id + '" data-bank-name="' + escapeHtml(bank.name) + '">Delete</button></td>' +
                         '</tr>';
                 }).join('') +
                 '</tbody></table>';
@@ -740,6 +743,27 @@ foreach ($orderedRegions as $regionKey => $countriesMap) {
             }
         );
     }
+
+    // Event delegation — avoids broken inline onclick quotes
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+
+        const action = btn.getAttribute('data-action');
+        if (action === 'show-regions') {
+            e.preventDefault();
+            showRegions();
+        } else if (action === 'open-region') {
+            e.preventDefault();
+            openRegion(btn.getAttribute('data-region'));
+        } else if (action === 'open-country') {
+            e.preventDefault();
+            openCountry(btn.getAttribute('data-region'), btn.getAttribute('data-country'));
+        } else if (action === 'delete-bank') {
+            e.preventDefault();
+            confirmDelete(parseInt(btn.getAttribute('data-bank-id'), 10), btn.getAttribute('data-bank-name'));
+        }
+    });
     
     document.getElementById('addBankModal').addEventListener('click', function(e) {
         if (e.target === this) {
