@@ -155,6 +155,14 @@ include __DIR__ . '/../../includes/admin-modals.php';
     font-weight: 700;
     font-size: 14px;
     flex-shrink: 0;
+    overflow: hidden;
+}
+
+.avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 
 .user-info {
@@ -173,14 +181,6 @@ include __DIR__ . '/../../includes/admin-modals.php';
     color: #64748b;
     font-size: 13px;
     margin: 0;
-}
-
-.user-meta-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    margin-top: 4px;
 }
 
 .status {
@@ -650,37 +650,21 @@ include __DIR__ . '/../../includes/admin-modals.php';
         Users
       </a>
       <div class="user-identity">
-        <div class="avatar"><?php echo strtoupper(substr($user['full_name'], 0, 2)); ?></div>
+        <?php
+        $profilePicture = trim((string)($user['profile_picture'] ?? ''));
+        $hasProfilePicture = $profilePicture !== '' && defined('BASE_PATH') && file_exists(BASE_PATH . $profilePicture);
+        $nameInitials = strtoupper(substr((string)($user['full_name'] ?? 'U'), 0, 2));
+        ?>
+        <div class="avatar">
+          <?php if ($hasProfilePicture): ?>
+            <img src="<?php echo htmlspecialchars($profilePicture); ?>" alt="<?php echo htmlspecialchars($user['full_name'] ?? 'User'); ?>">
+          <?php else: ?>
+            <?php echo htmlspecialchars($nameInitials); ?>
+          <?php endif; ?>
+        </div>
         <div class="user-info">
           <h1><?php echo htmlspecialchars($user['full_name']); ?></h1>
           <div class="email"><?php echo htmlspecialchars($user['email']); ?></div>
-          <div class="user-meta-row">
-            <span class="status <?php echo strtolower($user['status']); ?>"><?php echo strtoupper($user['status']); ?></span>
-            <?php if ($isJointAccountUser): ?>
-              <span style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 4px 10px; border-radius: 16px; font-size: 12px; font-weight: 600;">
-                Joint (Secondary)
-              </span>
-              <?php if ($primaryOwnerInfo):
-                $primaryOwnerName = $primaryOwnerInfo['primary_owner_name'] ?? $primaryOwnerInfo['full_name'] ?? 'Unknown';
-              ?>
-                <span style="color: #64748b; font-size: 13px;">Primary: <?php echo htmlspecialchars($primaryOwnerName); ?></span>
-              <?php endif; ?>
-            <?php elseif (!$isJointAccountUser && $accounts):
-              $hasJointUsers = false;
-              foreach ($accounts as $account) {
-                $owners = $jointAccount->getAccountOwners($account['id']);
-                if (count($owners) > 1) {
-                  $hasJointUsers = true;
-                  break;
-                }
-              }
-              if ($hasJointUsers): ?>
-                <span style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 4px 10px; border-radius: 16px; font-size: 12px; font-weight: 600;">
-                  Primary (has joint users)
-                </span>
-              <?php endif; ?>
-            <?php endif; ?>
-          </div>
         </div>
       </div>
     </div>
