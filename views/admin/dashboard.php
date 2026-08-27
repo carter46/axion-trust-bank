@@ -8,6 +8,7 @@ include __DIR__ . '/../../includes/head.php';
 
 // Include admin sidebar
 include __DIR__ . '/../../includes/admin-sidebar.php';
+include __DIR__ . '/../../includes/admin-modals.php';
 ?>
 
 <!-- ===== ADMIN CMS DASHBOARD PAGE CONTENT ===== -->
@@ -228,6 +229,47 @@ include __DIR__ . '/../../includes/admin-sidebar.php';
     border-radius: 16px;
     padding: 30px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+}
+
+.recent-activity-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+
+.recent-activity-header h3 {
+    color: #2d3748;
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.btn-clear-activity {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+    color: #b91c1c;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-clear-activity:hover {
+    background: #fee2e2;
+    border-color: #fca5a5;
+}
+
+.btn-clear-activity:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .activity-list {
@@ -683,8 +725,16 @@ include __DIR__ . '/../../includes/admin-sidebar.php';
 
     <!-- Recent Activity -->
     <div class="recent-activity">
-        <h3 style="color: #2d3748; margin-bottom: 25px; font-size: 20px; font-weight: 600;">Recent Activity</h3>
-        <div class="activity-list">
+        <div class="recent-activity-header">
+            <h3>Recent Activity</h3>
+            <?php if (!empty($audit_logs)): ?>
+            <button type="button" class="btn-clear-activity" id="clearActivityBtn" onclick="confirmClearRecentActivity()">
+                <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                Clear activity
+            </button>
+            <?php endif; ?>
+        </div>
+        <div class="activity-list" id="recentActivityList">
             <?php if (!empty($audit_logs)): ?>
                 <?php foreach ($audit_logs as $log): ?>
                     <?php
@@ -730,3 +780,70 @@ include __DIR__ . '/../../includes/admin-sidebar.php';
         </div>
     </div>
 </div>
+
+<script>
+function confirmClearRecentActivity() {
+    showModal(
+        'Clear recent activity',
+        'This will permanently delete all recent activity logs from the admin dashboard. This cannot be undone. Continue?',
+        'danger',
+        function () {
+            clearRecentActivity();
+        }
+    );
+    const confirmBtn = document.getElementById('modalConfirmBtn');
+    if (confirmBtn) confirmBtn.textContent = 'Clear everything';
+}
+
+function clearRecentActivity() {
+    const btn = document.getElementById('clearActivityBtn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Clearing...';
+    }
+
+    fetch(<?php echo json_encode(SITE_URL . '/api/admin-clear-activity.php'); ?>, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+    })
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+        if (data && data.success) {
+            if (typeof showToast === 'function') {
+                showToast(data.message || 'Recent activity cleared', 'success');
+            }
+            const list = document.getElementById('recentActivityList');
+            if (list) {
+                list.innerHTML =
+                    '<div class="activity-item" style="justify-content: center; text-align: center;">' +
+                    '<div class="activity-details">' +
+                    '<div class="activity-title" style="color: #9ca3af;">No recent activity</div>' +
+                    '</div></div>';
+            }
+            if (btn) btn.remove();
+        } else {
+            if (typeof showToast === 'function') {
+                showToast((data && data.message) || 'Failed to clear activity', 'error');
+            } else {
+                alert((data && data.message) || 'Failed to clear activity');
+            }
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-trash-alt" aria-hidden="true"></i> Clear activity';
+            }
+        }
+    })
+    .catch(function () {
+        if (typeof showToast === 'function') {
+            showToast('Failed to clear activity', 'error');
+        } else {
+            alert('Failed to clear activity');
+        }
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-trash-alt" aria-hidden="true"></i> Clear activity';
+        }
+    });
+}
+</script>

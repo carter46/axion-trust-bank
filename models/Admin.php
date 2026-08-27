@@ -640,6 +640,14 @@ class Admin {
         
         return $logs;
     }
+
+    /**
+     * Clear all admin recent-activity / audit log entries.
+     */
+    public function clearAuditLogs() {
+        $result = $this->db->query("DELETE FROM admin_logs");
+        return $result !== false;
+    }
     
     // ============ ADMIN ROLES ============
     
