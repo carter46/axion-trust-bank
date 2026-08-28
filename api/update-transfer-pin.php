@@ -40,11 +40,12 @@ try {
     $db = Database::getInstance();
     $userId = $_SESSION['user_id'];
     
-    // Verify current password (skip during first-time onboarding when no PIN exists yet)
+    // Verify current password (skip on first-time Transfer PIN setup — no existing PIN yet)
     $stmt = $db->query("SELECT password_hash, transfer_pin FROM users WHERE id = ?", [$userId]);
-    $user = $stmt->fetch();
+    $user = $stmt ? $stmt->fetch() : null;
 
-    $skipPassword = $onboarding && empty($user['transfer_pin']);
+    $isFirstTimeSetup = empty($user['transfer_pin'] ?? '');
+    $skipPassword = $isFirstTimeSetup || ($onboarding && $isFirstTimeSetup);
     if (!$skipPassword) {
         if (empty($password) || !$user || !password_verify($password, $user['password_hash'])) {
             echo json_encode(['success' => false, 'message' => 'Current password is incorrect']);

@@ -686,9 +686,8 @@ if (isLoggedIn()) {
           </div>
 
           <!-- Tabs -->
-          <div class="auth-tabs" role="tablist" aria-label="Authentication Methods">
+          <div class="auth-tabs" role="tablist" aria-label="Authentication Methods" style="display:none;">
             <button class="tab-btn active" id="tabPassword" role="tab" aria-selected="true" aria-controls="panelPassword">Password</button>
-            <button class="tab-btn" id="tabPin" role="tab" aria-selected="false" aria-controls="panelPin">Quick PIN</button>
           </div>
 
           <!-- FORM: Password -->
@@ -722,34 +721,6 @@ if (isLoggedIn()) {
               </div>
 
               <div class="card-note">By signing in, you agree to our <a href="<?php echo SITE_URL; ?>/terms" style="color:var(--accent);text-decoration:underline;">Terms of Service</a> and <a href="<?php echo SITE_URL; ?>/terms" style="color:var(--accent);text-decoration:underline;">Privacy Policy</a>.</div>
-            </div>
-          </form>
-
-          <!-- FORM: Quick PIN (NO EMAIL FIELD) -->
-          <form method="POST" action="<?php echo SITE_URL; ?>/auth/login" id="pinForm" style="display:none;">
-            <input type="hidden" name="csrf_token" value="<?php echo Security::generateCSRFToken(); ?>">
-            <input type="hidden" name="login_method" value="pin">
-            <!-- Hidden email - will be populated from localStorage or session -->
-            <input type="hidden" name="email" id="pinEmail" value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>">
-            
-            <div id="panelPin" role="tabpanel" aria-hidden="true" style="display:none;">
-              <div>
-                <label for="pin">Quick PIN</label>
-                <div class="input">
-                  <input id="pin" name="login_pin" type="password" inputmode="numeric" placeholder="4-digit PIN" pattern="\d{4}" maxlength="4" autocomplete="one-time-code" required>
-                </div>
-              </div>
-
-              <div class="row" style="margin-top:6px;">
-                <label class="remember"><input type="checkbox" id="rememberPin" name="remember" value="1"> Remember me</label>
-                <a href="<?php echo SITE_URL; ?>/auth/forgot-password" style="color:var(--accent); font-weight:700; text-decoration:none; font-size:14px;">Forgot PIN?</a>
-              </div>
-
-              <div>
-                <button type="submit" class="btn-primary" id="signInPinBtn">Sign In with PIN</button>
-              </div>
-
-              <div class="card-note">Quick PIN is available for approved devices — <a href="<?php echo SITE_URL; ?>/profile/security" style="color:var(--accent);text-decoration:underline;">learn more</a>.</div>
             </div>
           </form>
 
@@ -800,49 +771,9 @@ if (isLoggedIn()) {
     })();
 
     // ===============================
-    // Tab switching logic
+    // Password visibility (password-only login)
     // ===============================
-    const tabPassword = document.getElementById('tabPassword');
-    const tabPin = document.getElementById('tabPin');
-    const panelPassword = document.getElementById('panelPassword');
-    const panelPin = document.getElementById('panelPin');
     const passwordForm = document.getElementById('passwordForm');
-    const pinForm = document.getElementById('pinForm');
-
-    function activateTab(tab){
-      if(tab === 'password'){
-        tabPassword.classList.add('active');
-        tabPassword.setAttribute('aria-selected','true');
-        tabPin.classList.remove('active');
-        tabPin.setAttribute('aria-selected','false');
-        panelPassword.style.display = 'block';
-        panelPassword.setAttribute('aria-hidden','false');
-        passwordForm.style.display = 'block';
-        panelPin.style.display = 'none';
-        panelPin.setAttribute('aria-hidden','true');
-        pinForm.style.display = 'none';
-      } else {
-        tabPin.classList.add('active');
-        tabPin.setAttribute('aria-selected','true');
-        tabPassword.classList.remove('active');
-        tabPassword.setAttribute('aria-selected','false');
-        panelPin.style.display = 'block';
-        panelPin.setAttribute('aria-hidden','false');
-        pinForm.style.display = 'block';
-        panelPassword.style.display = 'none';
-        panelPassword.setAttribute('aria-hidden','true');
-        passwordForm.style.display = 'none';
-        
-        // Get email from password form if available, or localStorage
-        const emailFromForm = document.getElementById('email').value;
-        const emailFromStorage = localStorage.getItem('lastLoginEmail');
-        const emailToUse = emailFromForm || emailFromStorage || '';
-        document.getElementById('pinEmail').value = emailToUse;
-      }
-    }
-
-    tabPassword.addEventListener('click', ()=>activateTab('password'));
-    tabPin.addEventListener('click', ()=>activateTab('pin'));
 
     // ===============================
     // Toggle password visibility
@@ -888,31 +819,9 @@ if (isLoggedIn()) {
     const signInBtn = document.getElementById('signInBtn');
     if (signInBtn) {
       signInBtn.addEventListener('click', (e)=>{
-        // Store email for PIN login
         const email = document.getElementById('email').value.trim();
         if (email) {
           localStorage.setItem('lastLoginEmail', email);
-        }
-      });
-    }
-
-    const signInPinBtn = document.getElementById('signInPinBtn');
-    if (signInPinBtn) {
-      signInPinBtn.addEventListener('click', (e)=>{
-        const pin = document.getElementById('pin').value.trim();
-        const email = document.getElementById('pinEmail').value.trim();
-        
-        if(!pin){
-          e.preventDefault();
-          alert('Please enter your PIN.');
-          return;
-        }
-        
-        if(!email){
-          e.preventDefault();
-          alert('Email is required. Please use Password login first.');
-          activateTab('password');
-          return;
         }
       });
     }
@@ -934,32 +843,11 @@ if (isLoggedIn()) {
       });
     }
 
-    // Handle PIN form submission with loading delay
-    if (pinForm) {
-      pinForm.addEventListener('submit', function(e) {
-        const pin = document.getElementById('pin').value.trim();
-        const email = document.getElementById('pinEmail').value.trim();
-        
-        if(!pin || !email){
-          return; // Let normal validation handle it
-        }
-        
-        // Show loading animation immediately
-        showLoginLoader();
-        
-        // Allow form to submit normally - don't prevent default
-        // The loading animation will remain until page redirects
-        // Don't use fetch as it doesn't handle PHP redirects properly
-      });
-    }
-
     // Accessibility: allow Enter key to submit in inputs
     document.querySelectorAll('.input input').forEach(inp=>{
       inp.addEventListener('keydown', (ev)=>{
         if(ev.key === 'Enter'){
-          const visiblePasswordPanel = panelPassword.style.display !== 'none';
-          if(visiblePasswordPanel && signInBtn) signInBtn.click();
-          else if(signInPinBtn) signInPinBtn.click();
+          if(signInBtn) signInBtn.click();
         }
       });
     });

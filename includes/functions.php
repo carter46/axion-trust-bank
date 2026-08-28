@@ -330,7 +330,8 @@ function requireLogin() {
                 // Only check if function exists (defensive programming)
                 if (function_exists('isSecuritySetupIncomplete')) {
                     if (isSecuritySetupIncomplete($user['id'])) {
-                        $_SESSION['security_setup_required'] = true; // Flag that security setup is required
+                        $_SESSION['security_setup_required'] = true;
+                        $_SESSION['security_onboarding'] = true;
                         redirect('/profile/security');
                     }
                 }
@@ -399,7 +400,7 @@ function requireAdmin() {
 
 /**
  * Check if user's security setup is incomplete
- * Returns true if user needs Login PIN / Transfer PIN (2FA is optional and never blocks access)
+ * Returns true if user needs Transfer PIN (Login PIN removed; 2FA is optional)
  */
 function isSecuritySetupIncomplete($userId = null) {
     if (!$userId && isLoggedIn()) {
@@ -412,19 +413,17 @@ function isSecuritySetupIncomplete($userId = null) {
     
     try {
         $db = Database::getInstance();
-        $stmt = $db->query("SELECT transfer_pin, login_pin, role FROM users WHERE id = ?", [$userId]);
-        $user = $stmt->fetch();
+        $stmt = $db->query("SELECT transfer_pin, role FROM users WHERE id = ?", [$userId]);
+        $user = $stmt ? $stmt->fetch() : null;
         
         if (!$user) {
             return false;
         }
         
         $hasTransferPin = !empty($user['transfer_pin'] ?? '');
-        $hasLoginPin = !empty($user['login_pin'] ?? '');
         
-        // 2FA is optional — incompleteness is Login PIN / Transfer PIN only
-        $incomplete = !$hasTransferPin || !$hasLoginPin;
-        if (!$incomplete) {
+        // Only Transfer PIN is required for security onboarding
+        if ($hasTransferPin) {
             return false;
         }
         if (!isForceSecuritySetupEnabled()) {

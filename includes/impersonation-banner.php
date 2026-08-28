@@ -1,7 +1,6 @@
 <?php
 /**
- * Admin impersonation banner — shown on app pages and public pages while
- * an admin is logged in as a customer.
+ * Admin impersonation top bar — fixed above the header/sidebar (not floating over them).
  */
 if (empty($_SESSION['admin_impersonating'])) {
     return;
@@ -24,16 +23,21 @@ $switchBackUrl = htmlspecialchars(SITE_URL . '/admin/stop-impersonating', ENT_QU
     </div>
 </div>
 <style>
+:root {
+    --admin-impersonation-banner-h: 0px;
+}
 .admin-impersonation-banner {
-    position: sticky;
+    position: fixed;
     top: 0;
-    z-index: 20060;
+    left: 0;
+    right: 0;
+    z-index: 30000;
     width: 100%;
     background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
     color: #fff;
-    padding: 12px 16px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+    padding: 10px 16px;
     box-sizing: border-box;
+    box-shadow: none;
 }
 .admin-impersonation-banner__inner {
     max-width: 1400px;
@@ -69,9 +73,16 @@ $switchBackUrl = htmlspecialchars(SITE_URL . '/admin/stop-impersonating', ENT_QU
 .admin-impersonation-banner__btn:hover {
     background: rgba(255, 255, 255, 0.32);
 }
-body.has-admin-impersonation-banner .main-content-area,
-body.has-admin-impersonation-banner .dashboard-container {
-    /* Banner is sticky at top of flow; no extra offset needed */
+/* Push page chrome below the top bar so it never covers the header/sidebar */
+body.has-admin-impersonation-banner {
+    padding-top: var(--admin-impersonation-banner-h) !important;
+}
+body.has-admin-impersonation-banner .sidebar {
+    top: var(--admin-impersonation-banner-h) !important;
+    height: calc(100vh - var(--admin-impersonation-banner-h)) !important;
+}
+body.has-admin-impersonation-banner .header {
+    top: var(--admin-impersonation-banner-h) !important;
 }
 @media (max-width: 768px) {
     .admin-impersonation-banner__text {
@@ -84,7 +95,19 @@ body.has-admin-impersonation-banner .dashboard-container {
 }
 </style>
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    document.body.classList.add('has-admin-impersonation-banner');
-});
+(function () {
+    function syncImpersonationBannerOffset() {
+        var banner = document.getElementById('adminImpersonationBanner');
+        if (!banner) return;
+        document.body.classList.add('has-admin-impersonation-banner');
+        var height = Math.ceil(banner.getBoundingClientRect().height);
+        document.documentElement.style.setProperty('--admin-impersonation-banner-h', height + 'px');
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', syncImpersonationBannerOffset);
+    } else {
+        syncImpersonationBannerOffset();
+    }
+    window.addEventListener('resize', syncImpersonationBannerOffset);
+})();
 </script>

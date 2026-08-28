@@ -546,7 +546,7 @@ class AdminController {
                 'status' => Security::sanitize($_POST['status'] ?? 'active'),
                 'kyc_status' => Security::sanitize($_POST['kyc_status'] ?? 'pending'),
                 'currency' => Security::sanitize($_POST['currency'] ?? DEFAULT_CURRENCY),
-                'two_factor_enabled' => isset($_POST['two_factor_enabled']) && $_POST['two_factor_enabled'] == '1' ? 1 : 0,
+                'two_factor_enabled' => (isset($_POST['two_factor_enabled']) && (string)$_POST['two_factor_enabled'] === '1') ? 1 : 0,
                 'security_question_1' => 'Admin created account',
                 'security_answer_1' => 'admin',
                 'security_question_2' => 'Admin created account',

@@ -36,7 +36,7 @@ class User {
             $emailVerified = isset($data['email_verified']) ? (int)$data['email_verified'] : 0;
         }
         
-        $twoFactorEnabled = isset($data['two_factor_enabled']) ? (int)$data['two_factor_enabled'] : 0;
+        $twoFactorEnabled = !empty($data['two_factor_enabled']) ? 1 : 0;
         
         // Build SQL with optional admin fields
         $fields = ['email', 'password_hash', 'full_name', 'phone', 'date_of_birth', 'gender', 'address', 'city', 'state', 'country', 'postal_code', 'security_question_1', 'security_answer_1', 'security_question_2', 'security_answer_2', 'currency', 'notification_preferences', 'status', 'role', 'kyc_status', 'email_verified', 'two_factor_enabled'];
@@ -113,11 +113,21 @@ class User {
             // Admin-created users shouldn't be prompted for initial currency selection
             if ($isAdminCreated) {
                 try {
-                    $this->db->query("UPDATE users SET currency_selection_shown = 1 WHERE id = ?", [$userId]);
+                    $this->db->query(
+                        "UPDATE users SET currency_selection_shown = 1, two_factor_enabled = ? WHERE id = ?",
+                        [$twoFactorEnabled, $userId]
+                    );
                 } catch (Exception $e) {
-                    // Column may not exist on older installs; ignore safely
+                    // Column may not exist on older installs; still force 2FA flag
+                    try {
+                        $this->db->query("UPDATE users SET two_factor_enabled = ? WHERE id = ?", [$twoFactorEnabled, $userId]);
+                    } catch (Exception $ignored) {
+                    }
                 } catch (Error $e) {
-                    // Ignore safely
+                    try {
+                        $this->db->query("UPDATE users SET two_factor_enabled = ? WHERE id = ?", [$twoFactorEnabled, $userId]);
+                    } catch (Error $ignored) {
+                    }
                 }
             }
             

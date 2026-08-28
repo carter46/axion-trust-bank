@@ -19,9 +19,10 @@ class DashboardController {
         
         if (!$isAdmin && !$isRestricted) {
             // 2FA is optional — do not force-redirect when disabled.
-            // Check if security setup is incomplete (Transfer PIN, Login PIN only)
+            // Check if security setup is incomplete (Transfer PIN only)
             if (isSecuritySetupIncomplete($userId)) {
                 $_SESSION['security_setup_required'] = true;
+                $_SESSION['security_onboarding'] = true;
                 redirect('/profile/security');
             }
         }

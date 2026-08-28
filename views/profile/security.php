@@ -9,7 +9,7 @@ requireLogin();
 $db = Database::getInstance();
 $userId = $_SESSION['user_id'];
 
-$stmt = $db->query("SELECT two_factor_enabled, transfer_pin, login_pin, role FROM users WHERE id = ?", [$userId]);
+$stmt = $db->query("SELECT two_factor_enabled, transfer_pin, role FROM users WHERE id = ?", [$userId]);
 $user = $stmt->fetch();
 
 // SECURITY: Verify user exists (should be caught by requireLogin, but double-check)
@@ -23,7 +23,6 @@ if (!$user) {
 
 $has2FA = isset($user['two_factor_enabled']) && $user['two_factor_enabled'] == 1;
 $hasTransferPin = !empty($user['transfer_pin'] ?? '');
-$hasLoginPin = !empty($user['login_pin'] ?? '');
 $isAdmin = isset($user['role']) && $user['role'] === 'admin';
 
 // Check if this is first login and user needs to setup security
@@ -50,8 +49,8 @@ if (!$isAdmin) {
     }
 }
 
-// Setup gate is Login PIN / Transfer PIN only — 2FA is optional
-$needsSetup = !$hasTransferPin || !$hasLoginPin;
+// Setup gate is Transfer PIN only — Login PIN removed; 2FA is optional
+$needsSetup = !$hasTransferPin;
 
 // Clear the flag if setup is now complete
 if (!$needsSetup) {
@@ -62,7 +61,9 @@ if (!$needsSetup) {
 $forceSecuritySetup = isForceSecuritySetupEnabled();
 $isOnboardingWizard = (
     !empty($_SESSION['security_onboarding'])
+    || !empty($_SESSION['security_setup_required'])
     || (isset($_GET['verified']) && $_GET['verified'] === '1' && isset($_GET['setup']) && $_GET['setup'] === '1')
+    || $isFirstLogin
 ) && $needsSetup && !$isAdmin;
 
 if ($isOnboardingWizard) {
@@ -419,32 +420,6 @@ include __DIR__ . '/../../includes/sidebar.php';
 <!-- Security Settings Grid -->
 <div class="security-grid">
     
-    <!-- Login PIN Card -->
-    <div class="security-card">
-        <h4>
-            <i class="fas fa-key"></i>
-            Login PIN
-        </h4>
-        <p>Set a 6-digit PIN for quick login access to your account</p>
-        
-        <?php if ($hasLoginPin): ?>
-            <div class="security-status status-active">
-                <span class="status-dot"></span>
-                PIN Active
-            </div>
-        <?php else: ?>
-            <div class="security-status status-inactive">
-                <span class="status-dot"></span>
-                Not Set
-            </div>
-        <?php endif; ?>
-        
-        <button onclick="openLoginPINModal()" class="btn btn-primary">
-            <i class="fas <?php echo $hasLoginPin ? 'fa-edit' : 'fa-plus'; ?>"></i>
-            <?php echo $hasLoginPin ? 'Update Login PIN' : 'Setup Login PIN'; ?>
-        </button>
-    </div>
-    
     <!-- Transfer PIN Card -->
     <div class="security-card">
         <h4>
@@ -546,9 +521,6 @@ include __DIR__ . '/../../includes/sidebar.php';
                 <?php if (!$hasTransferPin): ?>
                 <li style="margin-bottom: 8px;"><strong>Transfer PIN</strong> - Required for all money transfers</li>
                 <?php endif; ?>
-                <?php if (!$hasLoginPin): ?>
-                <li style="margin-bottom: 8px;"><strong>Login PIN</strong> - Quick and secure login option</li>
-                <?php endif; ?>
             </ul>
         </div>
         
@@ -564,63 +536,6 @@ include __DIR__ . '/../../includes/sidebar.php';
 </div>
 <?php endif; ?>
 
-<!-- Login PIN Modal -->
-<div class="modal-overlay" id="loginPINModal">
-    <div class="modal">
-        <h3>Setup Login PIN</h3>
-        <p>Create a 6-digit PIN for quick login access</p>
-        
-        <div class="alert alert-error" id="loginPINError"></div>
-        <div class="alert alert-success" id="loginPINSuccess"></div>
-        
-        <form id="loginPINForm">
-            <div class="form-group login-pin-password-group"<?php echo $showOnboardingWizard && !$hasLoginPin ? ' style="display:none;"' : ''; ?>>
-                <label>Current Password</label>
-                <input type="password" class="form-control" id="loginPINCurrentPassword"<?php echo $showOnboardingWizard && !$hasLoginPin ? '' : ' required'; ?>>
-            </div>
-            
-            <div class="form-group">
-                <label>New 6-Digit PIN</label>
-                <div class="pin-input-container">
-                    <input type="text" maxlength="1" class="pin-digit" data-pin-index="0" pattern="[0-9]" inputmode="numeric">
-                    <input type="text" maxlength="1" class="pin-digit" data-pin-index="1" pattern="[0-9]" inputmode="numeric">
-                    <input type="text" maxlength="1" class="pin-digit" data-pin-index="2" pattern="[0-9]" inputmode="numeric">
-                    <input type="text" maxlength="1" class="pin-digit" data-pin-index="3" pattern="[0-9]" inputmode="numeric">
-                    <input type="text" maxlength="1" class="pin-digit" data-pin-index="4" pattern="[0-9]" inputmode="numeric">
-                    <input type="text" maxlength="1" class="pin-digit" data-pin-index="5" pattern="[0-9]" inputmode="numeric">
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label>Confirm 6-Digit PIN</label>
-                <div class="pin-input-container">
-                    <input type="text" maxlength="1" class="pin-digit" data-confirm-index="0" pattern="[0-9]" inputmode="numeric">
-                    <input type="text" maxlength="1" class="pin-digit" data-confirm-index="1" pattern="[0-9]" inputmode="numeric">
-                    <input type="text" maxlength="1" class="pin-digit" data-confirm-index="2" pattern="[0-9]" inputmode="numeric">
-                    <input type="text" maxlength="1" class="pin-digit" data-confirm-index="3" pattern="[0-9]" inputmode="numeric">
-                    <input type="text" maxlength="1" class="pin-digit" data-confirm-index="4" pattern="[0-9]" inputmode="numeric">
-                    <input type="text" maxlength="1" class="pin-digit" data-confirm-index="5" pattern="[0-9]" inputmode="numeric">
-                </div>
-            </div>
-            
-            <div class="modal-actions">
-                <?php if ($showOnboardingWizard && !$forceSecuritySetup): ?>
-                <button type="button" onclick="skipSecurityOnboarding()" class="btn btn-secondary" style="flex: 1;">Skip for Now</button>
-                <?php else: ?>
-                <button type="button" onclick="closeLoginPINModal()" class="btn btn-secondary" style="flex: 1;">Cancel</button>
-                <?php endif; ?>
-                <button type="submit" class="btn btn-primary" id="loginPINSaveBtn" style="flex: 2;">
-                    <span class="btn-text">Save PIN</span>
-                    <span class="btn-loader" style="display: none;">
-                        <i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i>
-                        Saving...
-                    </span>
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-
 <!-- Transfer PIN Modal -->
 <div class="modal-overlay" id="transferPINModal">
     <div class="modal">
@@ -631,9 +546,9 @@ include __DIR__ . '/../../includes/sidebar.php';
         <div class="alert alert-success" id="transferPINSuccess"></div>
         
         <form id="transferPINForm">
-            <div class="form-group transfer-pin-password-group"<?php echo $showOnboardingWizard && !$hasTransferPin ? ' style="display:none;"' : ''; ?>>
+            <div class="form-group transfer-pin-password-group"<?php echo !$hasTransferPin ? ' style="display:none;"' : ''; ?>>
                 <label>Current Password</label>
-                <input type="password" class="form-control" id="transferPINCurrentPassword"<?php echo $showOnboardingWizard && !$hasTransferPin ? '' : ' required'; ?>>
+                <input type="password" class="form-control" id="transferPINCurrentPassword"<?php echo !$hasTransferPin ? '' : ' required'; ?>>
             </div>
             
             <div class="form-group">
@@ -674,20 +589,6 @@ include __DIR__ . '/../../includes/sidebar.php';
     </div>
 </div>
 
-<!-- Onboarding 2FA Step -->
-<div class="modal-overlay" id="onboarding2FAModal">
-    <div class="modal">
-        <h3>Enable Two-Factor Authentication</h3>
-        <p>Two-factor authentication is required for your account. Enable it to add an extra layer of security.</p>
-        <div class="alert alert-error" id="onboarding2FAError"></div>
-        <div class="modal-actions">
-            <button type="button" onclick="enable2FAOnboarding()" class="btn btn-primary" id="onboarding2FABtn" style="flex: 1;">
-                Enable 2FA
-            </button>
-        </div>
-    </div>
-</div>
-
 <!-- Onboarding Complete -->
 <div class="modal-overlay" id="onboardingCompleteModal">
     <div class="modal" style="text-align:center;">
@@ -695,7 +596,7 @@ include __DIR__ . '/../../includes/sidebar.php';
             <i class="fas fa-shield-alt" style="font-size:32px;color:white;"></i>
         </div>
         <h3>Your Account Is Now Protected</h3>
-        <p>Security setup is complete. You can now use all banking features.</p>
+        <p>Security setup is complete. Redirecting you to the dashboard…</p>
         <a href="<?php echo SITE_URL; ?>/dashboard" class="btn btn-primary" style="display:inline-block;width:auto;padding:12px 28px;margin-top:8px;" onclick="clearSecurityOnboarding()">
             Go to Dashboard
         </a>
@@ -743,29 +644,25 @@ include __DIR__ . '/../../includes/sidebar.php';
 
 <script>
 const isOnboardingWizard = <?php echo $showOnboardingWizard ? 'true' : 'false'; ?>;
-let wizardHasLoginPin = <?php echo $hasLoginPin ? 'true' : 'false'; ?>;
 let wizardHasTransferPin = <?php echo $hasTransferPin ? 'true' : 'false'; ?>;
-let wizardHas2FA = <?php echo $has2FA ? 'true' : 'false'; ?>;
-const wizardNeeds2FA = <?php echo $needs2FAStep ? 'true' : 'false'; ?>;
+const dashboardUrl = <?php echo json_encode(SITE_URL . '/dashboard'); ?>;
+
+function finishSecuritySetupAndGoToDashboard() {
+    clearSecurityOnboarding();
+    window.location.href = dashboardUrl;
+}
 
 function advanceSecurityWizard() {
     if (!isOnboardingWizard) {
         location.reload();
         return;
     }
-    if (!wizardHasLoginPin) {
-        openLoginPINModal();
-        return;
-    }
     if (!wizardHasTransferPin) {
         openTransferPINModal();
         return;
     }
-    if (wizardNeeds2FA && !wizardHas2FA) {
-        document.getElementById('onboarding2FAModal').classList.add('active');
-        return;
-    }
     document.getElementById('onboardingCompleteModal').classList.add('active');
+    setTimeout(finishSecuritySetupAndGoToDashboard, 900);
 }
 
 async function skipSecurityOnboarding() {
@@ -790,34 +687,6 @@ function clearSecurityOnboarding() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
     }).catch(function() {});
-}
-
-async function enable2FAOnboarding() {
-    const btn = document.getElementById('onboarding2FABtn');
-    const errorDiv = document.getElementById('onboarding2FAError');
-    btn.disabled = true;
-    errorDiv.classList.remove('show');
-    try {
-        const response = await fetch('<?php echo SITE_URL; ?>/api/toggle-2fa.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ enabled: true })
-        });
-        const data = await response.json();
-        if (data.success) {
-            wizardHas2FA = true;
-            document.getElementById('onboarding2FAModal').classList.remove('active');
-            document.getElementById('onboardingCompleteModal').classList.add('active');
-        } else {
-            btn.disabled = false;
-            errorDiv.textContent = data.message || 'Failed to enable 2FA';
-            errorDiv.classList.add('show');
-        }
-    } catch (e) {
-        btn.disabled = false;
-        errorDiv.textContent = 'An error occurred. Please try again.';
-        errorDiv.classList.add('show');
-    }
 }
 
 if (isOnboardingWizard) {
@@ -877,18 +746,6 @@ document.querySelectorAll('.pin-digit').forEach((input, index, inputs) => {
     });
 });
 
-// Login PIN Modal
-function openLoginPINModal() {
-    document.getElementById('loginPINModal').classList.add('active');
-}
-
-function closeLoginPINModal() {
-    document.getElementById('loginPINModal').classList.remove('active');
-    document.getElementById('loginPINForm').reset();
-    document.getElementById('loginPINError').classList.remove('show');
-    document.getElementById('loginPINSuccess').classList.remove('show');
-}
-
 // Transfer PIN Modal
 function openTransferPINModal() {
     document.getElementById('transferPINModal').classList.add('active');
@@ -920,83 +777,6 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
             this.classList.remove('active');
         }
     });
-});
-
-// Login PIN Form Submit
-document.getElementById('loginPINForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const errorDiv = document.getElementById('loginPINError');
-    const successDiv = document.getElementById('loginPINSuccess');
-    const saveBtn = document.getElementById('loginPINSaveBtn');
-    const btnText = saveBtn.querySelector('.btn-text');
-    const btnLoader = saveBtn.querySelector('.btn-loader');
-    
-    errorDiv.classList.remove('show');
-    successDiv.classList.remove('show');
-    
-    // Get PIN values
-    const pinInputs = document.querySelectorAll('#loginPINModal [data-pin-index]');
-    const confirmInputs = document.querySelectorAll('#loginPINModal [data-confirm-index]');
-    
-    const pin = Array.from(pinInputs).map(input => input.value).join('');
-    const confirmPin = Array.from(confirmInputs).map(input => input.value).join('');
-    
-    // Validation
-    if (pin.length !== 6) {
-        errorDiv.textContent = 'Please enter a 6-digit PIN';
-        errorDiv.classList.add('show');
-        return;
-    }
-    
-    if (pin !== confirmPin) {
-        errorDiv.textContent = 'PINs do not match';
-        errorDiv.classList.add('show');
-        return;
-    }
-    
-    const password = document.getElementById('loginPINCurrentPassword').value;
-    const onboarding = isOnboardingWizard && !wizardHasLoginPin;
-    
-    // Show loading state
-    saveBtn.disabled = true;
-    btnText.style.display = 'none';
-    btnLoader.style.display = 'inline-block';
-    
-    try {
-        const response = await fetch('<?php echo SITE_URL; ?>/api/update-login-pin.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password, pin, onboarding })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            wizardHasLoginPin = true;
-            saveBtn.disabled = false;
-            btnText.style.display = 'inline';
-            btnLoader.style.display = 'none';
-            closeLoginPINModal();
-            advanceSecurityWizard();
-        } else {
-            // Hide loading state on error
-            saveBtn.disabled = false;
-            btnText.style.display = 'inline';
-            btnLoader.style.display = 'none';
-            
-            errorDiv.textContent = data.message || 'Failed to update Login PIN';
-            errorDiv.classList.add('show');
-        }
-    } catch (error) {
-        // Hide loading state on error
-        saveBtn.disabled = false;
-        btnText.style.display = 'inline';
-        btnLoader.style.display = 'none';
-        
-        errorDiv.textContent = 'An error occurred. Please try again.';
-        errorDiv.classList.add('show');
-    }
 });
 
 // Transfer PIN Form Submit
@@ -1032,8 +812,9 @@ document.getElementById('transferPINForm').addEventListener('submit', async func
         return;
     }
     
-    const password = document.getElementById('transferPINCurrentPassword').value;
-    const onboarding = isOnboardingWizard && !wizardHasTransferPin;
+    const passwordEl = document.getElementById('transferPINCurrentPassword');
+    const password = passwordEl ? passwordEl.value : '';
+    const onboarding = !wizardHasTransferPin;
     
     // Show loading state
     saveBtn.disabled = true;

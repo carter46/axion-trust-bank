@@ -370,11 +370,15 @@ include __DIR__ . '/../../includes/admin-modals.php';
             </div>
 
             <div style="display: flex; align-items: center; gap: 10px; margin-top: 15px;">
+                <input type="hidden" name="two_factor_enabled" value="0">
                 <input type="checkbox" name="two_factor_enabled" id="twoFactor" 
                        value="1" style="width: 20px; height: 20px;">
                 <label for="twoFactor" class="form-label" style="margin-bottom: 0;">
                     Enable Two-Factor Authentication (2FA)
                 </label>
+            </div>
+            <div class="help-text" style="margin-top: 6px;">
+                Leave unchecked to create the account with 2FA off. You can change this later on the user Security page.
             </div>
         </div>
 

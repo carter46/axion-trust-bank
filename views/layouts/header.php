@@ -549,6 +549,7 @@
     </style>
 </head>
 <body class="<?php echo !isLoggedIn() ? 'public-page' : ''; ?>">
+    <?php include __DIR__ . '/../../includes/impersonation-banner.php'; ?>
     <header class="header">
         <nav class="nav-container">
             <a href="<?php echo SITE_URL; ?>/" class="logo">
@@ -893,6 +894,4 @@
         })();
     </script>
 
-    <?php include __DIR__ . '/../../includes/impersonation-banner.php'; ?>
-    
     <main class="main-content"><?php

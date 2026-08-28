@@ -176,7 +176,7 @@ $criticalSettings = [
     'force_security_setup' => [
         'value' => '1',
         'type' => 'boolean',
-        'description' => 'Require Login PIN and Transfer PIN setup before dashboard access. When disabled, users can skip onboarding (demo/sales mode).'
+        'description' => 'Require Transfer PIN setup before dashboard access. When disabled, users can skip onboarding (demo/sales mode).'
     ],
     'require_transfer_pin' => [
         'value' => '1',

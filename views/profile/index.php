@@ -328,7 +328,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                 </div>
                 <div class="menu-item-content">
                     <h4>Security Settings</h4>
-                    <p>Password, Login PIN, Transfer PIN, and 2FA</p>
+                    <p>Password, Transfer PIN, and 2FA</p>
                 </div>
             </div>
             <div class="menu-item-arrow">

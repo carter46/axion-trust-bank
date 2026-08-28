@@ -49,24 +49,9 @@ class AuthController {
                     $_SESSION['error'] = 'Invalid email or password';
                     redirect('/auth/login');
                 }
-            } elseif ($loginMethod === 'pin') {
-                $loginPin = $_POST['login_pin'] ?? '';
-                
-                // Check if user has set up a login PIN
-                if (empty($user['login_pin'])) {
-                    $_SESSION['error'] = 'Login PIN not set up. Please use password to login.';
-                    redirect('/auth/login');
-                }
-                
-                $authenticated = password_verify($loginPin, $user['login_pin']);
-                
-                if (!$authenticated) {
-                    Security::recordLoginAttempt($email, false);
-                    $_SESSION['error'] = 'Invalid login PIN';
-                    redirect('/auth/login');
-                }
             } else {
-                $_SESSION['error'] = 'Invalid login method';
+                // Login PIN removed — password only
+                $_SESSION['error'] = 'Please sign in with your password';
                 redirect('/auth/login');
             }
             
@@ -154,9 +139,10 @@ class AuthController {
             }
             
             // 2FA is optional — do not force-redirect when disabled.
-            // Check if security setup is incomplete (Transfer PIN, Login PIN only)
+            // Check if security setup is incomplete (Transfer PIN only)
             if (isSecuritySetupIncomplete($user['id'])) {
                 $_SESSION['security_setup_required'] = true;
+                $_SESSION['security_onboarding'] = true;
                 redirect('/profile/security?logged_in=1');
             }
             
