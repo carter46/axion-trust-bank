@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../includes/functions.php';
 // Get dynamic branding
 $siteName = getSiteName();
 $siteInitials = getSiteInitials();
+$siteEmail = getSiteEmail();
 $pageTitle = 'Investor Portal | ' . $siteName;
 
 include __DIR__ . '/../layouts/header.php';
@@ -21,7 +22,7 @@ include __DIR__ . '/../layouts/header.php';
 <section class="section section--content">
     <div class="container content-block">
         <h2>Coming Soon</h2>
-        <p>The dedicated investor portal is currently under development. Accredited investors and partners can contact <a href="mailto:investors@cosmopolitantrustbank.com">investors@cosmopolitantrustbank.com</a> for interim reporting and updates.</p>
+        <p>The dedicated investor portal is currently under development. Accredited investors and partners can contact <a href="mailto:<?php echo htmlspecialchars($siteEmail); ?>"><?php echo htmlspecialchars($siteEmail); ?></a> for interim reporting and updates.</p>
     </div>
 </section>
 

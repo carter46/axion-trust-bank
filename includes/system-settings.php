@@ -376,6 +376,22 @@ function getSiteFavicon() {
 }
 
 /**
+ * Global helper function to get the admin-configured site contact email
+ */
+function getSiteEmail() {
+    try {
+        $email = SystemSettings::getInstance()->get('site_email', '');
+        if (!empty($email)) {
+            return $email;
+        }
+    } catch (Exception $e) {
+        error_log("[Branding Debug] Error in getSiteEmail(): " . $e->getMessage());
+    }
+
+    return defined('SMTP_FROM') ? SMTP_FROM : 'support@securebank.com';
+}
+
+/**
  * Global helper function to get site initials from site name
  * Extracts first letter of each word (e.g., "Cosmopolitan Trust Bank" -> "CTB")
  */

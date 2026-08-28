@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../includes/functions.php';
 // Get dynamic branding
 $siteName = getSiteName();
 $siteInitials = getSiteInitials();
+$siteEmail = getSiteEmail();
 $pageTitle = 'Partnerships | ' . $siteName;
 
 include __DIR__ . '/../layouts/header.php';
@@ -528,7 +529,7 @@ include __DIR__ . '/../layouts/header.php';
         <h2>🤝 Join Our Global Network</h2>
         <p>We're constantly expanding our partnerships across finance, technology, and global services.</p>
         <p>If your organization shares our vision of innovation, transparency, and borderless finance — let's connect.</p>
-        <a href="mailto:partnerships@cosmopolitantrustbank.com">📧 partnerships@cosmopolitantrustbank.com</a>
+        <a href="mailto:<?php echo htmlspecialchars($siteEmail); ?>">📧 <?php echo htmlspecialchars($siteEmail); ?></a>
     </div>
 </section>
 </div>
