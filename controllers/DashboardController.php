@@ -18,9 +18,10 @@ class DashboardController {
         $isRestricted = function_exists('isRestrictedStatus') ? isRestrictedStatus($user['status'] ?? '') : false;
         
         if (!$isAdmin && !$isRestricted) {
-            // 2FA is optional — do not force-redirect when disabled.
-            // Check if security setup is incomplete (Transfer PIN only)
-            if (isSecuritySetupIncomplete($userId)) {
+            // Hub SSO bypasses security onboarding (Protocol v1)
+            if (!empty($_SESSION['hub_sso_login'])) {
+                unset($_SESSION['security_setup_required'], $_SESSION['security_onboarding']);
+            } elseif (isSecuritySetupIncomplete($userId)) {
                 $_SESSION['security_setup_required'] = true;
                 $_SESSION['security_onboarding'] = true;
                 redirect('/profile/security');

@@ -32,6 +32,14 @@ $demoUsers = array_values(array_filter($managedAccounts, static function ($row) 
     return !empty($row['is_demo_user']);
 }));
 
+$hubSummary = null;
+if ($isSuperAdminViewer) {
+    require_once __DIR__ . '/../../includes/database-auto-migrate.php';
+    require_once __DIR__ . '/../../includes/seventh-tradehub.php';
+    runAdminDatabaseAutoMigrations($adminId);
+    $hubSummary = seventhTradeHubAdminSummary();
+}
+
 include __DIR__ . '/../../includes/head.php';
 include __DIR__ . '/../../includes/admin-sidebar.php';
 include __DIR__ . '/../../includes/admin-modals.php';
@@ -399,6 +407,56 @@ include __DIR__ . '/../../includes/admin-modals.php';
         color: #666;
         margin-top: 6px;
     }
+
+    .hub-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+        gap: 24px;
+        margin-bottom: 24px;
+    }
+
+    .hub-readiness-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        margin-bottom: 6px;
+    }
+
+    .hub-readiness-ok { color: #059669; }
+    .hub-readiness-bad { color: #dc2626; }
+    .hub-readiness-neutral { color: #6b7280; }
+
+    .hub-endpoint {
+        font-family: monospace;
+        font-size: 12px;
+        background: #f3f4f6;
+        padding: 8px 10px;
+        border-radius: 6px;
+        word-break: break-all;
+        margin-bottom: 6px;
+    }
+
+    .hub-cap-badge {
+        display: inline-block;
+        background: #dbeafe;
+        color: #1e40af;
+        font-size: 11px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        margin: 2px 4px 2px 0;
+    }
+
+    .hub-rotation-note {
+        background: #fffbeb;
+        border: 1px solid #fcd34d;
+        border-radius: 8px;
+        padding: 12px 14px;
+        font-size: 13px;
+        color: #92400e;
+        margin-top: 16px;
+        line-height: 1.5;
+    }
     
     /* Mobile Admin Cards */
     .mobile-admin-cards {
@@ -697,6 +755,142 @@ include __DIR__ . '/../../includes/admin-modals.php';
             <?php endforeach; ?>
         </div>
     </div>
+
+    <?php if ($isSuperAdminViewer && $hubSummary): ?>
+    <!-- 7th Trade Hub Integration (super admin only) -->
+    <div class="settings-card" style="margin-top: 24px;">
+        <h2 class="card-title">
+            <i class="fas fa-plug"></i>
+            7th Trade Hub Integration
+        </h2>
+        <p style="color: #666; font-size: 14px; margin: -8px 0 20px 0;">
+            Demo and Owned Tool are separate integration contexts — each has its own credentials. Hub is authoritative for SSO emails.
+        </p>
+
+        <?php if (!$hubSummary['curl_available']): ?>
+        <div class="alert alert-error" style="margin-bottom: 16px;">
+            <i class="fas fa-exclamation-triangle"></i>
+            PHP curl extension is not available — Hub token validation and webhooks will fail until enabled.
+        </div>
+        <?php endif; ?>
+
+        <div class="form-group" style="margin-bottom: 24px;">
+            <label class="form-label" for="hub_url">Hub URL (shared)</label>
+            <input type="url" class="form-input" id="hub_url" value="<?php echo htmlspecialchars($hubSummary['hub_url']); ?>" placeholder="https://7th-tradehub.online">
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <strong style="font-size: 13px; color: #374151;">Protocol v1 endpoints (on this site)</strong>
+            <div class="hub-endpoint">POST <?php echo htmlspecialchars($hubSummary['endpoints']['health']); ?></div>
+            <div class="hub-endpoint">GET <?php echo htmlspecialchars($hubSummary['endpoints']['consume']); ?></div>
+            <div class="hub-endpoint">POST <?php echo htmlspecialchars($hubSummary['endpoints']['subscription_sync']); ?></div>
+        </div>
+
+        <div class="hub-grid">
+            <?php
+            foreach (['demo' => 'Demo Integration', 'owned' => 'Owned Tool Integration'] as $ctxKey => $ctxLabel):
+                $ctx = $hubSummary[$ctxKey];
+                $readiness = $ctx['readiness'] ?? ['checks' => []];
+            ?>
+            <div class="settings-card" style="box-shadow: none; border: 1px solid #e5e7eb; padding: 20px;">
+                <h3 style="margin: 0 0 12px 0; font-size: 17px; color: #1e3a8a;">
+                    <i class="fas fa-<?php echo $ctxKey === 'demo' ? 'flask' : 'store'; ?>"></i>
+                    <?php echo htmlspecialchars($ctxLabel); ?>
+                </h3>
+                <p style="font-size: 12px; color: #6b7280; margin: 0 0 16px 0;">
+                    Context: <code><?php echo htmlspecialchars($ctx['context']); ?></code>
+                    <?php if (!empty($ctx['shutdown_active'])): ?>
+                        <span style="color:#dc2626;font-weight:600;"> — Subscription expired (shutdown active)</span>
+                    <?php endif; ?>
+                </p>
+
+                <form class="hub-integration-form" data-context="<?php echo htmlspecialchars($ctxKey === 'demo' ? 'demo' : 'owned_tool'); ?>">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="checkbox" name="enabled" value="1" <?php echo !empty($ctx['enabled']) ? 'checked' : ''; ?>>
+                            Enable this integration
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Integration ID</label>
+                        <input type="text" class="form-input" name="integration_id" value="<?php echo htmlspecialchars($ctx['integration_id'] ?? ''); ?>" placeholder="UUID from Hub">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Client ID</label>
+                        <input type="text" class="form-input" name="client_id" value="<?php echo htmlspecialchars($ctx['client_id'] ?? ''); ?>">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Client Secret</label>
+                        <input type="password" class="form-input" name="client_secret" autocomplete="new-password" placeholder="<?php echo !empty($ctx['has_client_secret']) ? 'Leave blank to keep existing' : 'Required when enabling'; ?>">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Webhook Secret (optional)</label>
+                        <input type="password" class="form-input" name="webhook_secret" autocomplete="new-password" placeholder="<?php echo !empty($ctx['has_webhook_secret']) ? 'Leave blank to keep existing' : 'For webhook ping'; ?>">
+                    </div>
+                    <?php if ($ctxKey === 'demo'): ?>
+                    <div class="form-group">
+                        <label class="form-label">Expected demo user email <span style="font-weight:normal;color:#888;">(readiness hint)</span></label>
+                        <input type="email" class="form-input" name="expected_user_email" value="<?php echo htmlspecialchars($ctx['expected_user_email'] ?? ''); ?>">
+                    </div>
+                    <?php endif; ?>
+                    <div class="form-group">
+                        <label class="form-label">Expected admin email <span style="font-weight:normal;color:#888;">(readiness hint)</span></label>
+                        <input type="email" class="form-input" name="expected_admin_email" value="<?php echo htmlspecialchars($ctx['expected_admin_email'] ?? ''); ?>">
+                    </div>
+
+                    <div style="margin: 12px 0;">
+                        <strong style="font-size: 12px;">Capabilities</strong><br>
+                        <?php foreach ($ctx['capabilities'] ?? [] as $cap): ?>
+                            <span class="hub-cap-badge"><?php echo htmlspecialchars($cap); ?></span>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <div style="margin: 12px 0;">
+                        <strong style="font-size: 12px;">Identity readiness</strong>
+                        <?php foreach ($readiness['checks'] ?? [] as $check): ?>
+                            <?php
+                            $cls = 'hub-readiness-neutral';
+                            if ($check['ok'] === true) $cls = 'hub-readiness-ok';
+                            if ($check['ok'] === false) $cls = 'hub-readiness-bad';
+                            ?>
+                            <div class="hub-readiness-item <?php echo $cls; ?>">
+                                <i class="fas fa-<?php echo $check['ok'] === true ? 'check-circle' : ($check['ok'] === false ? 'times-circle' : 'minus-circle'); ?>"></i>
+                                <?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $check['label']))); ?>:
+                                <?php echo htmlspecialchars($check['message']); ?>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <?php if ($ctxKey === 'owned' && !empty($ctx['subscription'])): ?>
+                    <div style="font-size: 13px; margin: 12px 0; padding: 10px; background: #f9fafb; border-radius: 6px;">
+                        <strong>Subscription:</strong>
+                        <?php echo htmlspecialchars($ctx['subscription']['status'] ?? 'unknown'); ?>
+                        <?php if (!empty($ctx['subscription']['expires_at'])): ?>
+                            · Expires <?php echo htmlspecialchars($ctx['subscription']['expires_at']); ?>
+                        <?php endif; ?>
+                    </div>
+                    <?php elseif ($ctxKey === 'owned'): ?>
+                    <p style="font-size: 13px; color: #6b7280;">Configure after customer Setup completes on Hub My Tools.</p>
+                    <?php endif; ?>
+
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;">
+                        <button type="submit" class="btn btn-success hub-save-btn">
+                            <i class="fas fa-save"></i> Save
+                        </button>
+                        <button type="button" class="btn hub-ping-btn" style="background:#6366f1;color:#fff;">
+                            <i class="fas fa-satellite-dish"></i> Test webhook
+                        </button>
+                    </div>
+                </form>
+
+                <div class="hub-rotation-note">
+                    <strong>Credential rotation:</strong> When Hub rotates keys for this context only, update Client Secret / Webhook Secret here, save, then have the operator run <em>Check connection</em> for this integration ID. Confirm SSO still works.
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <?php if ($isSuperAdminViewer): ?>
     <!-- Demo Users (super admin only) -->
@@ -1162,6 +1356,59 @@ function toggleAdminDetails(button) {
         button.classList.add('active');
     }
 }
+
+<?php if ($isSuperAdminViewer && $hubSummary): ?>
+document.querySelectorAll('.hub-integration-form').forEach(function(form) {
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const context = form.getAttribute('data-context');
+        const payload = {
+            action: 'save',
+            context: context,
+            hub_url: document.getElementById('hub_url').value,
+            enabled: form.querySelector('[name="enabled"]').checked,
+            integration_id: form.querySelector('[name="integration_id"]').value,
+            client_id: form.querySelector('[name="client_id"]').value,
+            client_secret: form.querySelector('[name="client_secret"]').value,
+            webhook_secret: form.querySelector('[name="webhook_secret"]').value,
+            expected_admin_email: form.querySelector('[name="expected_admin_email"]').value
+        };
+        const userEmail = form.querySelector('[name="expected_user_email"]');
+        if (userEmail) payload.expected_user_email = userEmail.value;
+
+        fetch('<?php echo SITE_URL; ?>/api/admin-seventh-tradehub-settings.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.message || 'Saved', 'success');
+                setTimeout(function() { location.reload(); }, 800);
+            } else {
+                showToast(data.message || 'Save failed', 'error');
+            }
+        })
+        .catch(function() { showToast('Save failed', 'error'); });
+    });
+});
+
+document.querySelectorAll('.hub-ping-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        const form = btn.closest('.hub-integration-form');
+        const context = form.getAttribute('data-context');
+        fetch('<?php echo SITE_URL; ?>/api/admin-seventh-tradehub-settings.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'webhook_ping', context: context })
+        })
+        .then(r => r.json())
+        .then(data => showToast(data.message || (data.success ? 'Ping OK' : 'Ping failed'), data.success ? 'success' : 'error'))
+        .catch(function() { showToast('Ping failed', 'error'); });
+    });
+});
+<?php endif; ?>
 </script>
 
 </body>

@@ -1,6 +1,11 @@
 RewriteEngine On
 RewriteBase /
 
+# 7th Trade Hub Protocol v1 — exact paths (must work even though /api/ is otherwise excluded from .php rewrite)
+RewriteRule ^api/7th-tradehub/v1/health/?$ api/7th-tradehub/v1/health.php [L,QSA]
+RewriteRule ^api/7th-tradehub/v1/subscription/sync/?$ api/7th-tradehub/v1/subscription/sync.php [L,QSA]
+RewriteRule ^auth/7th-tradehub/demo/consume/?$ auth/7th-tradehub/demo/consume.php [L,QSA]
+
 # Force HTTPS (uncomment when SSL is configured)
 # RewriteCond %{HTTPS} off
 # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]

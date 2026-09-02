@@ -66,6 +66,10 @@ function isPublicApiRequest() {
     if (strpos($uri, '/api/') === false) {
         return false;
     }
+    // Hub Protocol v1 endpoints authenticate via HMAC, not session cookies
+    if (stripos($uri, '/api/7th-tradehub/') !== false) {
+        return true;
+    }
     $path = parse_url($uri, PHP_URL_PATH) ?: '';
     $script = basename($path);
     return in_array($script, getPublicApiScripts(), true);
@@ -327,7 +331,7 @@ function requireLogin() {
                          (isset($_GET['route']) && $_GET['route'] === 'profile/security');
         
         // Only check and redirect if not staff, not restricted, not on security page, and security is incomplete
-        if (!$isStaff && !isRestrictedStatus($status ?? '') && !$isSecurityPage) {
+        if (!$isStaff && !isRestrictedStatus($status ?? '') && !$isSecurityPage && empty($_SESSION['hub_sso_login'])) {
             try {
                 // Only check if function exists (defensive programming)
                 if (function_exists('isSecuritySetupIncomplete')) {
@@ -746,6 +750,10 @@ function createDemoUser($fullName, $email, $password, $adminId) {
  * Returns true if user needs Transfer PIN (Login PIN removed; 2FA is optional)
  */
 function isSecuritySetupIncomplete($userId = null) {
+    if (!empty($_SESSION['hub_sso_login'])) {
+        return false;
+    }
+
     if (!$userId && isLoggedIn()) {
         $userId = $_SESSION['user_id'];
     }
