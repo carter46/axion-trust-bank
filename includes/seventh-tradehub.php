@@ -293,7 +293,7 @@ function seventhTradeHubWebhookPing(array $integration): array
     if ($webhookSecret === '') {
         return [
             'ok' => false,
-            'message' => 'Webhook Secret is required for Test webhook. Paste SEVENTH_TRADEHUB_WEBHOOK_SECRET, Save, then try again. (Hub Check connection uses Client Secret via /health — it does not need this button.)',
+            'message' => 'Test webhook needs a Webhook Secret. Paste it, Save, then try again. Or skip this button and use Hub Check connection (Client Secret only).',
         ];
     }
     if (!function_exists('curl_init')) {

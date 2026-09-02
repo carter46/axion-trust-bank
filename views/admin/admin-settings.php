@@ -901,12 +901,13 @@ include __DIR__ . '/../../includes/admin-modals.php';
                     </div>
                     <div class="form-group">
                         <label class="form-label">
-                            Webhook Secret (optional)
+                            Webhook Secret
                             <span class="hub-secret-badge hub-webhook-secret-badge" style="margin-left:8px;font-size:11px;font-weight:600;<?php echo !empty($ctx['has_webhook_secret']) ? 'color:#059669;' : 'color:#6b7280;'; ?>">
-                                <?php echo !empty($ctx['has_webhook_secret']) ? '● Saved on server' : '○ Not saved (optional)'; ?>
+                                <?php echo !empty($ctx['has_webhook_secret']) ? '● Saved on server' : '○ Not saved'; ?>
                             </span>
                         </label>
-                        <input type="password" class="form-input" name="webhook_secret" autocomplete="new-password" placeholder="<?php echo !empty($ctx['has_webhook_secret']) ? 'Leave blank to keep saved secret' : 'Needed only for Test webhook'; ?>">
+                        <input type="password" class="form-input" name="webhook_secret" autocomplete="new-password" placeholder="<?php echo !empty($ctx['has_webhook_secret']) ? 'Leave blank to keep saved secret' : 'Paste Webhook Secret to use Test webhook'; ?>">
+                        <p class="help-text">Not required for Hub <em>Check connection</em> or SSO login (those use Client Secret). Only needed if you want to use the <strong>Test webhook</strong> button.</p>
                     </div>
                     <?php if ($ctxKey === 'demo'): ?>
                     <div class="form-group">
@@ -977,10 +978,13 @@ include __DIR__ . '/../../includes/admin-modals.php';
                         <button type="submit" class="btn btn-success hub-save-btn">
                             <i class="fas fa-save"></i> <span class="hub-btn-label">Save</span>
                         </button>
-                        <button type="button" class="btn hub-ping-btn" style="background:#6366f1;color:#fff;">
+                        <button type="button" class="btn hub-ping-btn" style="background:#6366f1;color:#fff;" title="Requires Webhook Secret to be saved first">
                             <i class="fas fa-satellite-dish"></i> <span class="hub-btn-label">Test webhook</span>
                         </button>
                     </div>
+                    <p class="help-text" style="margin-top:8px;">
+                        <strong>Test webhook</strong> needs a saved Webhook Secret. For normal go-live, use Hub’s <strong>Check connection</strong> instead — that only needs Client Secret + Enable.
+                    </p>
                     <p class="hub-inline-status" style="display:none;margin:10px 0 0;font-size:13px;" aria-live="polite"></p>
                 </form>
 
@@ -1549,12 +1553,6 @@ function toggleAdminDetails(button) {
                 ? 'Leave blank to keep saved secret — paste only to replace'
                 : 'Paste Client Secret from Hub, then Save';
         }
-        if (webhookSecret) {
-            webhookSecret.value = '';
-            webhookSecret.placeholder = ctx && ctx.has_webhook_secret
-                ? 'Leave blank to keep saved secret'
-                : 'Needed only for Test webhook';
-        }
         if (clientBadge) {
             if (ctx && ctx.has_client_secret) {
                 clientBadge.textContent = '● Saved on server';
@@ -1564,12 +1562,18 @@ function toggleAdminDetails(button) {
                 clientBadge.style.color = '#dc2626';
             }
         }
+        if (webhookSecret) {
+            webhookSecret.value = '';
+            webhookSecret.placeholder = ctx && ctx.has_webhook_secret
+                ? 'Leave blank to keep saved secret'
+                : 'Paste Webhook Secret to use Test webhook';
+        }
         if (webhookBadge) {
             if (ctx && ctx.has_webhook_secret) {
                 webhookBadge.textContent = '● Saved on server';
                 webhookBadge.style.color = '#059669';
             } else {
-                webhookBadge.textContent = '○ Not saved (optional)';
+                webhookBadge.textContent = '○ Not saved';
                 webhookBadge.style.color = '#6b7280';
             }
         }
