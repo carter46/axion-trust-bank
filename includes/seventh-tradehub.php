@@ -155,13 +155,99 @@ function seventhTradeHubWebhookSecret(array $integration): string
  */
 function seventhTradeHubIsIntegrationOperational(?array $integration): bool
 {
-    if (!$integration || empty($integration['enabled'])) {
-        return false;
+    return seventhTradeHubOperationalStatus($integration)['ok'] === true;
+}
+
+/**
+ * Explain why an integration is / is not ready for Hub traffic.
+ *
+ * @return array{ok: bool, reason: string}
+ */
+function seventhTradeHubOperationalStatus(?array $integration): array
+{
+    if (!$integration) {
+        return ['ok' => false, 'reason' => 'Integration row not found'];
+    }
+    if (empty($integration['enabled'])) {
+        return ['ok' => false, 'reason' => 'Integration is disabled — enable it and Save'];
     }
     $id = trim((string)($integration['integration_id'] ?? ''));
+    if ($id === '') {
+        return ['ok' => false, 'reason' => 'Integration ID is missing'];
+    }
     $clientId = trim((string)($integration['client_id'] ?? ''));
+    if ($clientId === '') {
+        return ['ok' => false, 'reason' => 'Client ID is missing'];
+    }
+    $enc = trim((string)($integration['client_secret_enc'] ?? ''));
+    if ($enc === '') {
+        return ['ok' => false, 'reason' => 'Client Secret has not been saved — paste it and Save again'];
+    }
     $secret = seventhTradeHubClientSecret($integration);
-    return $id !== '' && $clientId !== '' && $secret !== '';
+    if ($secret === '') {
+        return [
+            'ok' => false,
+            'reason' => 'Client Secret cannot be decrypted. Re-paste Client Secret (and Webhook Secret if used), Save again. Prefer setting a stable ENCRYPTION_KEY in the server environment.',
+        ];
+    }
+    return ['ok' => true, 'reason' => 'ready'];
+}
+
+/**
+ * Webhook ping to Hub.
+ *
+ * @return array{ok: bool, message: string}
+ */
+function seventhTradeHubWebhookPing(array $integration): array
+{
+    $status = seventhTradeHubOperationalStatus($integration);
+    if (!$status['ok']) {
+        return ['ok' => false, 'message' => $status['reason']];
+    }
+    $hubUrl = seventhTradeHubHubUrl();
+    $integrationId = trim((string)($integration['integration_id'] ?? ''));
+    $webhookSecret = seventhTradeHubWebhookSecret($integration);
+    if ($hubUrl === '') {
+        return ['ok' => false, 'message' => 'Hub URL is missing — set it above and Save'];
+    }
+    if ($webhookSecret === '') {
+        return [
+            'ok' => false,
+            'message' => 'Webhook Secret is required for Test webhook. Paste SEVENTH_TRADEHUB_WEBHOOK_SECRET, Save, then try again. (Hub Check connection uses Client Secret via /health — it does not need this button.)',
+        ];
+    }
+    if (!function_exists('curl_init')) {
+        return ['ok' => false, 'message' => 'PHP curl extension is not available'];
+    }
+
+    $ch = curl_init($hubUrl . '/webhooks/site-integrations/' . rawurlencode($integrationId));
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/json',
+            'Accept: application/json',
+            'X-7TH-Webhook-Secret: ' . $webhookSecret,
+        ],
+        CURLOPT_POSTFIELDS => json_encode(['event' => 'ping']),
+        CURLOPT_TIMEOUT => 15,
+    ]);
+    $raw = curl_exec($ch);
+    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
+
+    if ($code >= 200 && $code < 300 && is_string($raw)) {
+        $body = json_decode($raw, true);
+        if (is_array($body) && ($body['ok'] ?? false) === true) {
+            return ['ok' => true, 'message' => 'Webhook ping succeeded'];
+        }
+        return ['ok' => false, 'message' => 'Hub responded HTTP ' . $code . ' but body was not { ok: true }'];
+    }
+    if ($curlErr !== '') {
+        return ['ok' => false, 'message' => 'Webhook ping failed: ' . $curlErr];
+    }
+    return ['ok' => false, 'message' => 'Webhook ping failed (HTTP ' . $code . ')'];
 }
 
 function seventhTradeHubCanonicalize($value): string
@@ -941,51 +1027,6 @@ function seventhTradeHubMaskSecret(?string $enc): string
 }
 
 /**
- * Webhook ping to Hub.
- *
- * @return array{ok: bool, message: string}
- */
-function seventhTradeHubWebhookPing(array $integration): array
-{
-    if (!seventhTradeHubIsIntegrationOperational($integration)) {
-        return ['ok' => false, 'message' => 'Integration not configured or disabled'];
-    }
-    $hubUrl = seventhTradeHubHubUrl();
-    $integrationId = trim((string)($integration['integration_id'] ?? ''));
-    $webhookSecret = seventhTradeHubWebhookSecret($integration);
-    if ($hubUrl === '' || $integrationId === '' || $webhookSecret === '') {
-        return ['ok' => false, 'message' => 'Hub URL, integration ID, and webhook secret required'];
-    }
-    if (!function_exists('curl_init')) {
-        return ['ok' => false, 'message' => 'PHP curl extension is not available'];
-    }
-
-    $ch = curl_init($hubUrl . '/webhooks/site-integrations/' . rawurlencode($integrationId));
-    curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER => [
-            'Content-Type: application/json',
-            'Accept: application/json',
-            'X-7TH-Webhook-Secret: ' . $webhookSecret,
-        ],
-        CURLOPT_POSTFIELDS => json_encode(['event' => 'ping']),
-        CURLOPT_TIMEOUT => 15,
-    ]);
-    $raw = curl_exec($ch);
-    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-
-    if ($code >= 200 && $code < 300 && is_string($raw)) {
-        $body = json_decode($raw, true);
-        if (is_array($body) && ($body['ok'] ?? false) === true) {
-            return ['ok' => true, 'message' => 'Webhook ping succeeded'];
-        }
-    }
-    return ['ok' => false, 'message' => 'Webhook ping failed (HTTP ' . $code . ')'];
-}
-
-/**
  * Public integration summary for admin UI (no secrets).
  *
  * @return array<string, mixed>
@@ -1028,6 +1069,7 @@ function seventhTradeHubFormatIntegrationForAdmin(?array $integration, string $c
         'context' => $context,
         'enabled' => !empty($integration['enabled']),
         'configured' => seventhTradeHubIsIntegrationOperational($integration),
+        'operational' => seventhTradeHubOperationalStatus($integration),
         'integration_id' => trim((string)($integration['integration_id'] ?? '')),
         'client_id' => trim((string)($integration['client_id'] ?? '')),
         'has_client_secret' => trim((string)($integration['client_secret_enc'] ?? '')) !== '',

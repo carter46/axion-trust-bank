@@ -833,7 +833,8 @@ include __DIR__ . '/../../includes/admin-modals.php';
             7th Trade Hub Integration
         </h2>
         <p style="color: #666; font-size: 14px; margin: -8px 0 20px 0;">
-            Demo and Owned Tool are separate integration contexts — each has its own credentials. Hub is authoritative for SSO emails.
+            Demo and Owned Tool are separate — enable only the context you are using. Owned does <strong>not</strong> need to be enabled for Demo to work.
+            Identity readiness only checks local emails; Hub Check connection / SSO use Client Secret. <em>Test webhook</em> also needs Webhook Secret.
         </p>
 
         <?php if (!$hubSummary['curl_available']): ?>
@@ -912,6 +913,18 @@ include __DIR__ . '/../../includes/admin-modals.php';
                         <?php foreach ($ctx['capabilities'] ?? [] as $cap): ?>
                             <span class="hub-cap-badge"><?php echo htmlspecialchars($cap); ?></span>
                         <?php endforeach; ?>
+                    </div>
+
+                    <div style="margin: 12px 0;">
+                        <strong style="font-size: 12px;">Connection status</strong>
+                        <?php
+                        $op = $ctx['operational'] ?? ['ok' => false, 'reason' => 'Unknown'];
+                        $opOk = !empty($op['ok']);
+                        ?>
+                        <div class="hub-readiness-item <?php echo $opOk ? 'hub-readiness-ok' : 'hub-readiness-bad'; ?>">
+                            <i class="fas fa-<?php echo $opOk ? 'check-circle' : 'times-circle'; ?>"></i>
+                            <?php echo $opOk ? 'Ready for Hub traffic' : htmlspecialchars($op['reason'] ?? 'Not ready'); ?>
+                        </div>
                     </div>
 
                     <div style="margin: 12px 0;">
