@@ -1,44 +1,68 @@
 <?php
 /**
  * POST /api/7th-tradehub/v1/subscription/sync — owned tool subscription push.
+ *
+ * Always require the Hub module here (do not rely only on config.php).
  */
-require_once __DIR__ . '/../../../../config/config.php';
+error_reporting(E_ALL);
+ini_set('display_errors', '0');
+ob_start();
 
-header('Content-Type: application/json');
-header('Accept: application/json');
+try {
+    require_once __DIR__ . '/../../../../config/config.php';
+    require_once __DIR__ . '/../../../../includes/seventh-tradehub.php';
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    seventhTradeHubHubError('method_not_allowed', 405);
+    if (ob_get_length() !== false) {
+        ob_end_clean();
+    }
+
+    header('Content-Type: application/json');
+    header('Accept: application/json');
+
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        seventhTradeHubHubError('method_not_allowed', 405);
+    }
+
+    $raw = file_get_contents('php://input');
+    $payload = json_decode($raw ?: '', true);
+    if (!is_array($payload)) {
+        seventhTradeHubHubError('invalid_payload', 400);
+    }
+
+    $integrationId = trim((string)($payload['integration_id'] ?? ''));
+    if ($integrationId === '') {
+        seventhTradeHubHubError('unknown_integration', 404);
+    }
+
+    $integration = seventhTradeHubGetByIntegrationId($integrationId);
+    if (!$integration) {
+        seventhTradeHubHubError('unknown_integration', 404);
+    }
+
+    if (($integration['context'] ?? '') !== SEVENTH_TRADEHUB_CONTEXT_OWNED) {
+        seventhTradeHubHubError('context_mismatch', 401);
+    }
+
+    seventhTradeHubVerifyInboundRequest($payload, $integration);
+
+    $subscription = $payload['subscription'] ?? null;
+    if (!is_array($subscription)) {
+        seventhTradeHubHubError('invalid_subscription', 400);
+    }
+
+    seventhTradeHubApplySubscription($integrationId, $subscription);
+
+    http_response_code(200);
+    echo json_encode(['ok' => true], JSON_UNESCAPED_SLASHES);
+} catch (Throwable $e) {
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    error_log('7th-tradehub sync: ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
+    if (!headers_sent()) {
+        header('Content-Type: application/json');
+    }
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'error' => 'server_error'], JSON_UNESCAPED_SLASHES);
+    exit;
 }
-
-$raw = file_get_contents('php://input');
-$payload = json_decode($raw ?: '', true);
-if (!is_array($payload)) {
-    seventhTradeHubHubError('invalid_payload', 400);
-}
-
-$integrationId = trim((string)($payload['integration_id'] ?? ''));
-if ($integrationId === '') {
-    seventhTradeHubHubError('unknown_integration', 404);
-}
-
-$integration = seventhTradeHubGetByIntegrationId($integrationId);
-if (!$integration) {
-    seventhTradeHubHubError('unknown_integration', 404);
-}
-
-if (($integration['context'] ?? '') !== SEVENTH_TRADEHUB_CONTEXT_OWNED) {
-    seventhTradeHubHubError('context_mismatch', 401);
-}
-
-seventhTradeHubVerifyInboundRequest($payload, $integration);
-
-$subscription = $payload['subscription'] ?? null;
-if (!is_array($subscription)) {
-    seventhTradeHubHubError('invalid_subscription', 400);
-}
-
-seventhTradeHubApplySubscription($integrationId, $subscription);
-
-http_response_code(200);
-echo json_encode(['ok' => true], JSON_UNESCAPED_SLASHES);

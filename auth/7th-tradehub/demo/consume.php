@@ -1,8 +1,17 @@
 <?php
 /**
  * GET /auth/7th-tradehub/demo/consume — Hub SSO browser entry (demo + owned).
+ *
+ * Always require the Hub module here (do not rely only on config.php).
  */
+ob_start();
+
 require_once __DIR__ . '/../../../config/config.php';
+require_once __DIR__ . '/../../../includes/seventh-tradehub.php';
+
+if (ob_get_length() !== false) {
+    ob_end_clean();
+}
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     seventhTradeHubRenderConsumeError('Invalid request method.');
