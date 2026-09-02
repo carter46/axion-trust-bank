@@ -890,13 +890,23 @@ include __DIR__ . '/../../includes/admin-modals.php';
                         <input type="text" class="form-input" name="client_id" value="<?php echo htmlspecialchars($ctx['client_id'] ?? ''); ?>">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Client Secret</label>
-                        <input type="password" class="form-input" name="client_secret" autocomplete="new-password" placeholder="<?php echo !empty($ctx['has_client_secret']) ? 'Paste again only if rotating / fixing decrypt errors' : 'Required when enabling'; ?>">
-                        <p class="help-text">Secrets are never shown after save. If Connection status says secret cannot be read, paste Client Secret again and Save.</p>
+                        <label class="form-label">
+                            Client Secret
+                            <span class="hub-secret-badge hub-client-secret-badge" style="margin-left:8px;font-size:11px;font-weight:600;<?php echo !empty($ctx['has_client_secret']) ? 'color:#059669;' : 'color:#dc2626;'; ?>">
+                                <?php echo !empty($ctx['has_client_secret']) ? '● Saved on server' : '○ Not saved yet'; ?>
+                            </span>
+                        </label>
+                        <input type="password" class="form-input" name="client_secret" autocomplete="new-password" placeholder="<?php echo !empty($ctx['has_client_secret']) ? 'Leave blank to keep saved secret — paste only to replace' : 'Paste Client Secret from Hub, then Save'; ?>">
+                        <p class="help-text">The field stays empty after save on purpose (password fields never show the stored value). Use the green “Saved on server” badge to confirm it stuck.</p>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Webhook Secret (optional)</label>
-                        <input type="password" class="form-input" name="webhook_secret" autocomplete="new-password" placeholder="<?php echo !empty($ctx['has_webhook_secret']) ? 'Leave blank to keep existing' : 'For webhook ping'; ?>">
+                        <label class="form-label">
+                            Webhook Secret (optional)
+                            <span class="hub-secret-badge hub-webhook-secret-badge" style="margin-left:8px;font-size:11px;font-weight:600;<?php echo !empty($ctx['has_webhook_secret']) ? 'color:#059669;' : 'color:#6b7280;'; ?>">
+                                <?php echo !empty($ctx['has_webhook_secret']) ? '● Saved on server' : '○ Not saved (optional)'; ?>
+                            </span>
+                        </label>
+                        <input type="password" class="form-input" name="webhook_secret" autocomplete="new-password" placeholder="<?php echo !empty($ctx['has_webhook_secret']) ? 'Leave blank to keep saved secret' : 'Needed only for Test webhook'; ?>">
                     </div>
                     <?php if ($ctxKey === 'demo'): ?>
                     <div class="form-group">
@@ -1530,17 +1540,38 @@ function toggleAdminDetails(button) {
     function updateSecretPlaceholders(form, ctx) {
         var clientSecret = form.querySelector('[name="client_secret"]');
         var webhookSecret = form.querySelector('[name="webhook_secret"]');
+        var clientBadge = form.querySelector('.hub-client-secret-badge');
+        var webhookBadge = form.querySelector('.hub-webhook-secret-badge');
+
         if (clientSecret) {
             clientSecret.value = '';
             clientSecret.placeholder = ctx && ctx.has_client_secret
-                ? 'Paste again only if rotating / fixing decrypt errors'
-                : 'Required when enabling';
+                ? 'Leave blank to keep saved secret — paste only to replace'
+                : 'Paste Client Secret from Hub, then Save';
         }
         if (webhookSecret) {
             webhookSecret.value = '';
             webhookSecret.placeholder = ctx && ctx.has_webhook_secret
-                ? 'Leave blank to keep existing'
-                : 'For webhook ping';
+                ? 'Leave blank to keep saved secret'
+                : 'Needed only for Test webhook';
+        }
+        if (clientBadge) {
+            if (ctx && ctx.has_client_secret) {
+                clientBadge.textContent = '● Saved on server';
+                clientBadge.style.color = '#059669';
+            } else {
+                clientBadge.textContent = '○ Not saved yet';
+                clientBadge.style.color = '#dc2626';
+            }
+        }
+        if (webhookBadge) {
+            if (ctx && ctx.has_webhook_secret) {
+                webhookBadge.textContent = '● Saved on server';
+                webhookBadge.style.color = '#059669';
+            } else {
+                webhookBadge.textContent = '○ Not saved (optional)';
+                webhookBadge.style.color = '#6b7280';
+            }
         }
     }
 
