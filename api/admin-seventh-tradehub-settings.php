@@ -1,13 +1,19 @@
 <?php
-error_reporting(0);
-ini_set('display_errors', 0);
+/**
+ * Admin API — 7th Trade Hub integration settings (super admin only).
+ */
+error_reporting(E_ALL);
+ini_set('display_errors', '0');
 ob_start();
 
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../includes/seventh-tradehub.php';
 
-ob_end_clean();
+if (ob_get_length() !== false) {
+    ob_end_clean();
+}
 
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=UTF-8');
 
 if (!isLoggedIn() || ($_SESSION['user_role'] ?? '') !== 'admin') {
     http_response_code(403);
@@ -21,7 +27,8 @@ if (!isSuperAdmin()) {
     exit;
 }
 
-$input = json_decode(file_get_contents('php://input'), true);
+$rawInput = file_get_contents('php://input');
+$input = json_decode($rawInput ?: '', true);
 if (!is_array($input)) {
     $input = $_POST;
 }
@@ -29,6 +36,8 @@ if (!is_array($input)) {
 $action = trim((string)($input['action'] ?? ''));
 
 try {
+    seventhTradeHubEnsureSchema();
+
     if ($action === 'get') {
         echo json_encode(['success' => true, 'data' => seventhTradeHubAdminSummary()]);
         exit;
@@ -44,10 +53,14 @@ try {
 
         $hubUrl = trim((string)($input['hub_url'] ?? ''));
         if ($hubUrl !== '') {
-            seventhTradeHubSaveHubUrl($hubUrl, (int)$_SESSION['user_id']);
+            if (!seventhTradeHubSaveHubUrl($hubUrl, (int)$_SESSION['user_id'])) {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Failed to save Hub URL']);
+                exit;
+            }
         }
 
-        $saved = seventhTradeHubSaveIntegration($context, [
+        $result = seventhTradeHubSaveIntegration($context, [
             'enabled' => !empty($input['enabled']),
             'integration_id' => $input['integration_id'] ?? '',
             'client_id' => $input['client_id'] ?? '',
@@ -57,17 +70,21 @@ try {
             'expected_admin_email' => $input['expected_admin_email'] ?? '',
         ], (int)$_SESSION['user_id']);
 
-        if (!$saved) {
+        if (empty($result['ok'])) {
             http_response_code(400);
             echo json_encode([
                 'success' => false,
-                'message' => 'Failed to save. Ensure integration ID is unique across demo/owned, and all credentials are set when enabling.',
+                'message' => $result['error'] ?? 'Failed to save integration settings',
             ]);
             exit;
         }
 
         logActivity($_SESSION['user_id'], 'HUB_INTEGRATION_SAVED', 'Saved 7th Trade Hub settings for context: ' . $context);
-        echo json_encode(['success' => true, 'message' => 'Integration settings saved', 'data' => seventhTradeHubAdminSummary()]);
+        echo json_encode([
+            'success' => true,
+            'message' => 'Integration settings saved',
+            'data' => seventhTradeHubAdminSummary(),
+        ]);
         exit;
     }
 
@@ -87,7 +104,17 @@ try {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Invalid action']);
 } catch (Throwable $e) {
-    error_log('admin-seventh-tradehub-settings: ' . $e->getMessage());
+    error_log('admin-seventh-tradehub-settings: ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
     http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Server error']);
+    // Super-admin endpoint — surface a concise reason so the UI is actionable
+    $detail = trim($e->getMessage());
+    if (strlen($detail) > 180) {
+        $detail = substr($detail, 0, 177) . '...';
+    }
+    echo json_encode([
+        'success' => false,
+        'message' => $detail !== ''
+            ? ('Server error: ' . $detail)
+            : 'Server error while saving Hub settings',
+    ]);
 }

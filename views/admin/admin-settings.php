@@ -410,9 +410,57 @@ include __DIR__ . '/../../includes/admin-modals.php';
 
     .hub-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-        gap: 24px;
+        grid-template-columns: 1fr;
+        gap: 16px;
         margin-bottom: 24px;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+    }
+
+    @media (min-width: 900px) {
+        .hub-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 24px;
+        }
+    }
+
+    .hub-context-card {
+        min-width: 0;
+        max-width: 100%;
+        width: 100%;
+        box-sizing: border-box;
+        overflow: visible;
+        box-shadow: none;
+        border: 1px solid #e5e7eb;
+        padding: 16px;
+    }
+
+    .hub-section-card {
+        margin-top: 24px;
+        overflow: visible;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .hub-section-card .form-input,
+    .hub-context-card .form-input {
+        max-width: 100%;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .hub-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+    }
+
+    .hub-actions .btn {
+        flex: 1 1 auto;
+        min-width: 120px;
     }
 
     .hub-readiness-item {
@@ -603,7 +651,23 @@ include __DIR__ . '/../../includes/admin-modals.php';
         }
         
         .admin-settings-container {
-            padding: 15px;
+            padding: 12px;
+            overflow-x: hidden;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .settings-card,
+        .hub-section-card,
+        .hub-context-card {
+            padding: 16px;
+            overflow: visible;
+            max-width: 100%;
+        }
+
+        .hub-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
         }
         
         .admin-list {
@@ -617,6 +681,11 @@ include __DIR__ . '/../../includes/admin-modals.php';
         .page-header {
             flex-direction: column;
             align-items: flex-start;
+        }
+
+        .hub-endpoint {
+            font-size: 11px;
+            padding: 8px;
         }
     }
 </style>
@@ -758,7 +827,7 @@ include __DIR__ . '/../../includes/admin-modals.php';
 
     <?php if ($isSuperAdminViewer && $hubSummary): ?>
     <!-- 7th Trade Hub Integration (super admin only) -->
-    <div class="settings-card" style="margin-top: 24px;">
+    <div class="settings-card hub-section-card">
         <h2 class="card-title">
             <i class="fas fa-plug"></i>
             7th Trade Hub Integration
@@ -792,7 +861,7 @@ include __DIR__ . '/../../includes/admin-modals.php';
                 $ctx = $hubSummary[$ctxKey];
                 $readiness = $ctx['readiness'] ?? ['checks' => []];
             ?>
-            <div class="settings-card" style="box-shadow: none; border: 1px solid #e5e7eb; padding: 20px;">
+            <div class="settings-card hub-context-card">
                 <h3 style="margin: 0 0 12px 0; font-size: 17px; color: #1e3a8a;">
                     <i class="fas fa-<?php echo $ctxKey === 'demo' ? 'flask' : 'store'; ?>"></i>
                     <?php echo htmlspecialchars($ctxLabel); ?>
@@ -873,7 +942,7 @@ include __DIR__ . '/../../includes/admin-modals.php';
                     <p style="font-size: 13px; color: #6b7280;">Configure after customer Setup completes on Hub My Tools.</p>
                     <?php endif; ?>
 
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;">
+                    <div class="hub-actions">
                         <button type="submit" class="btn btn-success hub-save-btn">
                             <i class="fas fa-save"></i> Save
                         </button>
@@ -1381,7 +1450,18 @@ document.querySelectorAll('.hub-integration-form').forEach(function(form) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         })
-        .then(r => r.json())
+        .then(async function(r) {
+            let data = null;
+            try {
+                data = await r.json();
+            } catch (e) {
+                throw new Error('Server returned HTTP ' + r.status + ' (invalid JSON). Deploy latest Hub files and confirm DB migration ran.');
+            }
+            if (!r.ok && data && data.message) {
+                throw new Error(data.message);
+            }
+            return data;
+        })
         .then(data => {
             if (data.success) {
                 showToast(data.message || 'Saved', 'success');
@@ -1390,7 +1470,7 @@ document.querySelectorAll('.hub-integration-form').forEach(function(form) {
                 showToast(data.message || 'Save failed', 'error');
             }
         })
-        .catch(function() { showToast('Save failed', 'error'); });
+        .catch(function(err) { showToast(err.message || 'Save failed', 'error'); });
     });
 });
 

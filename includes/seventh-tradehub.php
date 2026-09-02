@@ -24,11 +24,13 @@ function seventhTradeHubEnsureSchema(): void
         }
         $db = Database::getInstance();
         $stmt = $db->query("SHOW TABLES LIKE 'seventh_tradehub_integrations'");
-        if ($stmt && $stmt->fetch()) {
-            return;
+        if (!$stmt || !$stmt->fetch()) {
+            require_once __DIR__ . '/database-auto-migrate.php';
+            (new DatabaseAutoMigrate())->run(null);
         }
-        require_once __DIR__ . '/database-auto-migrate.php';
-        (new DatabaseAutoMigrate())->run(null);
+        // Always ensure both context slots exist (migration may have created table but skipped seeds)
+        seventhTradeHubEnsureContextRow(SEVENTH_TRADEHUB_CONTEXT_DEMO);
+        seventhTradeHubEnsureContextRow(SEVENTH_TRADEHUB_CONTEXT_OWNED);
     } catch (Throwable $e) {
         error_log('seventhTradeHubEnsureSchema: ' . $e->getMessage());
     }
@@ -774,17 +776,22 @@ function seventhTradeHubPollSubscription(array $integration): ?array
 
 /**
  * Save integration row fields (super admin).
+ * Upserts the context row so save works even if seed migration has not run yet.
  *
  * @param array<string, mixed> $data
+ * @return array{ok: bool, error?: string}
  */
-function seventhTradeHubSaveIntegration(string $context, array $data, int $adminId): bool
+function seventhTradeHubSaveIntegration(string $context, array $data, int $adminId): array
 {
     if (!isSuperAdmin($adminId)) {
-        return false;
+        return ['ok' => false, 'error' => 'Super administrator access required'];
     }
     if (!in_array($context, [SEVENTH_TRADEHUB_CONTEXT_DEMO, SEVENTH_TRADEHUB_CONTEXT_OWNED], true)) {
-        return false;
+        return ['ok' => false, 'error' => 'Invalid context'];
     }
+
+    seventhTradeHubEnsureSchema();
+    seventhTradeHubEnsureContextRow($context);
 
     $enabled = !empty($data['enabled']) ? 1 : 0;
     $integrationId = trim((string)($data['integration_id'] ?? ''));
@@ -792,46 +799,74 @@ function seventhTradeHubSaveIntegration(string $context, array $data, int $admin
     $expectedUser = trim((string)($data['expected_user_email'] ?? ''));
     $expectedAdmin = trim((string)($data['expected_admin_email'] ?? ''));
 
-    $existing = seventhTradeHubGetByContext($context);
+    $existing = seventhTradeHubGetByContext($context) ?: [];
     $clientSecretEnc = $existing['client_secret_enc'] ?? null;
     $webhookSecretEnc = $existing['webhook_secret_enc'] ?? null;
 
     $newSecret = trim((string)($data['client_secret'] ?? ''));
-    if ($newSecret !== '' && function_exists('encryptData')) {
-        $clientSecretEnc = encryptData($newSecret);
+    if ($newSecret !== '') {
+        if (!function_exists('encryptData')) {
+            return ['ok' => false, 'error' => 'Encryption helper unavailable'];
+        }
+        $enc = encryptData($newSecret);
+        if ($enc === false || $enc === null || $enc === '') {
+            return ['ok' => false, 'error' => 'Failed to encrypt client secret'];
+        }
+        $clientSecretEnc = $enc;
     }
+
     $newWebhook = trim((string)($data['webhook_secret'] ?? ''));
-    if ($newWebhook !== '' && function_exists('encryptData')) {
-        $webhookSecretEnc = encryptData($newWebhook);
+    if ($newWebhook !== '') {
+        if (!function_exists('encryptData')) {
+            return ['ok' => false, 'error' => 'Encryption helper unavailable'];
+        }
+        $enc = encryptData($newWebhook);
+        if ($enc === false || $enc === null || $enc === '') {
+            return ['ok' => false, 'error' => 'Failed to encrypt webhook secret'];
+        }
+        $webhookSecretEnc = $enc;
     }
 
     if ($enabled && ($integrationId === '' || $clientId === '' || trim((string)$clientSecretEnc) === '')) {
-        return false;
+        return [
+            'ok' => false,
+            'error' => 'To enable this integration, provide Integration ID, Client ID, and Client Secret (secret required on first enable).',
+        ];
     }
 
     if ($integrationId !== '') {
-        $otherContext = $context === SEVENTH_TRADEHUB_CONTEXT_DEMO ? SEVENTH_TRADEHUB_CONTEXT_OWNED : SEVENTH_TRADEHUB_CONTEXT_DEMO;
+        $otherContext = $context === SEVENTH_TRADEHUB_CONTEXT_DEMO
+            ? SEVENTH_TRADEHUB_CONTEXT_OWNED
+            : SEVENTH_TRADEHUB_CONTEXT_DEMO;
         $other = seventhTradeHubGetByContext($otherContext);
-        if ($other && trim((string)($other['integration_id'] ?? '')) !== '' && hash_equals(trim((string)$other['integration_id']), $integrationId)) {
-            return false;
+        $otherId = trim((string)($other['integration_id'] ?? ''));
+        if ($otherId !== '' && hash_equals($otherId, $integrationId)) {
+            return [
+                'ok' => false,
+                'error' => 'Integration ID is already used by the other context. Demo and Owned must use different UUIDs.',
+            ];
         }
     }
 
     try {
         $db = Database::getInstance();
-        $db->query(
-            'UPDATE seventh_tradehub_integrations SET
-                enabled = ?,
-                integration_id = ?,
-                client_id = ?,
-                client_secret_enc = ?,
-                webhook_secret_enc = ?,
-                expected_user_email = ?,
-                expected_admin_email = ?,
+        $result = $db->query(
+            'INSERT INTO seventh_tradehub_integrations
+                (context, enabled, integration_id, client_id, client_secret_enc, webhook_secret_enc,
+                 expected_user_email, expected_admin_email, updated_at, updated_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
+             ON DUPLICATE KEY UPDATE
+                enabled = VALUES(enabled),
+                integration_id = VALUES(integration_id),
+                client_id = VALUES(client_id),
+                client_secret_enc = VALUES(client_secret_enc),
+                webhook_secret_enc = VALUES(webhook_secret_enc),
+                expected_user_email = VALUES(expected_user_email),
+                expected_admin_email = VALUES(expected_admin_email),
                 updated_at = NOW(),
-                updated_by = ?
-             WHERE context = ?',
+                updated_by = VALUES(updated_by)',
             [
+                $context,
                 $enabled,
                 $integrationId !== '' ? $integrationId : null,
                 $clientId !== '' ? $clientId : null,
@@ -840,13 +875,57 @@ function seventhTradeHubSaveIntegration(string $context, array $data, int $admin
                 $expectedUser !== '' ? $expectedUser : null,
                 $expectedAdmin !== '' ? $expectedAdmin : null,
                 $adminId,
-                $context,
             ]
         );
-        return true;
+
+        if ($result === false) {
+            $pdoErr = method_exists($db, 'errorInfo') ? ($db->errorInfo()[2] ?? '') : '';
+            error_log('seventhTradeHubSaveIntegration query failed: ' . $pdoErr);
+            return [
+                'ok' => false,
+                'error' => $pdoErr !== ''
+                    ? ('Database error: ' . $pdoErr)
+                    : 'Database update failed. Confirm the Hub integration tables exist (open Admin Settings as super admin once to run migrations).',
+            ];
+        }
+
+        return ['ok' => true];
     } catch (Throwable $e) {
         error_log('seventhTradeHubSaveIntegration: ' . $e->getMessage());
-        return false;
+        $msg = $e->getMessage();
+        if (stripos($msg, 'Duplicate') !== false || stripos($msg, 'uk_integration_id') !== false) {
+            return ['ok' => false, 'error' => 'Integration ID must be unique. Demo and Owned cannot share the same UUID.'];
+        }
+        if (stripos($msg, "doesn't exist") !== false || stripos($msg, 'Base table') !== false) {
+            return ['ok' => false, 'error' => 'Hub tables missing. Open Admin Settings as super admin to run auto-migrations, then try again.'];
+        }
+        return ['ok' => false, 'error' => 'Save failed: ' . $msg];
+    }
+}
+
+/**
+ * Ensure a context row exists so UPDATE/upsert always has a target.
+ */
+function seventhTradeHubEnsureContextRow(string $context): void
+{
+    if (!in_array($context, [SEVENTH_TRADEHUB_CONTEXT_DEMO, SEVENTH_TRADEHUB_CONTEXT_OWNED], true)) {
+        return;
+    }
+    try {
+        $db = Database::getInstance();
+        $stmt = $db->query(
+            'SELECT context FROM seventh_tradehub_integrations WHERE context = ? LIMIT 1',
+            [$context]
+        );
+        if ($stmt && $stmt->fetch()) {
+            return;
+        }
+        $db->query(
+            'INSERT INTO seventh_tradehub_integrations (context, enabled, updated_at) VALUES (?, 0, NOW())',
+            [$context]
+        );
+    } catch (Throwable $e) {
+        error_log('seventhTradeHubEnsureContextRow: ' . $e->getMessage());
     }
 }
 
