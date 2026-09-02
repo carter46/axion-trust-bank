@@ -80,10 +80,19 @@ try {
         }
 
         logActivity($_SESSION['user_id'], 'HUB_INTEGRATION_SAVED', 'Saved 7th Trade Hub settings for context: ' . $context);
+        $summary = seventhTradeHubAdminSummary();
+        $ctxKey = $context === SEVENTH_TRADEHUB_CONTEXT_DEMO ? 'demo' : 'owned';
+        $op = $summary[$ctxKey]['operational'] ?? null;
+        $msg = 'Integration settings saved';
+        if (is_array($op) && empty($op['ok'])) {
+            $msg .= ' — warning: ' . ($op['reason'] ?? 'not ready for Hub traffic');
+        } elseif (is_array($op) && !empty($op['ok'])) {
+            $msg .= ' — ready for Hub traffic';
+        }
         echo json_encode([
             'success' => true,
-            'message' => 'Integration settings saved',
-            'data' => seventhTradeHubAdminSummary(),
+            'message' => $msg,
+            'data' => $summary,
         ]);
         exit;
     }

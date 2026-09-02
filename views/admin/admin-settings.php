@@ -891,7 +891,8 @@ include __DIR__ . '/../../includes/admin-modals.php';
                     </div>
                     <div class="form-group">
                         <label class="form-label">Client Secret</label>
-                        <input type="password" class="form-input" name="client_secret" autocomplete="new-password" placeholder="<?php echo !empty($ctx['has_client_secret']) ? 'Leave blank to keep existing' : 'Required when enabling'; ?>">
+                        <input type="password" class="form-input" name="client_secret" autocomplete="new-password" placeholder="<?php echo !empty($ctx['has_client_secret']) ? 'Paste again only if rotating / fixing decrypt errors' : 'Required when enabling'; ?>">
+                        <p class="help-text">Secrets are never shown after save. If Connection status says secret cannot be read, paste Client Secret again and Save.</p>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Webhook Secret (optional)</label>
@@ -915,20 +916,21 @@ include __DIR__ . '/../../includes/admin-modals.php';
                         <?php endforeach; ?>
                     </div>
 
-                    <div style="margin: 12px 0;">
+                    <div style="margin: 12px 0;" class="hub-connection-wrap">
                         <strong style="font-size: 12px;">Connection status</strong>
                         <?php
                         $op = $ctx['operational'] ?? ['ok' => false, 'reason' => 'Unknown'];
                         $opOk = !empty($op['ok']);
                         ?>
-                        <div class="hub-readiness-item <?php echo $opOk ? 'hub-readiness-ok' : 'hub-readiness-bad'; ?>">
+                        <div class="hub-connection-status hub-readiness-item <?php echo $opOk ? 'hub-readiness-ok' : 'hub-readiness-bad'; ?>">
                             <i class="fas fa-<?php echo $opOk ? 'check-circle' : 'times-circle'; ?>"></i>
-                            <?php echo $opOk ? 'Ready for Hub traffic' : htmlspecialchars($op['reason'] ?? 'Not ready'); ?>
+                            <span class="hub-connection-text"><?php echo $opOk ? 'Ready for Hub traffic' : htmlspecialchars($op['reason'] ?? 'Not ready'); ?></span>
                         </div>
                     </div>
 
-                    <div style="margin: 12px 0;">
+                    <div style="margin: 12px 0;" class="hub-readiness-wrap">
                         <strong style="font-size: 12px;">Identity readiness</strong>
+                        <div class="hub-readiness-list">
                         <?php foreach ($readiness['checks'] ?? [] as $check): ?>
                             <?php
                             $cls = 'hub-readiness-neutral';
@@ -941,28 +943,35 @@ include __DIR__ . '/../../includes/admin-modals.php';
                                 <?php echo htmlspecialchars($check['message']); ?>
                             </div>
                         <?php endforeach; ?>
+                        </div>
                     </div>
 
-                    <?php if ($ctxKey === 'owned' && !empty($ctx['subscription'])): ?>
-                    <div style="font-size: 13px; margin: 12px 0; padding: 10px; background: #f9fafb; border-radius: 6px;">
+                    <?php if ($ctxKey === 'owned'): ?>
+                    <div class="hub-subscription-wrap" style="font-size: 13px; margin: 12px 0; padding: 10px; background: #f9fafb; border-radius: 6px;<?php echo empty($ctx['subscription']) ? ' display:none;' : ''; ?>">
+                        <?php if (!empty($ctx['subscription'])): ?>
                         <strong>Subscription:</strong>
-                        <?php echo htmlspecialchars($ctx['subscription']['status'] ?? 'unknown'); ?>
-                        <?php if (!empty($ctx['subscription']['expires_at'])): ?>
-                            · Expires <?php echo htmlspecialchars($ctx['subscription']['expires_at']); ?>
+                        <span class="hub-subscription-text">
+                            <?php echo htmlspecialchars($ctx['subscription']['status'] ?? 'unknown'); ?>
+                            <?php if (!empty($ctx['subscription']['expires_at'])): ?>
+                                · Expires <?php echo htmlspecialchars($ctx['subscription']['expires_at']); ?>
+                            <?php endif; ?>
+                        </span>
                         <?php endif; ?>
                     </div>
-                    <?php elseif ($ctxKey === 'owned'): ?>
-                    <p style="font-size: 13px; color: #6b7280;">Configure after customer Setup completes on Hub My Tools.</p>
+                    <?php if (empty($ctx['subscription'])): ?>
+                    <p class="hub-owned-hint" style="font-size: 13px; color: #6b7280;">Configure after customer Setup completes on Hub My Tools.</p>
+                    <?php endif; ?>
                     <?php endif; ?>
 
                     <div class="hub-actions">
                         <button type="submit" class="btn btn-success hub-save-btn">
-                            <i class="fas fa-save"></i> Save
+                            <i class="fas fa-save"></i> <span class="hub-btn-label">Save</span>
                         </button>
                         <button type="button" class="btn hub-ping-btn" style="background:#6366f1;color:#fff;">
-                            <i class="fas fa-satellite-dish"></i> Test webhook
+                            <i class="fas fa-satellite-dish"></i> <span class="hub-btn-label">Test webhook</span>
                         </button>
                     </div>
+                    <p class="hub-inline-status" style="display:none;margin:10px 0 0;font-size:13px;" aria-live="polite"></p>
                 </form>
 
                 <div class="hub-rotation-note">
@@ -1440,67 +1449,244 @@ function toggleAdminDetails(button) {
 }
 
 <?php if ($isSuperAdminViewer && $hubSummary): ?>
-document.querySelectorAll('.hub-integration-form').forEach(function(form) {
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const context = form.getAttribute('data-context');
-        const payload = {
-            action: 'save',
-            context: context,
-            hub_url: document.getElementById('hub_url').value,
-            enabled: form.querySelector('[name="enabled"]').checked,
-            integration_id: form.querySelector('[name="integration_id"]').value,
-            client_id: form.querySelector('[name="client_id"]').value,
-            client_secret: form.querySelector('[name="client_secret"]').value,
-            webhook_secret: form.querySelector('[name="webhook_secret"]').value,
-            expected_admin_email: form.querySelector('[name="expected_admin_email"]').value
-        };
-        const userEmail = form.querySelector('[name="expected_user_email"]');
-        if (userEmail) payload.expected_user_email = userEmail.value;
+(function() {
+    var hubApiUrl = '<?php echo SITE_URL; ?>/api/admin-seventh-tradehub-settings.php';
 
-        fetch('<?php echo SITE_URL; ?>/api/admin-seventh-tradehub-settings.php', {
+    function setHubButtonLoading(btn, loading, loadingText) {
+        if (!btn) return;
+        var icon = btn.querySelector('i');
+        var label = btn.querySelector('.hub-btn-label');
+        if (loading) {
+            btn.disabled = true;
+            btn.dataset.busy = '1';
+            btn.style.opacity = '0.85';
+            btn.style.cursor = 'wait';
+            if (icon) icon.className = 'fas fa-spinner fa-spin';
+            if (label) label.textContent = loadingText || 'Working…';
+        } else {
+            btn.disabled = false;
+            btn.dataset.busy = '0';
+            btn.style.opacity = '';
+            btn.style.cursor = '';
+            if (btn.classList.contains('hub-save-btn')) {
+                if (icon) icon.className = 'fas fa-save';
+                if (label) label.textContent = 'Save';
+            } else {
+                if (icon) icon.className = 'fas fa-satellite-dish';
+                if (label) label.textContent = 'Test webhook';
+            }
+        }
+    }
+
+    function setInlineStatus(form, message, ok) {
+        var el = form.querySelector('.hub-inline-status');
+        if (!el) return;
+        el.style.display = message ? 'block' : 'none';
+        el.style.color = ok === true ? '#059669' : (ok === false ? '#dc2626' : '#6b7280');
+        el.textContent = message || '';
+    }
+
+    function escapeHtml(str) {
+        return String(str == null ? '' : str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function updateConnectionStatus(form, operational) {
+        var row = form.querySelector('.hub-connection-status');
+        var text = form.querySelector('.hub-connection-text');
+        var icon = row ? row.querySelector('i') : null;
+        if (!row || !operational) return;
+        var ok = !!operational.ok;
+        row.classList.remove('hub-readiness-ok', 'hub-readiness-bad', 'hub-readiness-neutral');
+        row.classList.add(ok ? 'hub-readiness-ok' : 'hub-readiness-bad');
+        if (icon) icon.className = 'fas fa-' + (ok ? 'check-circle' : 'times-circle');
+        if (text) text.textContent = ok ? 'Ready for Hub traffic' : (operational.reason || 'Not ready');
+    }
+
+    function updateReadiness(form, readiness) {
+        var list = form.querySelector('.hub-readiness-list');
+        if (!list || !readiness || !Array.isArray(readiness.checks)) return;
+        if (!readiness.checks.length) {
+            list.innerHTML = '<div class="hub-readiness-item hub-readiness-neutral"><i class="fas fa-minus-circle"></i> No readiness hints configured</div>';
+            return;
+        }
+        list.innerHTML = readiness.checks.map(function(check) {
+            var cls = 'hub-readiness-neutral';
+            var icon = 'minus-circle';
+            if (check.ok === true) { cls = 'hub-readiness-ok'; icon = 'check-circle'; }
+            if (check.ok === false) { cls = 'hub-readiness-bad'; icon = 'times-circle'; }
+            var label = String(check.label || '').replace(/_/g, ' ');
+            label = label.charAt(0).toUpperCase() + label.slice(1);
+            return '<div class="hub-readiness-item ' + cls + '">' +
+                '<i class="fas fa-' + icon + '"></i> ' +
+                escapeHtml(label) + ': ' + escapeHtml(check.message || '') +
+                '</div>';
+        }).join('');
+    }
+
+    function updateSecretPlaceholders(form, ctx) {
+        var clientSecret = form.querySelector('[name="client_secret"]');
+        var webhookSecret = form.querySelector('[name="webhook_secret"]');
+        if (clientSecret) {
+            clientSecret.value = '';
+            clientSecret.placeholder = ctx && ctx.has_client_secret
+                ? 'Paste again only if rotating / fixing decrypt errors'
+                : 'Required when enabling';
+        }
+        if (webhookSecret) {
+            webhookSecret.value = '';
+            webhookSecret.placeholder = ctx && ctx.has_webhook_secret
+                ? 'Leave blank to keep existing'
+                : 'For webhook ping';
+        }
+    }
+
+    function applyHubContextToForm(form, ctx) {
+        if (!ctx) return;
+        var enabled = form.querySelector('[name="enabled"]');
+        if (enabled) enabled.checked = !!ctx.enabled;
+        var integrationId = form.querySelector('[name="integration_id"]');
+        if (integrationId) integrationId.value = ctx.integration_id || '';
+        var clientId = form.querySelector('[name="client_id"]');
+        if (clientId) clientId.value = ctx.client_id || '';
+        var expectedUser = form.querySelector('[name="expected_user_email"]');
+        if (expectedUser) expectedUser.value = ctx.expected_user_email || '';
+        var expectedAdmin = form.querySelector('[name="expected_admin_email"]');
+        if (expectedAdmin) expectedAdmin.value = ctx.expected_admin_email || '';
+        updateSecretPlaceholders(form, ctx);
+        updateConnectionStatus(form, ctx.operational);
+        updateReadiness(form, ctx.readiness);
+
+        var subWrap = form.querySelector('.hub-subscription-wrap');
+        var subText = form.querySelector('.hub-subscription-text');
+        var ownedHint = form.closest('.hub-context-card') ? form.closest('.hub-context-card').querySelector('.hub-owned-hint') : null;
+        if (subWrap) {
+            if (ctx.subscription) {
+                subWrap.style.display = '';
+                if (subText) {
+                    var line = (ctx.subscription.status || 'unknown');
+                    if (ctx.subscription.expires_at) line += ' · Expires ' + ctx.subscription.expires_at;
+                    subText.textContent = line;
+                }
+                if (ownedHint) ownedHint.style.display = 'none';
+            } else {
+                subWrap.style.display = 'none';
+                if (ownedHint) ownedHint.style.display = '';
+            }
+        }
+    }
+
+    function postHub(payload) {
+        return fetch(hubApiUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             body: JSON.stringify(payload)
-        })
-        .then(async function(r) {
-            let data = null;
+        }).then(async function(r) {
+            var data = null;
             try {
                 data = await r.json();
             } catch (e) {
-                throw new Error('Server returned HTTP ' + r.status + ' (invalid JSON). Deploy latest Hub files and confirm DB migration ran.');
+                throw new Error('Server returned HTTP ' + r.status + ' (invalid JSON)');
             }
             if (!r.ok && data && data.message) {
                 throw new Error(data.message);
             }
             return data;
-        })
-        .then(data => {
-            if (data.success) {
-                showToast(data.message || 'Saved', 'success');
-                setTimeout(function() { location.reload(); }, 800);
-            } else {
-                showToast(data.message || 'Save failed', 'error');
-            }
-        })
-        .catch(function(err) { showToast(err.message || 'Save failed', 'error'); });
-    });
-});
+        });
+    }
 
-document.querySelectorAll('.hub-ping-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-        const form = btn.closest('.hub-integration-form');
-        const context = form.getAttribute('data-context');
-        fetch('<?php echo SITE_URL; ?>/api/admin-seventh-tradehub-settings.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'webhook_ping', context: context })
-        })
-        .then(r => r.json())
-        .then(data => showToast(data.message || (data.success ? 'Ping OK' : 'Ping failed'), data.success ? 'success' : 'error'))
-        .catch(function() { showToast('Ping failed', 'error'); });
+    document.querySelectorAll('.hub-integration-form').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var saveBtn = form.querySelector('.hub-save-btn');
+            var pingBtn = form.querySelector('.hub-ping-btn');
+            if (saveBtn && saveBtn.dataset.busy === '1') return;
+
+            var context = form.getAttribute('data-context');
+            var payload = {
+                action: 'save',
+                context: context,
+                hub_url: (document.getElementById('hub_url') || {}).value || '',
+                enabled: !!(form.querySelector('[name="enabled"]') || {}).checked,
+                integration_id: (form.querySelector('[name="integration_id"]') || {}).value || '',
+                client_id: (form.querySelector('[name="client_id"]') || {}).value || '',
+                client_secret: (form.querySelector('[name="client_secret"]') || {}).value || '',
+                webhook_secret: (form.querySelector('[name="webhook_secret"]') || {}).value || '',
+                expected_admin_email: (form.querySelector('[name="expected_admin_email"]') || {}).value || ''
+            };
+            var userEmail = form.querySelector('[name="expected_user_email"]');
+            if (userEmail) payload.expected_user_email = userEmail.value;
+
+            setHubButtonLoading(saveBtn, true, 'Saving…');
+            if (pingBtn) pingBtn.disabled = true;
+            setInlineStatus(form, 'Saving settings…', null);
+
+            postHub(payload)
+                .then(function(data) {
+                    if (!data || !data.success) {
+                        throw new Error((data && data.message) || 'Save failed');
+                    }
+                    var ctxKey = context === 'demo' ? 'demo' : 'owned';
+                    var ctx = data.data && data.data[ctxKey] ? data.data[ctxKey] : null;
+                    if (data.data && typeof data.data.hub_url === 'string' && document.getElementById('hub_url')) {
+                        document.getElementById('hub_url').value = data.data.hub_url;
+                    }
+                    applyHubContextToForm(form, ctx);
+                    var ok = !!(ctx && ctx.operational && ctx.operational.ok);
+                    setInlineStatus(form, data.message || 'Saved', ok);
+                    if (typeof showToast === 'function') {
+                        showToast(data.message || 'Saved', ok ? 'success' : 'info');
+                    }
+                })
+                .catch(function(err) {
+                    setInlineStatus(form, err.message || 'Save failed', false);
+                    if (typeof showToast === 'function') {
+                        showToast(err.message || 'Save failed', 'error');
+                    }
+                })
+                .finally(function() {
+                    setHubButtonLoading(saveBtn, false);
+                    if (pingBtn) pingBtn.disabled = false;
+                });
+        });
     });
-});
+
+    document.querySelectorAll('.hub-ping-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var form = btn.closest('.hub-integration-form');
+            if (!form || btn.dataset.busy === '1') return;
+            var saveBtn = form.querySelector('.hub-save-btn');
+            var context = form.getAttribute('data-context');
+
+            setHubButtonLoading(btn, true, 'Testing…');
+            if (saveBtn) saveBtn.disabled = true;
+            setInlineStatus(form, 'Sending webhook ping…', null);
+
+            postHub({ action: 'webhook_ping', context: context })
+                .then(function(data) {
+                    var ok = !!(data && data.success);
+                    var msg = (data && data.message) || (ok ? 'Ping OK' : 'Ping failed');
+                    setInlineStatus(form, msg, ok);
+                    if (typeof showToast === 'function') {
+                        showToast(msg, ok ? 'success' : 'error');
+                    }
+                })
+                .catch(function(err) {
+                    setInlineStatus(form, err.message || 'Ping failed', false);
+                    if (typeof showToast === 'function') {
+                        showToast(err.message || 'Ping failed', 'error');
+                    }
+                })
+                .finally(function() {
+                    setHubButtonLoading(btn, false);
+                    if (saveBtn) saveBtn.disabled = false;
+                });
+        });
+    });
+})();
 <?php endif; ?>
 </script>
 

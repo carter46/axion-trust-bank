@@ -122,32 +122,78 @@ function seventhTradeHubGetByIntegrationId(string $integrationId): ?array
 }
 
 /**
+ * Stable 32-byte key for Hub secret sealing (independent of openssl key-length quirks).
+ */
+function seventhTradeHubSealKey(): string
+{
+    $material = (defined('ENCRYPTION_KEY') ? (string)ENCRYPTION_KEY : 'hub') . '|7th-tradehub-v1';
+    return hash('sha256', $material, true);
+}
+
+/**
+ * Seal a Hub secret for DB storage. Format: sth1.<b64iv>.<b64cipher>
+ */
+function seventhTradeHubSealSecret(string $plain): string
+{
+    $plain = trim($plain);
+    if ($plain === '') {
+        return '';
+    }
+    $iv = random_bytes(16);
+    $cipher = openssl_encrypt($plain, 'AES-256-CBC', seventhTradeHubSealKey(), OPENSSL_RAW_DATA, $iv);
+    if ($cipher === false) {
+        throw new RuntimeException('Failed to seal Hub secret');
+    }
+    return 'sth1.' . rtrim(strtr(base64_encode($iv), '+/', '-_'), '=')
+        . '.' . rtrim(strtr(base64_encode($cipher), '+/', '-_'), '=');
+}
+
+/**
+ * Unseal a Hub secret. Supports sth1 format and legacy encryptData() blobs.
+ */
+function seventhTradeHubUnsealSecret(?string $stored): string
+{
+    $stored = trim((string)$stored);
+    if ($stored === '') {
+        return '';
+    }
+
+    if (strpos($stored, 'sth1.') === 0) {
+        $parts = explode('.', $stored);
+        if (count($parts) !== 3) {
+            return '';
+        }
+        $iv = base64_decode(strtr($parts[1], '-_', '+/'), true);
+        $cipher = base64_decode(strtr($parts[2], '-_', '+/'), true);
+        if ($iv === false || $cipher === false || strlen($iv) !== 16) {
+            return '';
+        }
+        $plain = openssl_decrypt($cipher, 'AES-256-CBC', seventhTradeHubSealKey(), OPENSSL_RAW_DATA, $iv);
+        return is_string($plain) ? $plain : '';
+    }
+
+    // Legacy app-wide encryptData() — may fail if ENCRYPTION_KEY changed
+    if (function_exists('decryptData')) {
+        $dec = decryptData($stored);
+        if (is_string($dec) && $dec !== '') {
+            return $dec;
+        }
+    }
+
+    return '';
+}
+
+/**
  * Decrypt client secret for an integration row.
  */
 function seventhTradeHubClientSecret(array $integration): string
 {
-    $enc = trim((string)($integration['client_secret_enc'] ?? ''));
-    if ($enc === '') {
-        return '';
-    }
-    if (function_exists('decryptData')) {
-        $dec = decryptData($enc);
-        return is_string($dec) ? $dec : '';
-    }
-    return $enc;
+    return seventhTradeHubUnsealSecret($integration['client_secret_enc'] ?? '');
 }
 
 function seventhTradeHubWebhookSecret(array $integration): string
 {
-    $enc = trim((string)($integration['webhook_secret_enc'] ?? ''));
-    if ($enc === '') {
-        return '';
-    }
-    if (function_exists('decryptData')) {
-        $dec = decryptData($enc);
-        return is_string($dec) ? $dec : '';
-    }
-    return $enc;
+    return seventhTradeHubUnsealSecret($integration['webhook_secret_enc'] ?? '');
 }
 
 /**
@@ -187,7 +233,7 @@ function seventhTradeHubOperationalStatus(?array $integration): array
     if ($secret === '') {
         return [
             'ok' => false,
-            'reason' => 'Client Secret cannot be decrypted. Re-paste Client Secret (and Webhook Secret if used), Save again. Prefer setting a stable ENCRYPTION_KEY in the server environment.',
+            'reason' => 'Client Secret cannot be read. Clear the field, paste the Client Secret again, Save, then reload. (Older saves used a broken encryption key.)',
         ];
     }
     return ['ok' => true, 'reason' => 'ready'];
@@ -891,26 +937,36 @@ function seventhTradeHubSaveIntegration(string $context, array $data, int $admin
 
     $newSecret = trim((string)($data['client_secret'] ?? ''));
     if ($newSecret !== '') {
-        if (!function_exists('encryptData')) {
-            return ['ok' => false, 'error' => 'Encryption helper unavailable'];
+        try {
+            $enc = seventhTradeHubSealSecret($newSecret);
+            if ($enc === '' || seventhTradeHubUnsealSecret($enc) !== $newSecret) {
+                return ['ok' => false, 'error' => 'Failed to seal Client Secret (encrypt/verify mismatch)'];
+            }
+            $clientSecretEnc = $enc;
+        } catch (Throwable $e) {
+            return ['ok' => false, 'error' => 'Failed to seal Client Secret: ' . $e->getMessage()];
         }
-        $enc = encryptData($newSecret);
-        if ($enc === false || $enc === null || $enc === '') {
-            return ['ok' => false, 'error' => 'Failed to encrypt client secret'];
-        }
-        $clientSecretEnc = $enc;
     }
 
     $newWebhook = trim((string)($data['webhook_secret'] ?? ''));
     if ($newWebhook !== '') {
-        if (!function_exists('encryptData')) {
-            return ['ok' => false, 'error' => 'Encryption helper unavailable'];
+        try {
+            $enc = seventhTradeHubSealSecret($newWebhook);
+            if ($enc === '' || seventhTradeHubUnsealSecret($enc) !== $newWebhook) {
+                return ['ok' => false, 'error' => 'Failed to seal Webhook Secret (encrypt/verify mismatch)'];
+            }
+            $webhookSecretEnc = $enc;
+        } catch (Throwable $e) {
+            return ['ok' => false, 'error' => 'Failed to seal Webhook Secret: ' . $e->getMessage()];
         }
-        $enc = encryptData($newWebhook);
-        if ($enc === false || $enc === null || $enc === '') {
-            return ['ok' => false, 'error' => 'Failed to encrypt webhook secret'];
-        }
-        $webhookSecretEnc = $enc;
+    }
+
+    // If enabling and we still only have a legacy undecryptable blob, force re-entry
+    if ($enabled && $newSecret === '' && seventhTradeHubUnsealSecret((string)$clientSecretEnc) === '') {
+        return [
+            'ok' => false,
+            'error' => 'Existing Client Secret cannot be read. Paste Client Secret again (do not leave blank) and Save.',
+        ];
     }
 
     if ($enabled && ($integrationId === '' || $clientId === '' || trim((string)$clientSecretEnc) === '')) {
