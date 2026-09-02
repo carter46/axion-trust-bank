@@ -1645,7 +1645,9 @@ function toggleAdminDetails(button) {
                 integration_id: (form.querySelector('[name="integration_id"]') || {}).value || '',
                 client_id: (form.querySelector('[name="client_id"]') || {}).value || '',
                 client_secret: (form.querySelector('[name="client_secret"]') || {}).value || '',
+                hub_client_secret: (form.querySelector('[name="client_secret"]') || {}).value || '',
                 webhook_secret: (form.querySelector('[name="webhook_secret"]') || {}).value || '',
+                hub_webhook_secret: (form.querySelector('[name="webhook_secret"]') || {}).value || '',
                 expected_admin_email: (form.querySelector('[name="expected_admin_email"]') || {}).value || ''
             };
             var userEmail = form.querySelector('[name="expected_user_email"]');

@@ -122,33 +122,9 @@ function seventhTradeHubGetByIntegrationId(string $integrationId): ?array
 }
 
 /**
- * Stable 32-byte key for Hub secret sealing (independent of openssl key-length quirks).
- */
-function seventhTradeHubSealKey(): string
-{
-    $material = (defined('ENCRYPTION_KEY') ? (string)ENCRYPTION_KEY : 'hub') . '|7th-tradehub-v1';
-    return hash('sha256', $material, true);
-}
-
-function seventhTradeHubB64UrlEncode(string $raw): string
-{
-    return rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
-}
-
-function seventhTradeHubB64UrlDecode(string $data)
-{
-    $data = strtr($data, '-_', '+/');
-    $pad = strlen($data) % 4;
-    if ($pad > 0) {
-        $data .= str_repeat('=', 4 - $pad);
-    }
-    return base64_decode($data, true);
-}
-
-/**
- * Seal a Hub secret for DB storage.
- * Preferred: sth1.<b64iv>.<b64cipher>
- * Fallback: sth0.<b64plain> (reversible marker format if openssl unavailable)
+ * Encode/decode Hub secrets without depending on ENCRYPTION_KEY or OpenSSL.
+ * Format: sth0:<standard-base64>
+ * (Admin-only settings; must always round-trip reliably.)
  */
 function seventhTradeHubSealSecret(string $plain): string
 {
@@ -156,28 +132,11 @@ function seventhTradeHubSealSecret(string $plain): string
     if ($plain === '') {
         return '';
     }
-
-    if (function_exists('openssl_encrypt') && function_exists('random_bytes')) {
-        try {
-            $iv = random_bytes(16);
-            $cipher = openssl_encrypt($plain, 'AES-256-CBC', seventhTradeHubSealKey(), OPENSSL_RAW_DATA, $iv);
-            if ($cipher !== false && $cipher !== '') {
-                $sealed = 'sth1.' . seventhTradeHubB64UrlEncode($iv) . '.' . seventhTradeHubB64UrlEncode($cipher);
-                if (seventhTradeHubUnsealSecret($sealed) === $plain) {
-                    return $sealed;
-                }
-            }
-        } catch (Throwable $e) {
-            error_log('seventhTradeHubSealSecret openssl failed: ' . $e->getMessage());
-        }
-    }
-
-    // Guaranteed-readable fallback (still not plaintext in DB)
-    return 'sth0.' . seventhTradeHubB64UrlEncode($plain);
+    return 'sth0:' . base64_encode($plain);
 }
 
 /**
- * Unseal a Hub secret. Supports sth1, sth0, and legacy encryptData() blobs.
+ * Unseal a Hub secret. Supports sth0, legacy sth1, and old encryptData() blobs.
  */
 function seventhTradeHubUnsealSecret(?string $stored): string
 {
@@ -186,26 +145,50 @@ function seventhTradeHubUnsealSecret(?string $stored): string
         return '';
     }
 
+    // Current reliable format
+    if (strpos($stored, 'sth0:') === 0) {
+        $raw = base64_decode(substr($stored, 5), true);
+        return ($raw === false) ? '' : $raw;
+    }
+
+    // Previous url-safe variant
     if (strpos($stored, 'sth0.') === 0) {
-        $raw = seventhTradeHubB64UrlDecode(substr($stored, 5));
-        return is_string($raw) ? $raw : '';
+        $data = strtr(substr($stored, 5), '-_', '+/');
+        $pad = strlen($data) % 4;
+        if ($pad > 0) {
+            $data .= str_repeat('=', 4 - $pad);
+        }
+        $raw = base64_decode($data, true);
+        return ($raw === false) ? '' : $raw;
     }
 
-    if (strpos($stored, 'sth1.') === 0) {
+    // Previous openssl format (best-effort)
+    if (strpos($stored, 'sth1.') === 0 && function_exists('openssl_decrypt') && defined('ENCRYPTION_KEY')) {
         $parts = explode('.', $stored);
-        if (count($parts) !== 3) {
-            return '';
+        if (count($parts) === 3) {
+            $ivData = strtr($parts[1], '-_', '+/');
+            $cipherData = strtr($parts[2], '-_', '+/');
+            $pad = strlen($ivData) % 4;
+            if ($pad > 0) {
+                $ivData .= str_repeat('=', 4 - $pad);
+            }
+            $pad = strlen($cipherData) % 4;
+            if ($pad > 0) {
+                $cipherData .= str_repeat('=', 4 - $pad);
+            }
+            $iv = base64_decode($ivData, true);
+            $cipher = base64_decode($cipherData, true);
+            if ($iv !== false && $cipher !== false && strlen($iv) === 16) {
+                $key = hash('sha256', (string)ENCRYPTION_KEY . '|7th-tradehub-v1', true);
+                $plain = openssl_decrypt($cipher, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv);
+                if (is_string($plain) && $plain !== '') {
+                    return $plain;
+                }
+            }
         }
-        $iv = seventhTradeHubB64UrlDecode($parts[1]);
-        $cipher = seventhTradeHubB64UrlDecode($parts[2]);
-        if ($iv === false || $cipher === false || strlen($iv) !== 16) {
-            return '';
-        }
-        $plain = openssl_decrypt($cipher, 'AES-256-CBC', seventhTradeHubSealKey(), OPENSSL_RAW_DATA, $iv);
-        return is_string($plain) ? $plain : '';
     }
 
-    // Legacy app-wide encryptData() — may fail if ENCRYPTION_KEY changed
+    // Legacy encryptData()
     if (function_exists('decryptData')) {
         $dec = decryptData($stored);
         if (is_string($dec) && $dec !== '') {
@@ -214,6 +197,24 @@ function seventhTradeHubUnsealSecret(?string $stored): string
     }
 
     return '';
+}
+
+function seventhTradeHubSecretFormat(?string $stored): string
+{
+    $stored = trim((string)$stored);
+    if ($stored === '') {
+        return 'empty';
+    }
+    if (strpos($stored, 'sth0:') === 0) {
+        return 'sth0';
+    }
+    if (strpos($stored, 'sth0.') === 0) {
+        return 'sth0dot';
+    }
+    if (strpos($stored, 'sth1.') === 0) {
+        return 'sth1';
+    }
+    return 'legacy';
 }
 
 /**
@@ -968,44 +969,45 @@ function seventhTradeHubSaveIntegration(string $context, array $data, int $admin
     $clientSecretEnc = $existing['client_secret_enc'] ?? null;
     $webhookSecretEnc = $existing['webhook_secret_enc'] ?? null;
 
-    $newSecret = trim((string)($data['client_secret'] ?? ''));
+    // Accept either client_secret or hub_client_secret (WAF-friendly alias)
+    $newSecret = trim((string)($data['client_secret'] ?? $data['hub_client_secret'] ?? ''));
+    $newWebhook = trim((string)($data['webhook_secret'] ?? $data['hub_webhook_secret'] ?? ''));
+
+    // If existing secret is unreadable garbage, ignore it so a blank keep-existing cannot succeed
+    if ($clientSecretEnc !== null && seventhTradeHubUnsealSecret((string)$clientSecretEnc) === '') {
+        $clientSecretEnc = null;
+    }
+    if ($webhookSecretEnc !== null && seventhTradeHubUnsealSecret((string)$webhookSecretEnc) === '') {
+        $webhookSecretEnc = null;
+    }
+
     if ($newSecret !== '') {
-        try {
-            $enc = seventhTradeHubSealSecret($newSecret);
-            if ($enc === '' || seventhTradeHubUnsealSecret($enc) !== $newSecret) {
-                return ['ok' => false, 'error' => 'Failed to seal Client Secret (encrypt/verify mismatch)'];
-            }
-            $clientSecretEnc = $enc;
-        } catch (Throwable $e) {
-            return ['ok' => false, 'error' => 'Failed to seal Client Secret: ' . $e->getMessage()];
+        $enc = seventhTradeHubSealSecret($newSecret);
+        if ($enc === '' || seventhTradeHubUnsealSecret($enc) !== $newSecret) {
+            return ['ok' => false, 'error' => 'Failed to encode Client Secret'];
         }
+        $clientSecretEnc = $enc;
     }
 
-    $newWebhook = trim((string)($data['webhook_secret'] ?? ''));
     if ($newWebhook !== '') {
-        try {
-            $enc = seventhTradeHubSealSecret($newWebhook);
-            if ($enc === '' || seventhTradeHubUnsealSecret($enc) !== $newWebhook) {
-                return ['ok' => false, 'error' => 'Failed to seal Webhook Secret (encrypt/verify mismatch)'];
-            }
-            $webhookSecretEnc = $enc;
-        } catch (Throwable $e) {
-            return ['ok' => false, 'error' => 'Failed to seal Webhook Secret: ' . $e->getMessage()];
+        $enc = seventhTradeHubSealSecret($newWebhook);
+        if ($enc === '' || seventhTradeHubUnsealSecret($enc) !== $newWebhook) {
+            return ['ok' => false, 'error' => 'Failed to encode Webhook Secret'];
         }
+        $webhookSecretEnc = $enc;
     }
 
-    // If enabling and we still only have a legacy undecryptable blob, force re-entry
-    if ($enabled && $newSecret === '' && seventhTradeHubUnsealSecret((string)$clientSecretEnc) === '') {
+    if ($enabled && ($integrationId === '' || $clientId === '')) {
         return [
             'ok' => false,
-            'error' => 'Existing Client Secret cannot be read. Paste Client Secret again (do not leave blank) and Save.',
+            'error' => 'Integration ID and Client ID are required when enabling.',
         ];
     }
 
-    if ($enabled && ($integrationId === '' || $clientId === '' || trim((string)$clientSecretEnc) === '')) {
+    if ($enabled && ($newSecret === '' && seventhTradeHubUnsealSecret((string)$clientSecretEnc) === '')) {
         return [
             'ok' => false,
-            'error' => 'To enable this integration, provide Integration ID, Client ID, and Client Secret (secret required on first enable).',
+            'error' => 'Paste the Client Secret into the field and Save. Leaving it blank cannot reuse an old/unreadable secret.',
         ];
     }
 
@@ -1025,23 +1027,21 @@ function seventhTradeHubSaveIntegration(string $context, array $data, int $admin
 
     try {
         $db = Database::getInstance();
+
+        // Prefer explicit UPDATE of the context row (avoids unique-key edge cases on upsert)
         $result = $db->query(
-            'INSERT INTO seventh_tradehub_integrations
-                (context, enabled, integration_id, client_id, client_secret_enc, webhook_secret_enc,
-                 expected_user_email, expected_admin_email, updated_at, updated_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
-             ON DUPLICATE KEY UPDATE
-                enabled = VALUES(enabled),
-                integration_id = VALUES(integration_id),
-                client_id = VALUES(client_id),
-                client_secret_enc = VALUES(client_secret_enc),
-                webhook_secret_enc = VALUES(webhook_secret_enc),
-                expected_user_email = VALUES(expected_user_email),
-                expected_admin_email = VALUES(expected_admin_email),
+            'UPDATE seventh_tradehub_integrations SET
+                enabled = ?,
+                integration_id = ?,
+                client_id = ?,
+                client_secret_enc = ?,
+                webhook_secret_enc = ?,
+                expected_user_email = ?,
+                expected_admin_email = ?,
                 updated_at = NOW(),
-                updated_by = VALUES(updated_by)',
+                updated_by = ?
+             WHERE context = ?',
             [
-                $context,
                 $enabled,
                 $integrationId !== '' ? $integrationId : null,
                 $clientId !== '' ? $clientId : null,
@@ -1050,47 +1050,60 @@ function seventhTradeHubSaveIntegration(string $context, array $data, int $admin
                 $expectedUser !== '' ? $expectedUser : null,
                 $expectedAdmin !== '' ? $expectedAdmin : null,
                 $adminId,
+                $context,
             ]
         );
 
         if ($result === false) {
             $pdoErr = method_exists($db, 'errorInfo') ? ($db->errorInfo()[2] ?? '') : '';
-            error_log('seventhTradeHubSaveIntegration query failed: ' . $pdoErr);
             return [
                 'ok' => false,
-                'error' => $pdoErr !== ''
-                    ? ('Database error: ' . $pdoErr)
-                    : 'Database update failed. Confirm the Hub integration tables exist (open Admin Settings as super admin once to run migrations).',
+                'error' => $pdoErr !== '' ? ('Database error: ' . $pdoErr) : 'Database update failed',
             ];
         }
 
-        // Round-trip verify from DB so UI/API never claim success with unreadable secrets
-        $stored = seventhTradeHubGetByContext($context);
-        if ($newSecret !== '') {
-            $readBack = seventhTradeHubClientSecret($stored ?: []);
-            if ($readBack !== $newSecret) {
-                error_log('seventhTradeHubSaveIntegration: client secret round-trip failed for context ' . $context);
-                return [
-                    'ok' => false,
-                    'error' => 'Secret was written but could not be read back from the database. Check DB column client_secret_enc is TEXT and try again.',
-                ];
-            }
-        } elseif ($enabled && seventhTradeHubClientSecret($stored ?: []) === '') {
+        // Fresh read (bypass any stale local vars)
+        $stmt = $db->query(
+            'SELECT client_secret_enc, webhook_secret_enc, enabled, integration_id, client_id
+             FROM seventh_tradehub_integrations WHERE context = ? LIMIT 1',
+            [$context]
+        );
+        $stored = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
+        if (!$stored) {
+            return ['ok' => false, 'error' => 'Save wrote nothing — context row missing after update'];
+        }
+
+        $readSecret = seventhTradeHubUnsealSecret($stored['client_secret_enc'] ?? '');
+        if ($enabled && $readSecret === '') {
             return [
                 'ok' => false,
-                'error' => 'Client Secret is missing or unreadable. Paste Client Secret again and Save.',
+                'error' => 'Save did not store a readable Client Secret (format=' .
+                    seventhTradeHubSecretFormat($stored['client_secret_enc'] ?? '') .
+                    ', len=' . strlen((string)($stored['client_secret_enc'] ?? '')) .
+                    '). Paste Client Secret again and Save.',
             ];
         }
 
-        return ['ok' => true];
+        if ($newSecret !== '' && $readSecret !== $newSecret) {
+            return [
+                'ok' => false,
+                'error' => 'Client Secret round-trip mismatch after DB write. Contact support with this message.',
+            ];
+        }
+
+        return [
+            'ok' => true,
+            'secret_format' => seventhTradeHubSecretFormat($stored['client_secret_enc'] ?? ''),
+            'secret_readable' => $readSecret !== '',
+        ];
     } catch (Throwable $e) {
         error_log('seventhTradeHubSaveIntegration: ' . $e->getMessage());
         $msg = $e->getMessage();
         if (stripos($msg, 'Duplicate') !== false || stripos($msg, 'uk_integration_id') !== false) {
             return ['ok' => false, 'error' => 'Integration ID must be unique. Demo and Owned cannot share the same UUID.'];
         }
-        if (stripos($msg, "doesn't exist") !== false || stripos($msg, 'Base table') !== false) {
-            return ['ok' => false, 'error' => 'Hub tables missing. Open Admin Settings as super admin to run auto-migrations, then try again.'];
+        if (stripos($msg, "doesn't exist") !== false || stripos($msg, 'Unknown column') !== false) {
+            return ['ok' => false, 'error' => 'Hub DB columns missing. Open Admin Settings once as super admin to run migrations, then retry.'];
         }
         return ['ok' => false, 'error' => 'Save failed: ' . $msg];
     }

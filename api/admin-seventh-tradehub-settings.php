@@ -64,8 +64,8 @@ try {
             'enabled' => !empty($input['enabled']),
             'integration_id' => $input['integration_id'] ?? '',
             'client_id' => $input['client_id'] ?? '',
-            'client_secret' => $input['client_secret'] ?? '',
-            'webhook_secret' => $input['webhook_secret'] ?? '',
+            'client_secret' => $input['client_secret'] ?? $input['hub_client_secret'] ?? '',
+            'webhook_secret' => $input['webhook_secret'] ?? $input['hub_webhook_secret'] ?? '',
             'expected_user_email' => $input['expected_user_email'] ?? '',
             'expected_admin_email' => $input['expected_admin_email'] ?? '',
         ], (int)$_SESSION['user_id']);
@@ -84,6 +84,9 @@ try {
         $ctxKey = $context === SEVENTH_TRADEHUB_CONTEXT_DEMO ? 'demo' : 'owned';
         $op = $summary[$ctxKey]['operational'] ?? null;
         $msg = 'Integration settings saved';
+        if (!empty($result['secret_readable'])) {
+            $msg .= ' — Client Secret stored and verified';
+        }
         if (is_array($op) && empty($op['ok'])) {
             $msg .= ' — warning: ' . ($op['reason'] ?? 'not ready for Hub traffic');
         } elseif (is_array($op) && !empty($op['ok'])) {
@@ -93,6 +96,8 @@ try {
             'success' => true,
             'message' => $msg,
             'data' => $summary,
+            'secret_format' => $result['secret_format'] ?? null,
+            'secret_readable' => !empty($result['secret_readable']),
         ]);
         exit;
     }
@@ -103,6 +108,16 @@ try {
         if (!$integration) {
             http_response_code(404);
             echo json_encode(['success' => false, 'message' => 'Integration not found']);
+            exit;
+        }
+        $status = seventhTradeHubOperationalStatus($integration);
+        if (!$status['ok']) {
+            echo json_encode([
+                'success' => false,
+                'message' => $status['reason'],
+                'secret_format' => seventhTradeHubSecretFormat($integration['client_secret_enc'] ?? ''),
+                'secret_len' => strlen(trim((string)($integration['client_secret_enc'] ?? ''))),
+            ]);
             exit;
         }
         $ping = seventhTradeHubWebhookPing($integration);
