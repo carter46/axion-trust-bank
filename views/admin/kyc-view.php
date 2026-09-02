@@ -41,7 +41,16 @@ function formatSSN($encrypted) {
     margin-bottom: 30px;
     display: flex;
     justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.page-header-actions {
+    display: flex;
     align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
 .page-header h1 {
@@ -263,6 +272,31 @@ function formatSSN($encrypted) {
 }
 
 @media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .page-header-actions {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+    }
+
+    .page-header-actions .btn {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .page-header-actions .status-badge {
+        align-self: flex-start;
+    }
+
+    .page-header h1 {
+        font-size: 24px;
+    }
+
     .info-grid {
         grid-template-columns: 1fr;
     }
@@ -287,7 +321,7 @@ function formatSSN($encrypted) {
         <h1>KYC Verification Details</h1>
         <p style="color: #666;">Review submission for <?php echo htmlspecialchars($kyc['full_name'] ?? $kyc['email']); ?></p>
     </div>
-    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+    <div class="page-header-actions">
         <span class="status-badge status-<?php echo $kyc['status']; ?>">
             <?php echo ucfirst(str_replace('_', ' ', $kyc['status'])); ?>
         </span>

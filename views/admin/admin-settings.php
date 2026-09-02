@@ -523,15 +523,17 @@ include __DIR__ . '/../../includes/admin-modals.php';
         </div>
     <?php endif; ?>
     
-    <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+    <div class="page-header">
         <div>
             <h1><i class="fas fa-user-shield"></i> Admin Settings</h1>
             <p>Manage administrator accounts</p>
         </div>
-        <button class="btn btn-success" onclick="openAddAdminModal()" style="padding: 12px 24px;">
-            <i class="fas fa-user-plus"></i>
-            Add Administrator
-        </button>
+        <div class="page-header-actions">
+            <button class="btn btn-success" onclick="openAddAdminModal()" style="padding: 12px 24px;">
+                <i class="fas fa-user-plus"></i>
+                Add Administrator
+            </button>
+        </div>
     </div>
     
     <!-- List of Administrators -->

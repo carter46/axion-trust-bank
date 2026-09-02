@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $pageTitle ?? 'SecureBank'; ?></title>
-    
+    <?php
+    $isAdminRoute = isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/admin') !== false;
+    ?>
     <!-- Dynamic Favicon - Supports all formats -->
     <?php 
     try {
@@ -868,6 +870,124 @@
                 font-size: 14px;
                 font-weight: 600;
             }
+
+            /* ===== ADMIN MOBILE LAYOUT FIXES ===== */
+            body.admin-page .page-header {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                justify-content: flex-start !important;
+                gap: 16px !important;
+            }
+
+            body.admin-page .page-header > div,
+            body.admin-page .page-header > h1 {
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 0 !important;
+            }
+
+            body.admin-page .page-header h1 {
+                font-size: 1.5rem !important;
+                line-height: 1.25 !important;
+                word-break: break-word;
+                overflow-wrap: anywhere;
+            }
+
+            body.admin-page .page-header p {
+                word-break: break-word;
+                overflow-wrap: anywhere;
+            }
+
+            body.admin-page .page-header-actions,
+            body.admin-page .page-header > div:last-child:not(:only-child) {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 10px !important;
+                width: 100% !important;
+            }
+
+            body.admin-page .page-header > a,
+            body.admin-page .page-header > button,
+            body.admin-page .page-header .btn,
+            body.admin-page .page-header button,
+            body.admin-page .page-header a.btn,
+            body.admin-page .page-header a.add-user-btn,
+            body.admin-page .page-header a.back-button,
+            body.admin-page .page-header a.btn-create,
+            body.admin-page .page-header-actions .btn,
+            body.admin-page .page-header-actions button,
+            body.admin-page .page-header-actions a {
+                width: 100% !important;
+                justify-content: center !important;
+                text-align: center !important;
+                white-space: normal !important;
+            }
+
+            body.admin-page .page-header .status-badge,
+            body.admin-page .page-header-actions .status-badge {
+                align-self: flex-start !important;
+                width: auto !important;
+                max-width: 100% !important;
+            }
+
+            body.admin-page .action-buttons,
+            body.admin-page .form-actions {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+
+            body.admin-page .action-buttons .btn,
+            body.admin-page .action-buttons button,
+            body.admin-page .action-buttons a,
+            body.admin-page .form-actions .btn,
+            body.admin-page .form-actions button,
+            body.admin-page .form-actions a {
+                width: 100% !important;
+                justify-content: center !important;
+            }
+
+            body.admin-page .card-header,
+            body.admin-page .user-card-header,
+            body.admin-page .wallet-card-header,
+            body.admin-page .version-card-header,
+            body.admin-page .admin-card-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 12px !important;
+            }
+
+            body.admin-page .stats-grid,
+            body.admin-page .info-grid,
+            body.admin-page .edit-form-grid,
+            body.admin-page .form-grid {
+                grid-template-columns: 1fr !important;
+            }
+
+            body.admin-page .card {
+                padding: 20px !important;
+            }
+
+            body.admin-page .admin-toolbar,
+            body.admin-page .toolbar-row,
+            body.admin-page .filter-row {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 12px !important;
+            }
+
+            body.admin-page .admin-toolbar > *,
+            body.admin-page .toolbar-row > *,
+            body.admin-page .filter-row > * {
+                width: 100% !important;
+            }
+
+            body.admin-page .content-area .admin-item,
+            body.admin-page .content-area [class*="-item"][style*="justify-content: space-between"] {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 12px !important;
+            }
         }
 
         /* ===== MOBILE BOTTOM NAVIGATION (YOUR PREFERRED DESIGN) ===== */
@@ -1507,11 +1627,10 @@
     </script>
     <?php
     // Enable translation on all non-admin pages that use this shared head.
-    $isAdminRoute = isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/admin') !== false;
     if (!$isAdminRoute) {
         include __DIR__ . '/translation.php';
     }
     ?>
     
 </head>
-<body>
+<body<?php echo $isAdminRoute ? ' class="admin-page"' : ''; ?>>

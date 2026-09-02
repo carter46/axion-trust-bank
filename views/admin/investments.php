@@ -299,7 +299,7 @@ if (empty($stats)) {
 
 <div class="page-header">
     <h1>Investment Products</h1>
-    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+    <div class="page-header-actions">
         <a href="<?php echo SITE_URL; ?>/admin/investment-funding" class="btn-create" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
             <i class="fas fa-money-bill-wave"></i> Crypto Funding
         </a>

@@ -422,7 +422,7 @@ table td {
         <?php endif; ?>
     </div>
     
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+    <div class="admin-toolbar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
         <h3 style="color: #032B44; margin: 0;">All User Transactions</h3>
         <div style="color: #6b7280; font-size: 14px;">
             <i class="fas fa-list"></i> 

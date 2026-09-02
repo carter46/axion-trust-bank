@@ -221,7 +221,7 @@ $kycList = $kycModel->getAll(['status' => $status]);
         <div>
             <?php foreach ($kycList as $kyc): ?>
             <div class="kyc-item">
-                <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div class="admin-toolbar" style="display: flex; justify-content: space-between; align-items: start;">
                     <div>
                         <h4 style="margin: 0 0 8px 0; color: #032B44;">
                             <?php echo htmlspecialchars($kyc['full_name'] ?? 'Unknown User'); ?>
