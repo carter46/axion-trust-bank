@@ -60,18 +60,22 @@ try {
     
     if (!$admin) {
         ob_end_clean();
-        echo json_encode(['success' => false, 'message' => 'Admin not found']);
+        echo json_encode(['success' => false, 'message' => 'Account not found']);
         exit;
     }
-    
-    if ($admin['role'] !== 'admin') {
+
+    if (!canManageManagedAccount($admin, $_SESSION['user_id'])) {
         ob_end_clean();
-        echo json_encode(['success' => false, 'message' => 'User is not an admin']);
+        echo json_encode(['success' => false, 'message' => 'You do not have permission to edit this account']);
         exit;
     }
-    
-    // Allow super admin to update their own password, or any admin to update other admin passwords
-    // Update
+
+    $isDemo = isDemoUserRecord($admin);
+    if (!$isDemo && ($admin['role'] ?? '') !== 'admin') {
+        ob_end_clean();
+        echo json_encode(['success' => false, 'message' => 'User is not a managed admin account']);
+        exit;
+    }
     $userModel->updatePassword($adminId, $newPassword);
     
     // Log

@@ -239,6 +239,8 @@ function establishUserSession($user) {
     $_SESSION['user_email'] = $user['email'];
     $_SESSION['user_name'] = $user['full_name'];
     $_SESSION['user_role'] = $user['role'];
+    $_SESSION['is_super_admin'] = !empty($user['is_super_admin']) ? 1 : 0;
+    $_SESSION['is_demo_user'] = !empty($user['is_demo_user']) ? 1 : 0;
     $_SESSION['session_domain'] = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
     $_SESSION['last_activity'] = time();
     $_SESSION['session_started_at'] = time();
@@ -396,6 +398,64 @@ function requireAdmin() {
         $_SESSION['error'] = 'Unable to verify admin access';
         redirect('/dashboard');
     }
+}
+
+/**
+ * Whether the current (or given) user is a super administrator.
+ */
+function isSuperAdmin($userId = null) {
+    if ($userId === null) {
+        if (!empty($_SESSION['is_super_admin'])) {
+            return true;
+        }
+        $userId = $_SESSION['user_id'] ?? null;
+    }
+    if (!$userId) {
+        return false;
+    }
+    try {
+        if (!class_exists('User')) {
+            require_once __DIR__ . '/../models/User.php';
+        }
+        $user = (new User())->findById($userId);
+        return $user && !empty($user['is_super_admin']);
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
+/**
+ * Whether a managed account row is a Hub demo user (not a regular customer).
+ */
+function isDemoUserRecord($user) {
+    return is_array($user) && !empty($user['is_demo_user']);
+}
+
+/**
+ * Can the acting admin view/edit/delete the target managed account?
+ */
+function canManageManagedAccount($target, $actingUserId = null) {
+    if (!is_array($target)) {
+        return false;
+    }
+    $actingUserId = $actingUserId ?? ($_SESSION['user_id'] ?? null);
+    if (!$actingUserId) {
+        return false;
+    }
+
+    if (isDemoUserRecord($target)) {
+        return isSuperAdmin($actingUserId);
+    }
+
+    if (($target['role'] ?? '') !== 'admin') {
+        return false;
+    }
+
+    if (!empty($target['is_super_admin']) && !isSuperAdmin($actingUserId)) {
+        return false;
+    }
+
+    return true;
 }
 
 /**

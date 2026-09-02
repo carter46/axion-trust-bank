@@ -8,12 +8,29 @@ requireAdmin();
 $adminId = $_SESSION['user_id'];
 $userModel = new User();
 $adminUser = $userModel->findById($adminId);
+$isSuperAdminViewer = isSuperAdmin($adminId);
 
-// Get all admin users
+// Managed accounts: admins (+ demo users for super admin only)
 $db = Database::getInstance();
-$sql = "SELECT id, full_name, email, is_super_admin, created_at, last_login FROM users WHERE role = 'admin' ORDER BY is_super_admin DESC, created_at DESC";
+if ($isSuperAdminViewer) {
+    $sql = "SELECT id, full_name, email, role, is_super_admin, COALESCE(is_demo_user, 0) AS is_demo_user, created_at, last_login
+            FROM users
+            WHERE role = 'admin' OR COALESCE(is_demo_user, 0) = 1
+            ORDER BY is_demo_user ASC, is_super_admin DESC, created_at DESC";
+} else {
+    $sql = "SELECT id, full_name, email, role, is_super_admin, COALESCE(is_demo_user, 0) AS is_demo_user, created_at, last_login
+            FROM users
+            WHERE role = 'admin' AND COALESCE(is_super_admin, 0) = 0
+            ORDER BY created_at DESC";
+}
 $stmt = $db->query($sql);
-$adminUsers = $stmt->fetchAll();
+$managedAccounts = $stmt ? $stmt->fetchAll() : [];
+$adminAccounts = array_values(array_filter($managedAccounts, static function ($row) {
+    return empty($row['is_demo_user']);
+}));
+$demoUsers = array_values(array_filter($managedAccounts, static function ($row) {
+    return !empty($row['is_demo_user']);
+}));
 
 include __DIR__ . '/../../includes/head.php';
 include __DIR__ . '/../../includes/admin-sidebar.php';
@@ -295,13 +312,29 @@ include __DIR__ . '/../../includes/admin-modals.php';
     }
     
     .super-admin-badge {
-        background: linear-gradient(135deg, #dc2626 0%, #f59e0b 100%);
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
         color: white;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 12px;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
         font-weight: 600;
         margin-left: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .demo-user-badge {
+        background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-left: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
     }
     
     .alert {
@@ -526,33 +559,37 @@ include __DIR__ . '/../../includes/admin-modals.php';
     <div class="page-header">
         <div>
             <h1><i class="fas fa-user-shield"></i> Admin Settings</h1>
-            <p>Manage administrator accounts</p>
+            <p>Manage administrator accounts<?php echo $isSuperAdminViewer ? ' and demo users' : ''; ?></p>
         </div>
         <div class="page-header-actions">
             <button class="btn btn-success" onclick="openAddAdminModal()" style="padding: 12px 24px;">
                 <i class="fas fa-user-plus"></i>
-                Add Administrator
+                <?php echo $isSuperAdminViewer ? 'Add Account' : 'Add Administrator'; ?>
             </button>
         </div>
     </div>
     
-    <!-- List of Administrators -->
+    <!-- Administrators -->
     <div class="settings-card">
         <h2 class="card-title">
             <i class="fas fa-users-cog"></i>
-            All Administrators (<?php echo count($adminUsers); ?>)
+            Administrators (<?php echo count($adminAccounts); ?>)
         </h2>
         
         <ul class="admin-list">
-            <?php foreach ($adminUsers as $admin): ?>
+            <?php if (empty($adminAccounts)): ?>
+                <li class="admin-item" style="justify-content: center; color: #666;">No administrators found.</li>
+            <?php endif; ?>
+            <?php foreach ($adminAccounts as $admin): ?>
+                <?php $canManage = canManageManagedAccount($admin, $adminId); ?>
                 <li class="admin-item">
                     <div class="admin-info">
                         <div class="admin-name">
                             <?php echo htmlspecialchars($admin['full_name']); ?>
-                            <?php if ($admin['is_super_admin'] == 1): ?>
+                            <?php if (!empty($admin['is_super_admin'])): ?>
                                 <span class="super-admin-badge"><i class="fas fa-crown"></i> Super Admin</span>
                             <?php endif; ?>
-                            <?php if ($admin['id'] == $adminId): ?>
+                            <?php if ((int)$admin['id'] === (int)$adminId): ?>
                                 <span class="admin-badge">You</span>
                             <?php endif; ?>
                         </div>
@@ -568,32 +605,35 @@ include __DIR__ . '/../../includes/admin-modals.php';
                             <?php endif; ?>
                         </div>
                     </div>
+                    <?php if ($canManage): ?>
                     <div class="admin-actions">
-                        <button class="btn-edit" onclick="openEditAdminModal(<?php echo $admin['id']; ?>, '<?php echo htmlspecialchars($admin['full_name'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($admin['email'], ENT_QUOTES); ?>', <?php echo $admin['is_super_admin']; ?>)" title="Edit Administrator">
+                        <button class="btn-edit" onclick="openEditAdminModal(<?php echo (int)$admin['id']; ?>, '<?php echo htmlspecialchars($admin['full_name'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($admin['email'], ENT_QUOTES); ?>', <?php echo !empty($admin['is_demo_user']) ? 1 : 0; ?>)" title="Edit">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <?php if ($admin['id'] != $adminId && $admin['is_super_admin'] != 1): ?>
-                            <button class="btn-delete" onclick="deleteAdmin(<?php echo $admin['id']; ?>, '<?php echo htmlspecialchars($admin['full_name'], ENT_QUOTES); ?>')" title="Delete Administrator">
+                        <?php if ((int)$admin['id'] !== (int)$adminId && empty($admin['is_super_admin'])): ?>
+                            <button class="btn-delete" onclick="deleteManagedAccount(<?php echo (int)$admin['id']; ?>, '<?php echo htmlspecialchars($admin['full_name'], ENT_QUOTES); ?>', 'admin')" title="Delete">
                                 <i class="fas fa-trash"></i>
                             </button>
                         <?php endif; ?>
                     </div>
+                    <?php endif; ?>
                 </li>
             <?php endforeach; ?>
         </ul>
         
         <!-- Mobile View -->
         <div class="mobile-admin-cards">
-            <?php foreach ($adminUsers as $admin): ?>
+            <?php foreach ($adminAccounts as $admin): ?>
+                <?php $canManage = canManageManagedAccount($admin, $adminId); ?>
                 <div class="admin-card-mobile">
                     <div class="admin-card-header">
                         <div class="admin-info-mobile">
                             <div class="admin-name-mobile">
                                 <?php echo htmlspecialchars($admin['full_name']); ?>
-                                <?php if ($admin['is_super_admin'] == 1): ?>
+                                <?php if (!empty($admin['is_super_admin'])): ?>
                                     <span class="super-admin-badge" style="font-size: 10px; padding: 2px 8px;"><i class="fas fa-crown"></i> Super Admin</span>
                                 <?php endif; ?>
-                                <?php if ($admin['id'] == $adminId): ?>
+                                <?php if ((int)$admin['id'] === (int)$adminId): ?>
                                     <span class="admin-badge" style="font-size: 10px; padding: 2px 8px;">You</span>
                                 <?php endif; ?>
                             </div>
@@ -601,10 +641,13 @@ include __DIR__ . '/../../includes/admin-modals.php';
                                 <i class="fas fa-envelope"></i> <?php echo htmlspecialchars($admin['email']); ?>
                             </div>
                         </div>
+                        <?php if ($canManage): ?>
                         <button class="expand-btn" onclick="toggleAdminDetails(this)">
                             <i class="fas fa-chevron-down"></i>
                         </button>
+                        <?php endif; ?>
                     </div>
+                    <?php if ($canManage): ?>
                     <div class="admin-details-mobile">
                         <div class="detail-row">
                             <span class="detail-label">Added</span>
@@ -617,20 +660,67 @@ include __DIR__ . '/../../includes/admin-modals.php';
                         </div>
                         <?php endif; ?>
                         <div class="mobile-actions">
-                            <button class="btn-edit-mobile" onclick="openEditAdminModal(<?php echo $admin['id']; ?>, '<?php echo htmlspecialchars($admin['full_name'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($admin['email'], ENT_QUOTES); ?>', <?php echo $admin['is_super_admin']; ?>)">
+                            <button class="btn-edit-mobile" onclick="openEditAdminModal(<?php echo (int)$admin['id']; ?>, '<?php echo htmlspecialchars($admin['full_name'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($admin['email'], ENT_QUOTES); ?>', <?php echo !empty($admin['is_demo_user']) ? 1 : 0; ?>)">
                                 <i class="fas fa-edit"></i> Edit
                             </button>
-                            <?php if ($admin['id'] != $adminId && $admin['is_super_admin'] != 1): ?>
-                                <button class="btn-delete-mobile" onclick="deleteAdmin(<?php echo $admin['id']; ?>, '<?php echo htmlspecialchars($admin['full_name'], ENT_QUOTES); ?>')">
+                            <?php if ((int)$admin['id'] !== (int)$adminId && empty($admin['is_super_admin'])): ?>
+                                <button class="btn-delete-mobile" onclick="deleteManagedAccount(<?php echo (int)$admin['id']; ?>, '<?php echo htmlspecialchars($admin['full_name'], ENT_QUOTES); ?>', 'admin')">
                                     <i class="fas fa-trash"></i> Delete
                                 </button>
                             <?php endif; ?>
                         </div>
                     </div>
+                    <?php endif; ?>
                 </div>
             <?php endforeach; ?>
         </div>
     </div>
+
+    <?php if ($isSuperAdminViewer): ?>
+    <!-- Demo Users (super admin only) -->
+    <div class="settings-card" style="margin-top: 24px;">
+        <h2 class="card-title">
+            <i class="fas fa-flask"></i>
+            Demo Users (<?php echo count($demoUsers); ?>)
+        </h2>
+        <p style="color: #666; font-size: 14px; margin: -8px 0 20px 0;">For Hub demo SSO — not shown in the main Users list.</p>
+
+        <ul class="admin-list">
+            <?php if (empty($demoUsers)): ?>
+                <li class="admin-item" style="justify-content: center; color: #666;">No demo users yet.</li>
+            <?php endif; ?>
+            <?php foreach ($demoUsers as $demoUser): ?>
+                <li class="admin-item">
+                    <div class="admin-info">
+                        <div class="admin-name">
+                            <?php echo htmlspecialchars($demoUser['full_name']); ?>
+                            <span class="demo-user-badge"><i class="fas fa-flask"></i> Demo User</span>
+                        </div>
+                        <div class="admin-email">
+                            <i class="fas fa-envelope"></i>
+                            <?php echo htmlspecialchars($demoUser['email']); ?>
+                        </div>
+                        <div class="admin-meta">
+                            <i class="fas fa-calendar"></i>
+                            Added: <?php echo date('M j, Y', strtotime($demoUser['created_at'])); ?>
+                            <?php if ($demoUser['last_login']): ?>
+                                | Last Login: <?php echo timeAgo($demoUser['last_login']); ?>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <div class="admin-actions">
+                        <button class="btn-edit" onclick="openEditAdminModal(<?php echo (int)$demoUser['id']; ?>, '<?php echo htmlspecialchars($demoUser['full_name'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($demoUser['email'], ENT_QUOTES); ?>', 1)" title="Edit Demo User">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-delete" onclick="deleteManagedAccount(<?php echo (int)$demoUser['id']; ?>, '<?php echo htmlspecialchars($demoUser['full_name'], ENT_QUOTES); ?>', 'demo_user')" title="Delete Demo User">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    </div>
+    <?php endif; ?>
 </div>
 
 <!-- Add Admin Modal -->
@@ -639,12 +729,28 @@ include __DIR__ . '/../../includes/admin-modals.php';
         <div class="modal-header">
             <h2 class="modal-title">
                 <i class="fas fa-user-plus"></i>
-                Add New Administrator
+                <?php echo $isSuperAdminViewer ? 'Add Account' : 'Add New Administrator'; ?>
             </h2>
             <button class="modal-close" onclick="closeAddAdminModal()">&times;</button>
         </div>
         
         <form id="addAdminModalForm">
+            <?php if ($isSuperAdminViewer): ?>
+            <div class="form-group">
+                <label class="form-label" for="add_account_type">Account Type *</label>
+                <select class="form-input" id="add_account_type" name="account_type" required>
+                    <option value="admin">Administrator</option>
+                    <option value="demo_user">Demo User</option>
+                </select>
+                <p class="help-text">
+                    <i class="fas fa-info-circle"></i>
+                    Demo users are for Hub demo login only and are hidden from the Users list.
+                </p>
+            </div>
+            <?php else: ?>
+            <input type="hidden" name="account_type" value="admin">
+            <?php endif; ?>
+
             <div class="form-group">
                 <label class="form-label" for="add_admin_name">Full Name *</label>
                 <input type="text" class="form-input" id="add_admin_name" name="full_name" required>
@@ -665,9 +771,9 @@ include __DIR__ . '/../../includes/admin-modals.php';
             </div>
             
             <div style="display: flex; gap: 12px; margin-top: 24px;">
-                <button type="submit" class="btn btn-success" style="flex: 1;">
+                <button type="submit" class="btn btn-success" style="flex: 1;" id="addAccountSubmitBtn">
                     <i class="fas fa-check"></i>
-                    Add Administrator
+                    <span id="addAccountSubmitLabel"><?php echo $isSuperAdminViewer ? 'Add Account' : 'Add Administrator'; ?></span>
                 </button>
                 <button type="button" class="btn" onclick="closeAddAdminModal()" style="flex: 1; background: #6b7280;">
                     <i class="fas fa-times"></i>
@@ -691,7 +797,13 @@ include __DIR__ . '/../../includes/admin-modals.php';
         
         <form id="editAdminModalForm">
             <input type="hidden" id="edit_admin_id">
+            <input type="hidden" id="edit_is_demo_user" value="0">
             
+            <div class="form-group" id="edit_account_type_display" style="display: none;">
+                <label class="form-label">Account Type</label>
+                <input type="text" class="form-input" id="edit_account_type_label" readonly>
+            </div>
+
             <div class="form-group">
                 <label class="form-label">Full Name</label>
                 <input type="text" class="form-input" id="edit_admin_name" required>
@@ -740,17 +852,27 @@ function closeAddAdminModal() {
     document.getElementById('addAdminModalForm').reset();
 }
 
-function openEditAdminModal(id, name, email, isSuperAdmin) {
+function openEditAdminModal(id, name, email, isDemoUser) {
     document.getElementById('edit_admin_id').value = id;
     document.getElementById('edit_admin_name').value = name;
     document.getElementById('edit_admin_email').value = email;
+    document.getElementById('edit_is_demo_user').value = isDemoUser ? '1' : '0';
+
+    const typeDisplay = document.getElementById('edit_account_type_display');
+    const typeLabel = document.getElementById('edit_account_type_label');
+    const modalTitle = document.querySelector('#editAdminModal .modal-title');
+    if (isDemoUser) {
+        typeDisplay.style.display = 'block';
+        typeLabel.value = 'Demo User';
+        modalTitle.innerHTML = '<i class="fas fa-edit"></i> Edit Demo User';
+    } else {
+        typeDisplay.style.display = 'none';
+        typeLabel.value = '';
+        modalTitle.innerHTML = '<i class="fas fa-edit"></i> Edit Administrator';
+    }
     
-    // Store original values for comparison
     document.getElementById('edit_admin_name').setAttribute('data-original', name);
     document.getElementById('edit_admin_email').setAttribute('data-original', email);
-    
-    // All admins can edit their info - no restrictions
-    // Super admin badge is just visual, functionally same as regular admin
     
     document.getElementById('editAdminModal').classList.add('active');
 }
@@ -771,6 +893,15 @@ document.getElementById('editAdminModal').addEventListener('click', function(e) 
 });
 
 // Add admin form submission
+const accountTypeEl = document.getElementById('add_account_type');
+if (accountTypeEl) {
+    accountTypeEl.addEventListener('change', function() {
+        const label = document.getElementById('addAccountSubmitLabel');
+        if (!label) return;
+        label.textContent = this.value === 'demo_user' ? 'Add Demo User' : 'Add Administrator';
+    });
+}
+
 document.getElementById('addAdminModalForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
@@ -779,6 +910,8 @@ document.getElementById('addAdminModalForm').addEventListener('submit', function
     formData.append('full_name', document.getElementById('add_admin_name').value);
     formData.append('email', document.getElementById('add_admin_email').value);
     formData.append('password', document.getElementById('add_admin_password').value);
+    const accountTypeEl = document.getElementById('add_account_type');
+    formData.append('account_type', accountTypeEl ? accountTypeEl.value : 'admin');
     
     // Submit via traditional form
     const form = document.createElement('form');
@@ -952,39 +1085,43 @@ if (editPasswordInput) {
     });
 }
 
-// Delete admin function
-function deleteAdmin(adminId, adminName) {
+// Delete managed account (admin or demo user)
+function deleteManagedAccount(accountId, accountName, accountKind) {
+    const title = accountKind === 'demo_user' ? 'Delete Demo User' : 'Delete Administrator';
+    const label = accountKind === 'demo_user' ? 'demo user' : 'administrator';
     showModal(
-        'Delete Administrator',
-        `Are you sure you want to delete administrator "${adminName}"?\n\nThis action cannot be undone. All their data will be permanently removed.`,
+        title,
+        `Are you sure you want to delete ${label} "${accountName}"?\n\nThis action cannot be undone.`,
         'danger',
         function() {
-    
-    // Send delete request
-    fetch('<?php echo SITE_URL; ?>/api/delete-admin.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            admin_id: adminId
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-            if (data.success) {
-                showToast('Administrator deleted successfully!', 'success');
-                window.location.reload();
-            } else {
-                showToast('Error: ' + (data.message || 'Failed to delete administrator'), 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showToast('An error occurred while deleting the administrator', 'error');
-        });
+            fetch('<?php echo SITE_URL; ?>/api/delete-admin.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    admin_id: accountId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message || 'Account deleted successfully!', 'success');
+                    window.location.reload();
+                } else {
+                    showToast('Error: ' + (data.message || 'Failed to delete account'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred while deleting the account', 'error');
+            });
         }
     );
+}
+
+function deleteAdmin(adminId, adminName) {
+    deleteManagedAccount(adminId, adminName, 'admin');
 }
 
 function toggleAdminDetails(button) {

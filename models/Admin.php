@@ -489,7 +489,7 @@ class Admin {
         $sql = "SELECT COUNT(*) as total, 
                 SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
                 SUM(CASE WHEN status = 'suspended' THEN 1 ELSE 0 END) as suspended
-                FROM users WHERE role = 'user'";
+                FROM users WHERE role = 'user' AND COALESCE(is_demo_user, 0) = 0 AND COALESCE(is_demo_user, 0) = 0";
         $stmt = $this->db->query($sql);
         $stats['users'] = $stmt->fetch();
         
@@ -506,14 +506,14 @@ class Admin {
         $sql = "SELECT COUNT(*) as total,
                 SUM(balance) as total_balance,
                 SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active
-                FROM accounts WHERE user_id IN (SELECT id FROM users WHERE role = 'user')";
+                FROM accounts WHERE user_id IN (SELECT id FROM users WHERE role = 'user' AND COALESCE(is_demo_user, 0) = 0)";
         $stmt = $this->db->query($sql);
         $stats['accounts'] = $stmt->fetch();
         
         // Transaction stats (ALL users, today)
         $sql = "SELECT COUNT(*) as count, SUM(amount) as total
                 FROM transactions 
-                WHERE user_id IN (SELECT id FROM users WHERE role = 'user') 
+                WHERE user_id IN (SELECT id FROM users WHERE role = 'user' AND COALESCE(is_demo_user, 0) = 0) 
                 AND DATE(created_at) = CURDATE()";
         $stmt = $this->db->query($sql);
         $stats['transactions_today'] = $stmt->fetch();
@@ -523,7 +523,7 @@ class Admin {
                 SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
                 SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
                 SUM(outstanding_balance) as total_outstanding
-                FROM loans WHERE user_id IN (SELECT id FROM users WHERE role = 'user')";
+                FROM loans WHERE user_id IN (SELECT id FROM users WHERE role = 'user' AND COALESCE(is_demo_user, 0) = 0)";
         $stmt = $this->db->query($sql);
         $stats['loans'] = $stmt->fetch();
         
@@ -531,7 +531,7 @@ class Admin {
         $sql = "SELECT COUNT(*) as total,
                 SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
                 SUM(CASE WHEN status = 'frozen' THEN 1 ELSE 0 END) as frozen
-                FROM cards WHERE user_id IN (SELECT id FROM users WHERE role = 'user')";
+                FROM cards WHERE user_id IN (SELECT id FROM users WHERE role = 'user' AND COALESCE(is_demo_user, 0) = 0)";
         $stmt = $this->db->query($sql);
         $stats['cards'] = $stmt->fetch();
         
@@ -544,7 +544,7 @@ class Admin {
                 SUM(CASE WHEN transaction_type = 'credit' THEN amount ELSE 0 END) as credits,
                 SUM(CASE WHEN transaction_type = 'debit' THEN amount ELSE 0 END) as debits
                 FROM transactions 
-                WHERE user_id IN (SELECT id FROM users WHERE role = 'user')
+                WHERE user_id IN (SELECT id FROM users WHERE role = 'user' AND COALESCE(is_demo_user, 0) = 0)
                 AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
                 GROUP BY DATE(created_at)
                 ORDER BY date ASC";
@@ -557,7 +557,7 @@ class Admin {
         $sql = "SELECT t.*, u.full_name, u.email 
                 FROM transactions t
                 JOIN users u ON t.user_id = u.id
-                WHERE u.role = 'user' 
+                WHERE u.role = 'user' AND COALESCE(u.is_demo_user, 0) = 0 
                 AND (t.amount > 10000 OR JSON_EXTRACT(t.metadata, '$.suspicious') = 1)
                 ORDER BY t.created_at DESC
                 LIMIT ?";

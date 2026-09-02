@@ -32,9 +32,9 @@ class AdminController {
     public function users() {
         requireAdmin();
         
-        // Show all users (excluding admins)
+        // Show all users (excluding admins and demo users)
         $db = Database::getInstance();
-        $sql = "SELECT * FROM users WHERE role = 'user' ORDER BY created_at DESC";
+        $sql = "SELECT * FROM users WHERE role = 'user' AND COALESCE(is_demo_user, 0) = 0 ORDER BY created_at DESC";
         $stmt = $db->query($sql);
         $users = $stmt->fetchAll();
         
@@ -53,9 +53,9 @@ class AdminController {
             redirect('/admin/users');
         }
         
-        // Prevent admins from logging in as other admins
-        if ($targetUser['role'] === 'admin') {
-            $_SESSION['error'] = 'Cannot login as another admin account';
+        // Prevent admins from logging in as other admins or demo users
+        if ($targetUser['role'] === 'admin' || !empty($targetUser['is_demo_user'])) {
+            $_SESSION['error'] = 'Cannot login as this account';
             redirect('/admin/users');
         }
         
@@ -1295,53 +1295,61 @@ class AdminController {
                 redirect('/admin/admin-settings');
                 
             } elseif ($action === 'add_admin') {
-                // Add new administrator
                 $fullName = Security::sanitize($_POST['full_name']);
                 $email = Security::sanitize($_POST['email']);
                 $password = $_POST['password'];
-                
-                // Validate email
+                $accountType = Security::sanitize($_POST['account_type'] ?? 'admin');
+
+                if (!in_array($accountType, ['admin', 'demo_user'], true)) {
+                    $_SESSION['error'] = 'Invalid account type';
+                    redirect('/admin/admin-settings');
+                }
+
+                if ($accountType === 'demo_user' && !isSuperAdmin()) {
+                    $_SESSION['error'] = 'Only Super Administrators can create demo users';
+                    redirect('/admin/admin-settings');
+                }
+
                 if (!Security::validateEmail($email)) {
                     $_SESSION['error'] = 'Invalid email address';
                     redirect('/admin/admin-settings');
                 }
-                
-                // Check if email already exists
+
                 $userModel = new User();
                 if ($userModel->findByEmail($email)) {
                     $_SESSION['error'] = 'Email address already registered';
                     redirect('/admin/admin-settings');
                 }
-                
-                // Validate password
+
                 if (strlen($password) < 8) {
                     $_SESSION['error'] = 'Password must be at least 8 characters';
                     redirect('/admin/admin-settings');
                 }
-                
-                // Create admin user
-                // Admins are created with email_verified = 1 and no welcome email
-                // They have same access as super admin, just can't delete super admin account
+
                 $db = Database::getInstance();
                 $passwordHash = Security::hashPassword($password);
-                
-                $sql = "INSERT INTO users (full_name, email, password_hash, role, status, kyc_status, email_verified, created_at) 
-                        VALUES (?, ?, ?, 'admin', 'active', 'verified', 1, NOW())";
-                
-                $result = $db->query($sql, [$fullName, $email, $passwordHash]);
-                
-                if ($result) {
-                    // Log activity
-                    logActivity($_SESSION['user_id'], 'ADMIN_USER_CREATED', "Created new admin user: $email");
-                    
-                    // Note: No welcome email sent - admins are created by super admin and don't need verification
-                    // They have immediate access with same permissions as super admin
-                    
-                    $_SESSION['success'] = "Administrator $fullName added successfully! They can now log in with their credentials.";
+
+                if ($accountType === 'demo_user') {
+                    $sql = "INSERT INTO users (full_name, email, password_hash, role, is_demo_user, status, kyc_status, email_verified, created_at)
+                            VALUES (?, ?, ?, 'user', 1, 'active', 'verified', 1, NOW())";
+                    $result = $db->query($sql, [$fullName, $email, $passwordHash]);
+                    $logLabel = 'demo user';
                 } else {
-                    $_SESSION['error'] = 'Failed to create administrator. Please try again.';
+                    $sql = "INSERT INTO users (full_name, email, password_hash, role, is_demo_user, status, kyc_status, email_verified, created_at)
+                            VALUES (?, ?, ?, 'admin', 0, 'active', 'verified', 1, NOW())";
+                    $result = $db->query($sql, [$fullName, $email, $passwordHash]);
+                    $logLabel = 'admin user';
                 }
-                
+
+                if ($result) {
+                    logActivity($_SESSION['user_id'], 'ADMIN_USER_CREATED', "Created new $logLabel: $email");
+                    $_SESSION['success'] = $accountType === 'demo_user'
+                        ? "Demo user $fullName added successfully."
+                        : "Administrator $fullName added successfully! They can now log in with their credentials.";
+                } else {
+                    $_SESSION['error'] = 'Failed to create account. Please try again.';
+                }
+
                 redirect('/admin/admin-settings');
             }
         }
