@@ -2,7 +2,13 @@
 $pageTitle = 'KYC Details - Admin - ' . getSiteName();
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../includes/functions.php';
+require_once __DIR__ . '/../../includes/kyc-config.php';
 require_once __DIR__ . '/../../models/Kyc.php';
+
+$kycConfig = getKycFieldsForUser($kyc['user_id']);
+$kycProfile = $kycConfig['profile'];
+$kycExtraFields = getKycExtraFieldsFromRecord($kyc);
+$canAdminEditKyc = in_array($kyc['status'], ['verified', 'pending', 'under_review', 'rejected', 'requires_action'], true);
 
 // Include head
 include __DIR__ . '/../../includes/head.php';
@@ -160,6 +166,84 @@ function formatSSN($encrypted) {
     box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3);
 }
 
+.btn-edit {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+}
+
+.btn-edit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+}
+
+.btn-secondary {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.btn-secondary:hover {
+    background: #e5e7eb;
+}
+
+.edit-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #374151;
+    font-size: 14px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 15px;
+    box-sizing: border-box;
+}
+
+.form-group textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+.form-hint {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 4px;
+}
+
+.edit-panel {
+    display: none;
+}
+
+.edit-panel.is-visible {
+    display: block;
+}
+
+.view-panel.is-hidden {
+    display: none;
+}
+
 .document-link {
     display: inline-flex;
     align-items: center;
@@ -203,14 +287,19 @@ function formatSSN($encrypted) {
         <h1>KYC Verification Details</h1>
         <p style="color: #666;">Review submission for <?php echo htmlspecialchars($kyc['full_name'] ?? $kyc['email']); ?></p>
     </div>
-    <div>
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
         <span class="status-badge status-<?php echo $kyc['status']; ?>">
             <?php echo ucfirst(str_replace('_', ' ', $kyc['status'])); ?>
         </span>
+        <?php if ($canAdminEditKyc): ?>
+        <button type="button" class="btn btn-edit" id="toggleEditBtn" onclick="toggleEditMode()">
+            <i class="fas fa-pen"></i> Edit KYC Details
+        </button>
+        <?php endif; ?>
     </div>
 </div>
 
-<!-- User Information -->
+<div id="viewPanel" class="view-panel">
 <div class="card">
     <h3 class="section-title">User Information</h3>
     <div class="info-grid">
@@ -460,8 +549,205 @@ function formatSSN($encrypted) {
     </div>
 </div>
 <?php endif; ?>
+</div>
 
-<!-- Modals -->
+<?php if ($canAdminEditKyc): ?>
+<div id="editPanel" class="edit-panel">
+    <div class="card">
+        <h3 class="section-title">Edit KYC Details</h3>
+        <p style="color: #666; margin-bottom: 24px;">Update submitted KYC information. Verification status will remain <?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $kyc['status']))); ?>.</p>
+
+        <form id="adminKycEditForm" enctype="multipart/form-data" onsubmit="submitKycEdit(event); return false;">
+            <input type="hidden" name="kyc_id" value="<?php echo (int)$kyc['id']; ?>">
+            <input type="hidden" name="account_type" value="<?php echo htmlspecialchars($kyc['account_type'] ?? 'individual'); ?>">
+
+            <h4 style="color: #032B44; margin-bottom: 16px;">Personal Information</h4>
+            <div class="edit-form-grid">
+                <div class="form-group">
+                    <label for="edit_full_legal_name">Full Legal Name *</label>
+                    <input type="text" id="edit_full_legal_name" name="full_legal_name" required value="<?php echo htmlspecialchars($kyc['full_legal_name'] ?? ''); ?>">
+                </div>
+                <div class="form-group">
+                    <label for="edit_date_of_birth">Date of Birth *</label>
+                    <input type="date" id="edit_date_of_birth" name="date_of_birth" required value="<?php echo htmlspecialchars($kyc['date_of_birth'] ?? ''); ?>">
+                </div>
+                <?php if (!$kycConfig['use_custom']): ?>
+                <div class="form-group">
+                    <label for="edit_ssn"><?php echo htmlspecialchars($kycProfile['identity_label']); ?></label>
+                    <input type="text" id="edit_ssn" name="ssn" placeholder="Leave blank to keep current value" maxlength="<?php echo (int)($kycProfile['identity_maxlength'] ?? 20); ?>">
+                    <div class="form-hint">Current value on file: <?php echo formatSSN($kyc['ssn']); ?></div>
+                </div>
+                <?php endif; ?>
+            </div>
+
+            <?php if (!$kycConfig['use_custom']): ?>
+            <h4 style="color: #032B44; margin: 24px 0 16px;">Residential Address</h4>
+            <div class="edit-form-grid">
+                <div class="form-group">
+                    <label for="edit_residential_address">Street Address *</label>
+                    <input type="text" id="edit_residential_address" name="residential_address" required value="<?php echo htmlspecialchars($kyc['residential_address'] ?? ''); ?>">
+                </div>
+                <div class="form-group">
+                    <label for="edit_residential_city">City *</label>
+                    <input type="text" id="edit_residential_city" name="residential_city" required value="<?php echo htmlspecialchars($kyc['residential_city'] ?? ''); ?>">
+                </div>
+                <div class="form-group">
+                    <label for="edit_residential_state"><?php echo htmlspecialchars($kycProfile['state_label']); ?> *</label>
+                    <input type="text" id="edit_residential_state" name="residential_state" required value="<?php echo htmlspecialchars($kyc['residential_state'] ?? ''); ?>">
+                </div>
+                <div class="form-group">
+                    <label for="edit_residential_zip"><?php echo htmlspecialchars($kycProfile['zip_label']); ?> *</label>
+                    <input type="text" id="edit_residential_zip" name="residential_zip" required value="<?php echo htmlspecialchars($kyc['residential_zip'] ?? ''); ?>">
+                </div>
+                <div class="form-group">
+                    <label for="edit_residential_country">Country *</label>
+                    <input type="text" id="edit_residential_country" name="residential_country" required value="<?php echo htmlspecialchars($kyc['residential_country'] ?? $kycProfile['default_country']); ?>">
+                </div>
+            </div>
+
+            <h4 style="color: #032B44; margin: 24px 0 16px;">Government-Issued Photo ID</h4>
+            <div class="edit-form-grid">
+                <div class="form-group">
+                    <label for="edit_id_type">ID Type *</label>
+                    <select id="edit_id_type" name="id_type" required>
+                        <?php foreach ($kycProfile['id_types'] as $typeKey => $typeLabel): ?>
+                        <option value="<?php echo htmlspecialchars($typeKey); ?>" <?php echo ($kyc['id_type'] ?? '') === $typeKey ? 'selected' : ''; ?>>
+                            <?php echo htmlspecialchars($typeLabel); ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="edit_id_number">ID Number *</label>
+                    <input type="text" id="edit_id_number" name="id_number" required value="<?php echo htmlspecialchars($kyc['id_number'] ?? ''); ?>">
+                </div>
+                <div class="form-group">
+                    <label for="edit_id_issued_date">Issued Date *</label>
+                    <input type="date" id="edit_id_issued_date" name="id_issued_date" required value="<?php echo htmlspecialchars($kyc['id_issued_date'] ?? ''); ?>">
+                </div>
+                <div class="form-group">
+                    <label for="edit_id_expiry_date">Expiry Date *</label>
+                    <input type="date" id="edit_id_expiry_date" name="id_expiry_date" required value="<?php echo htmlspecialchars($kyc['id_expiry_date'] ?? ''); ?>">
+                </div>
+                <div class="form-group">
+                    <label for="edit_id_issued_state"><?php echo htmlspecialchars($kycProfile['id_issued_state_label']); ?> *</label>
+                    <input type="text" id="edit_id_issued_state" name="id_issued_state" required value="<?php echo htmlspecialchars($kyc['id_issued_state'] ?? ''); ?>">
+                </div>
+                <div class="form-group">
+                    <label for="edit_id_issued_country">Issued Country *</label>
+                    <input type="text" id="edit_id_issued_country" name="id_issued_country" required value="<?php echo htmlspecialchars($kyc['id_issued_country'] ?? $kycProfile['id_issued_country_default']); ?>">
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php if ($kycConfig['use_custom']): ?>
+            <h4 style="color: #032B44; margin: 24px 0 16px;">Custom Fields</h4>
+            <div class="edit-form-grid">
+                <?php foreach ($kycConfig['custom_fields'] as $field): ?>
+                <div class="form-group">
+                    <label for="edit_<?php echo htmlspecialchars($field['key']); ?>"><?php echo htmlspecialchars($field['label']); ?><?php echo !empty($field['required']) ? ' *' : ''; ?></label>
+                    <?php if ($field['type'] === 'textarea'): ?>
+                    <textarea id="edit_<?php echo htmlspecialchars($field['key']); ?>" name="<?php echo htmlspecialchars($field['key']); ?>" <?php echo !empty($field['required']) ? 'required' : ''; ?>><?php echo htmlspecialchars($kycExtraFields[$field['key']] ?? ''); ?></textarea>
+                    <?php elseif ($field['type'] === 'select'): ?>
+                    <select id="edit_<?php echo htmlspecialchars($field['key']); ?>" name="<?php echo htmlspecialchars($field['key']); ?>" <?php echo !empty($field['required']) ? 'required' : ''; ?>>
+                        <option value="">Select...</option>
+                        <?php foreach (($field['options'] ?? []) as $option): ?>
+                        <option value="<?php echo htmlspecialchars($option); ?>" <?php echo ($kycExtraFields[$field['key']] ?? '') === $option ? 'selected' : ''; ?>><?php echo htmlspecialchars($option); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <?php elseif ($field['type'] === 'file'): ?>
+                    <input type="file" id="edit_<?php echo htmlspecialchars($field['key']); ?>" name="<?php echo htmlspecialchars($field['key']); ?>" accept="image/*,.pdf">
+                    <?php if (!empty($kycExtraFields[$field['key']])): ?>
+                    <div class="form-hint">Current file on record.</div>
+                    <?php endif; ?>
+                    <?php elseif ($field['type'] === 'date'): ?>
+                    <input type="date" id="edit_<?php echo htmlspecialchars($field['key']); ?>" name="<?php echo htmlspecialchars($field['key']); ?>" value="<?php echo htmlspecialchars($kycExtraFields[$field['key']] ?? ''); ?>" <?php echo !empty($field['required']) ? 'required' : ''; ?>>
+                    <?php else: ?>
+                    <input type="text" id="edit_<?php echo htmlspecialchars($field['key']); ?>" name="<?php echo htmlspecialchars($field['key']); ?>" value="<?php echo htmlspecialchars($kycExtraFields[$field['key']] ?? ''); ?>" <?php echo !empty($field['required']) ? 'required' : ''; ?>>
+                    <?php endif; ?>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
+
+            <h4 style="color: #032B44; margin: 24px 0 16px;">Documents</h4>
+            <div class="edit-form-grid">
+                <?php foreach ($kycConfig['document_fields'] as $docField): ?>
+                <div class="form-group">
+                    <label for="edit_<?php echo htmlspecialchars($docField['key']); ?>"><?php echo htmlspecialchars($docField['label']); ?><?php echo !empty($docField['required']) ? ' *' : ''; ?></label>
+                    <input type="file" id="edit_<?php echo htmlspecialchars($docField['key']); ?>" name="<?php echo htmlspecialchars($docField['key']); ?>" accept="image/*,.pdf">
+                    <?php if (!empty($kyc[$docField['key']])): ?>
+                    <div class="form-hint">Current document on file. Upload only to replace it.</div>
+                    <?php endif; ?>
+                </div>
+                <?php endforeach; ?>
+            </div>
+
+            <h4 style="color: #032B44; margin: 24px 0 16px;">Compliance Information</h4>
+            <div class="form-group">
+                <label for="edit_source_of_funds">Source of Funds *</label>
+                <textarea id="edit_source_of_funds" name="source_of_funds" required><?php echo htmlspecialchars($kyc['source_of_funds'] ?? ''); ?></textarea>
+            </div>
+            <div class="form-group">
+                <label for="edit_account_purpose">Account Purpose *</label>
+                <textarea id="edit_account_purpose" name="account_purpose" required><?php echo htmlspecialchars($kyc['account_purpose'] ?? ''); ?></textarea>
+            </div>
+
+            <?php if (($kyc['account_type'] ?? 'individual') === 'business'): ?>
+            <h4 style="color: #032B44; margin: 24px 0 16px;">Business Information</h4>
+            <div class="edit-form-grid">
+                <div class="form-group">
+                    <label for="edit_business_name">Business Name</label>
+                    <input type="text" id="edit_business_name" name="business_name" value="<?php echo htmlspecialchars($kyc['business_name'] ?? ''); ?>">
+                </div>
+                <div class="form-group">
+                    <label for="edit_business_address">Business Address</label>
+                    <input type="text" id="edit_business_address" name="business_address" value="<?php echo htmlspecialchars($kyc['business_address'] ?? ''); ?>">
+                </div>
+                <div class="form-group">
+                    <label for="edit_business_city">Business City</label>
+                    <input type="text" id="edit_business_city" name="business_city" value="<?php echo htmlspecialchars($kyc['business_city'] ?? ''); ?>">
+                </div>
+                <div class="form-group">
+                    <label for="edit_business_state">Business State</label>
+                    <input type="text" id="edit_business_state" name="business_state" value="<?php echo htmlspecialchars($kyc['business_state'] ?? ''); ?>">
+                </div>
+                <div class="form-group">
+                    <label for="edit_business_zip">Business ZIP</label>
+                    <input type="text" id="edit_business_zip" name="business_zip" value="<?php echo htmlspecialchars($kyc['business_zip'] ?? ''); ?>">
+                </div>
+                <div class="form-group">
+                    <label for="edit_business_country">Business Country</label>
+                    <input type="text" id="edit_business_country" name="business_country" value="<?php echo htmlspecialchars($kyc['business_country'] ?? ''); ?>">
+                </div>
+                <div class="form-group">
+                    <label for="edit_ein">EIN</label>
+                    <input type="text" id="edit_ein" name="ein" placeholder="Leave blank to keep current value">
+                    <div class="form-hint">Current value on file: <?php echo formatSSN($kyc['ein']); ?></div>
+                </div>
+                <div class="form-group">
+                    <label for="edit_business_formation_doc">Business Formation Document</label>
+                    <input type="file" id="edit_business_formation_doc" name="business_formation_doc" accept="image/*,.pdf">
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <div class="form-group">
+                <label for="edit_admin_notes">Admin Notes</label>
+                <textarea id="edit_admin_notes" name="admin_notes"><?php echo htmlspecialchars($kyc['admin_notes'] ?? ''); ?></textarea>
+            </div>
+
+            <div class="action-buttons" style="border-top: none; padding-top: 0; margin-top: 24px;">
+                <button type="submit" class="btn btn-edit" id="saveKycBtn">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="toggleEditMode()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+<?php endif; ?>
+
 <div id="approveModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
     <div style="background: white; padding: 30px; border-radius: 16px; max-width: 500px; width: 90%;">
         <h3 style="margin-bottom: 20px; color: #032B44;">Approve KYC Verification</h3>
@@ -501,6 +787,62 @@ function formatSSN($encrypted) {
 </div>
 
 <script>
+let editModeActive = false;
+
+function toggleEditMode() {
+    editModeActive = !editModeActive;
+    const viewPanel = document.getElementById('viewPanel');
+    const editPanel = document.getElementById('editPanel');
+    const toggleBtn = document.getElementById('toggleEditBtn');
+
+    if (!viewPanel || !editPanel || !toggleBtn) {
+        return;
+    }
+
+    if (editModeActive) {
+        viewPanel.classList.add('is-hidden');
+        editPanel.classList.add('is-visible');
+        toggleBtn.innerHTML = '<i class="fas fa-eye"></i> View KYC Details';
+    } else {
+        viewPanel.classList.remove('is-hidden');
+        editPanel.classList.remove('is-visible');
+        toggleBtn.innerHTML = '<i class="fas fa-pen"></i> Edit KYC Details';
+    }
+}
+
+function submitKycEdit(event) {
+    event.preventDefault();
+
+    const form = document.getElementById('adminKycEditForm');
+    const saveBtn = document.getElementById('saveKycBtn');
+    const formData = new FormData(form);
+
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+    fetch('<?php echo SITE_URL; ?>/api/admin-update-kyc.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('KYC details updated successfully!');
+            window.location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Failed to update KYC details'));
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+    });
+}
+
 function approveKYC(id) {
     document.getElementById('approve_id').value = id;
     document.getElementById('approveModal').style.display = 'flex';

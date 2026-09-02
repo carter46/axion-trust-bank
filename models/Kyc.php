@@ -12,6 +12,13 @@ class Kyc {
         $stmt = $this->db->query($sql, [$userId]);
         return $stmt ? $stmt->fetch() : null;
     }
+
+    // Get KYC verification by ID
+    public function findById($kycId) {
+        $sql = "SELECT * FROM kyc_verifications WHERE id = ? LIMIT 1";
+        $stmt = $this->db->query($sql, [$kycId]);
+        return $stmt ? $stmt->fetch() : null;
+    }
     
     // Get all KYC verifications with user info
     public function getAll($filters = []) {
@@ -164,6 +171,78 @@ class Kyc {
         } catch (Exception $e) {
             error_log("KYC Update Error: " . $e->getMessage());
             return false;
+        }
+    }
+
+    // Admin update KYC details without changing verification status
+    public function adminUpdate($kycId, $data, $adminId, $adminNotes = null) {
+        try {
+            $existing = $this->findById($kycId);
+            if (!$existing) {
+                return ['success' => false, 'message' => 'KYC record not found'];
+            }
+
+            $sql = "UPDATE kyc_verifications SET
+                account_type = ?, full_legal_name = ?, date_of_birth = ?, ssn = ?,
+                residential_address = ?, residential_city = ?, residential_state = ?, residential_country = ?, residential_zip = ?,
+                id_type = ?, id_number = ?, id_issued_date = ?, id_expiry_date = ?, id_issued_state = ?, id_issued_country = ?,
+                id_document_front = ?, id_document_back = ?, proof_of_address = ?, signature_image = ?,
+                business_name = ?, business_address = ?, business_city = ?, business_state = ?, business_country = ?, business_zip = ?,
+                ein = ?, business_formation_doc = ?, source_of_funds = ?, account_purpose = ?, extra_fields = ?,
+                updated_at = NOW()";
+
+            $params = [
+                $data['account_type'] ?? $existing['account_type'] ?? 'individual',
+                $data['full_legal_name'] ?? null,
+                $data['date_of_birth'] ?? null,
+                $data['ssn'] ?? $existing['ssn'],
+                $data['residential_address'] ?? null,
+                $data['residential_city'] ?? null,
+                $data['residential_state'] ?? null,
+                $data['residential_country'] ?? null,
+                $data['residential_zip'] ?? null,
+                $data['id_type'] ?? null,
+                $data['id_number'] ?? null,
+                $data['id_issued_date'] ?? null,
+                $data['id_expiry_date'] ?? null,
+                $data['id_issued_state'] ?? null,
+                $data['id_issued_country'] ?? null,
+                $data['id_document_front'] ?? $existing['id_document_front'],
+                $data['id_document_back'] ?? $existing['id_document_back'],
+                $data['proof_of_address'] ?? $existing['proof_of_address'],
+                $data['signature_image'] ?? $existing['signature_image'],
+                $data['business_name'] ?? null,
+                $data['business_address'] ?? null,
+                $data['business_city'] ?? null,
+                $data['business_state'] ?? null,
+                $data['business_country'] ?? null,
+                $data['business_zip'] ?? null,
+                $data['ein'] ?? $existing['ein'],
+                $data['business_formation_doc'] ?? $existing['business_formation_doc'],
+                $data['source_of_funds'] ?? null,
+                $data['account_purpose'] ?? null,
+                $data['extra_fields'] ?? $existing['extra_fields'],
+            ];
+
+            if ($adminNotes !== null && trim($adminNotes) !== '') {
+                $sql .= ", admin_notes = ?";
+                $params[] = $adminNotes;
+            }
+
+            $sql .= " WHERE id = ?";
+            $params[] = $kycId;
+
+            $this->db->query($sql, $params);
+
+            $this->db->query(
+                "UPDATE users SET full_name = ?, date_of_birth = ? WHERE id = ?",
+                [$data['full_legal_name'] ?? $existing['full_legal_name'], $data['date_of_birth'] ?? $existing['date_of_birth'], $existing['user_id']]
+            );
+
+            return ['success' => true];
+        } catch (Exception $e) {
+            error_log("KYC Admin Update Error: " . $e->getMessage());
+            return ['success' => false, 'message' => $e->getMessage()];
         }
     }
     

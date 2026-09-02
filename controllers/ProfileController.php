@@ -198,6 +198,11 @@ class ProfileController {
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
+                if (!empty($existingKyc) && !in_array($existingKyc['status'] ?? '', ['rejected'], true)) {
+                    $_SESSION['error'] = 'Your KYC cannot be modified in its current status.';
+                    redirect('/profile/kyc');
+                }
+
                 $postData = array_merge($_POST, ['user_id' => $_SESSION['user_id']]);
                 $validation = validateKycSubmission($postData, $_FILES, $existingKyc ?: null, $_SESSION['user_id']);
                 
