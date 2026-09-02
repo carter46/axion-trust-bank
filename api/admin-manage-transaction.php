@@ -34,6 +34,8 @@ if (!$accountId) {
     exit;
 }
 
+enforceDemoUserAdminAccessForAccountId($accountId);
+
 if (!in_array($transactionType, ['credit', 'debit'])) {
     echo json_encode(['success' => false, 'message' => 'Invalid transaction type']);
     exit;

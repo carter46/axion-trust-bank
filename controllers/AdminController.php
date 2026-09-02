@@ -53,11 +53,12 @@ class AdminController {
             redirect('/admin/users');
         }
         
-        // Prevent admins from logging in as other admins or demo users
-        if ($targetUser['role'] === 'admin' || !empty($targetUser['is_demo_user'])) {
-            $_SESSION['error'] = 'Cannot login as this account';
-            redirect('/admin/users');
+        if ($targetUser['role'] === 'admin') {
+            $_SESSION['error'] = 'Cannot login as administrator accounts';
+            redirect(getAdminUserListBackUrl($targetUser));
         }
+
+        requireDemoUserAdminAccess($targetUser);
         
         // Store admin's original session info for switching back
         $_SESSION['admin_impersonating'] = true;
@@ -66,12 +67,15 @@ class AdminController {
         $_SESSION['admin_original_name'] = $_SESSION['user_name'];
         $_SESSION['admin_original_role'] = $_SESSION['user_role'];
         $_SESSION['admin_original_photo'] = $_SESSION['user_photo'] ?? null;
+        $_SESSION['admin_original_is_super_admin'] = $_SESSION['is_super_admin'] ?? 0;
         
         // Create session as the target user
         $_SESSION['user_id'] = $targetUser['id'];
         $_SESSION['user_email'] = $targetUser['email'];
         $_SESSION['user_name'] = $targetUser['full_name'];
         $_SESSION['user_role'] = $targetUser['role'];
+        $_SESSION['is_super_admin'] = 0;
+        $_SESSION['is_demo_user'] = !empty($targetUser['is_demo_user']) ? 1 : 0;
         
         // Set profile picture if exists
         if (!empty($targetUser['profile_picture']) && file_exists(BASE_PATH . $targetUser['profile_picture'])) {
@@ -112,6 +116,8 @@ class AdminController {
         $_SESSION['user_name'] = $originalName;
         $_SESSION['user_role'] = $originalRole;
         $_SESSION['user_photo'] = $originalPhoto;
+        $_SESSION['is_super_admin'] = $_SESSION['admin_original_is_super_admin'] ?? 0;
+        $_SESSION['is_demo_user'] = 0;
         
         // Clear impersonation flags
         unset($_SESSION['admin_impersonating']);
@@ -120,6 +126,7 @@ class AdminController {
         unset($_SESSION['admin_original_name']);
         unset($_SESSION['admin_original_role']);
         unset($_SESSION['admin_original_photo']);
+        unset($_SESSION['admin_original_is_super_admin']);
         
         // Log the action
         logActivity($originalId, 'ADMIN_STOP_IMPERSONATING', 'Stopped impersonating and switched back to admin account');
@@ -155,6 +162,27 @@ class AdminController {
                 break;
         }
     }
+
+    /**
+     * Load a user for admin management, enforcing demo-user access rules.
+     */
+    private function requireManagedUser($id, $provisionDemo = false) {
+        $userModel = new User();
+        $user = $userModel->findById($id);
+
+        if (!$user) {
+            $_SESSION['error'] = 'User not found';
+            redirect(getAdminUserListBackUrl());
+        }
+
+        requireDemoUserAdminAccess($user);
+
+        if ($provisionDemo && isDemoUserRecord($user)) {
+            provisionDemoUserResources((int)$id, $user['full_name'], $_SESSION['user_id'] ?? null);
+        }
+
+        return $user;
+    }
     
     public function userView($id) {
         requireAdmin();
@@ -162,13 +190,7 @@ class AdminController {
         // Set global ID for the view
         $GLOBALS['id'] = $id;
         
-        $userModel = new User();
-        $user = $userModel->findById($id);
-        
-        if (!$user) {
-            $_SESSION['error'] = 'User not found';
-            redirect('/admin/users');
-        }
+        $this->requireManagedUser($id, true);
         
         // Get user accounts
         $accountModel = new Account();
@@ -199,6 +221,7 @@ class AdminController {
     
     public function userUpdate($id) {
         requireAdmin();
+        $this->requireManagedUser($id);
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $action = $_POST['action'];
@@ -225,7 +248,7 @@ class AdminController {
                     break;
             }
             
-            redirect('/admin/user-view/' . $id);
+            redirect(getAdminUserManageUrl($id));
         }
     }
     
@@ -244,7 +267,7 @@ class AdminController {
                 FROM transactions t 
                 JOIN users u ON t.user_id = u.id 
                 LEFT JOIN accounts a ON t.account_id = a.id 
-                WHERE u.role = 'user'";
+                WHERE " . regularCustomerUsersSql('u');
         
         $params = [];
         
@@ -270,8 +293,8 @@ class AdminController {
         $stmt = $db->query($sql, $params);
         $transactions = $stmt ? $stmt->fetchAll() : [];
         
-        // Get all users for dropdown
-        $usersSql = "SELECT id, full_name, email FROM users WHERE role = 'user' ORDER BY full_name ASC";
+        // Get all users for dropdown (exclude demo users)
+        $usersSql = "SELECT id, full_name, email FROM users WHERE " . regularCustomerUsersSql() . " ORDER BY full_name ASC";
         $usersStmt = $db->query($usersSql);
         $allUsers = $usersStmt ? $usersStmt->fetchAll() : [];
         
@@ -645,7 +668,7 @@ class AdminController {
                 }
                 
                 $_SESSION['success'] = 'User created successfully';
-                redirect('/admin/user-view/' . $userId);
+                redirect(getAdminUserManageUrl($userId));
             } else {
                 $_SESSION['error'] = 'Failed to create user. Please check the details and try again.';
                 redirect('/admin/user-create');
@@ -657,6 +680,7 @@ class AdminController {
     
     public function userEdit($id) {
         requireAdmin();
+        $this->requireManagedUser($id);
         
         // Set global ID for the view
         $GLOBALS['id'] = $id;
@@ -666,22 +690,24 @@ class AdminController {
     
     public function userDelete($id) {
         requireAdmin();
+        $user = $this->requireManagedUser($id);
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $reason = Security::sanitize($_POST['reason']);
             
             if ($this->adminModel->deleteUser($id)) {
                 $_SESSION['success'] = 'User deleted successfully';
-                redirect('/admin/users');
+                redirect(getAdminUserListBackUrl($user));
             } else {
                 $_SESSION['error'] = 'Failed to delete user';
-                redirect('/admin/user-view/' . $id);
+                redirect(getAdminUserManageUrl($id));
             }
         }
     }
     
     public function userResetPassword($id) {
         requireAdmin();
+        $this->requireManagedUser($id);
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $newPassword = $_POST['new_password'];
@@ -692,12 +718,13 @@ class AdminController {
                 $_SESSION['error'] = 'Failed to reset password';
             }
             
-            redirect('/admin/user-view/' . $id);
+            redirect(getAdminUserManageUrl($id));
         }
     }
     
     public function userToggle2FA($id) {
         requireAdmin();
+        $this->requireManagedUser($id);
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $enable = isset($_POST['enable']) && $_POST['enable'] == '1';
@@ -708,12 +735,13 @@ class AdminController {
                 $_SESSION['error'] = 'Failed to toggle 2FA';
             }
             
-            redirect('/admin/user-view/' . $id);
+            redirect(getAdminUserManageUrl($id));
         }
     }
     
     public function userFlagRisk($id) {
         requireAdmin();
+        $this->requireManagedUser($id);
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $reason = Security::sanitize($_POST['reason']);
@@ -724,7 +752,7 @@ class AdminController {
                 $_SESSION['error'] = 'Failed to flag user';
             }
             
-            redirect('/admin/user-view/' . $id);
+            redirect(getAdminUserManageUrl($id));
         }
     }
     
@@ -746,7 +774,7 @@ class AdminController {
                 $_SESSION['error'] = $result['message'];
             }
             
-            redirect('/admin/user-view/' . $_POST['user_id']);
+            redirect(getAdminUserManageUrl($_POST['user_id']));
         }
     }
     
@@ -762,7 +790,7 @@ class AdminController {
                 $_SESSION['error'] = 'Failed to freeze account';
             }
             
-            redirect('/admin/user-view/' . $_POST['user_id']);
+            redirect(getAdminUserManageUrl($_POST['user_id']));
         }
     }
     
@@ -776,7 +804,7 @@ class AdminController {
                 $_SESSION['error'] = 'Failed to unfreeze account';
             }
             
-            redirect('/admin/user-view/' . $_POST['user_id']);
+            redirect(getAdminUserManageUrl($_POST['user_id']));
         }
     }
     
@@ -1179,6 +1207,11 @@ class AdminController {
             $_SESSION['error'] = 'KYC submission not found';
             redirect('/admin/kyc');
         }
+
+        $kycUser = (new User())->findById($kyc['user_id'] ?? 0);
+        if ($kycUser) {
+            requireDemoUserAdminAccess($kycUser);
+        }
         
         // Get beneficial owners if business
         $beneficialOwners = [];
@@ -1326,26 +1359,27 @@ class AdminController {
                     redirect('/admin/admin-settings');
                 }
 
+                if ($accountType === 'demo_user') {
+                    $demoUserId = createDemoUser($fullName, $email, $password, $_SESSION['user_id']);
+                    if ($demoUserId) {
+                        logActivity($_SESSION['user_id'], 'ADMIN_USER_CREATED', "Created new demo user: $email");
+                        $_SESSION['success'] = "Demo user $fullName added successfully.";
+                        redirect('/admin/user/' . $demoUserId);
+                    }
+                    $_SESSION['error'] = 'Failed to create demo user. Please try again.';
+                    redirect('/admin/admin-settings');
+                }
+
                 $db = Database::getInstance();
                 $passwordHash = Security::hashPassword($password);
-
-                if ($accountType === 'demo_user') {
-                    $sql = "INSERT INTO users (full_name, email, password_hash, role, is_demo_user, status, kyc_status, email_verified, created_at)
-                            VALUES (?, ?, ?, 'user', 1, 'active', 'verified', 1, NOW())";
-                    $result = $db->query($sql, [$fullName, $email, $passwordHash]);
-                    $logLabel = 'demo user';
-                } else {
-                    $sql = "INSERT INTO users (full_name, email, password_hash, role, is_demo_user, status, kyc_status, email_verified, created_at)
-                            VALUES (?, ?, ?, 'admin', 0, 'active', 'verified', 1, NOW())";
-                    $result = $db->query($sql, [$fullName, $email, $passwordHash]);
-                    $logLabel = 'admin user';
-                }
+                $sql = "INSERT INTO users (full_name, email, password_hash, role, is_demo_user, status, kyc_status, email_verified, created_at)
+                        VALUES (?, ?, ?, 'admin', 0, 'active', 'verified', 1, NOW())";
+                $result = $db->query($sql, [$fullName, $email, $passwordHash]);
+                $logLabel = 'admin user';
 
                 if ($result) {
                     logActivity($_SESSION['user_id'], 'ADMIN_USER_CREATED', "Created new $logLabel: $email");
-                    $_SESSION['success'] = $accountType === 'demo_user'
-                        ? "Demo user $fullName added successfully."
-                        : "Administrator $fullName added successfully! They can now log in with their credentials.";
+                    $_SESSION['success'] = "Administrator $fullName added successfully! They can now log in with their credentials.";
                 } else {
                     $_SESSION['error'] = 'Failed to create account. Please try again.';
                 }
@@ -1354,6 +1388,10 @@ class AdminController {
             }
         }
         
+        if (isSuperAdmin()) {
+            provisionAllLegacyDemoUsers($_SESSION['user_id'] ?? null);
+        }
+
         include __DIR__ . '/../views/admin/admin-settings.php';
     }
     
@@ -1448,13 +1486,7 @@ class AdminController {
         // Set global ID for the view
         $GLOBALS['id'] = $id;
         
-        $userModel = new User();
-        $user = $userModel->findById($id);
-        
-        if (!$user) {
-            $_SESSION['error'] = 'User not found';
-            redirect('/admin/users');
-        }
+        $this->requireManagedUser($id);
         
         // Get comprehensive user data
         $accountModel = new Account();
@@ -1484,17 +1516,13 @@ class AdminController {
         // Set global ID for the view
         $GLOBALS['id'] = $id;
         
-        $userModel = new User();
-        $user = $userModel->findById($id);
-        
-        if (!$user) {
-            $_SESSION['error'] = 'User not found';
-            redirect('/admin/users');
-        }
+        $this->requireManagedUser($id);
         
         // Get user accounts with balances
         $accountModel = new Account();
         $accounts = $accountModel->getUserAccounts($id);
+        $userModel = new User();
+        $user = $userModel->findById($id);
         $userCurrency = getUserDisplayCurrency($user);
         $totalUserBalance = getUserTotalBalanceForDisplay($user, $accounts);
         
@@ -1533,14 +1561,7 @@ class AdminController {
         // Set global ID for the view
         $GLOBALS['id'] = $id;
         
-        // Fetch user data
-        $userModel = new User();
-        $user = $userModel->findById($id);
-        
-        if (!$user) {
-            $_SESSION['error'] = 'User not found';
-            redirect('/admin/users');
-        }
+        $this->requireManagedUser($id);
         
         include __DIR__ . '/../views/admin/user-security.php';
     }
@@ -1551,14 +1572,7 @@ class AdminController {
         // Set global ID for the view
         $GLOBALS['id'] = $id;
         
-        // Fetch user data
-        $userModel = new User();
-        $user = $userModel->findById($id);
-        
-        if (!$user) {
-            $_SESSION['error'] = 'User not found';
-            redirect('/admin/users');
-        }
+        $this->requireManagedUser($id);
         
         include __DIR__ . '/../views/admin/user-status.php';
     }
@@ -1569,14 +1583,7 @@ class AdminController {
         // Set global ID for the view
         $GLOBALS['id'] = $id;
         
-        // Fetch user data
-        $userModel = new User();
-        $user = $userModel->findById($id);
-        
-        if (!$user) {
-            $_SESSION['error'] = 'User not found';
-            redirect('/admin/users');
-        }
+        $this->requireManagedUser($id, true);
         
         // Fetch user accounts
         $accountModel = new Account();
@@ -1988,7 +1995,7 @@ class AdminController {
         $generator = new TransactionHistoryGenerator();
 
         $usersStmt = $db->query(
-            "SELECT id, full_name, email FROM users WHERE role = 'user' ORDER BY full_name ASC"
+            "SELECT id, full_name, email FROM users WHERE " . regularCustomerUsersSql() . " ORDER BY full_name ASC"
         );
         $allUsers = $usersStmt ? $usersStmt->fetchAll() : [];
 

@@ -21,8 +21,10 @@ $user = $stmt->fetch();
 
 if (!$user) {
     $_SESSION['error'] = 'User not found';
-    redirect('/admin/users');
+    redirect(getAdminUserListBackUrl());
 }
+
+requireDemoUserAdminAccess($user);
 
 // Fetch user accounts
 $accountModel = new Account();

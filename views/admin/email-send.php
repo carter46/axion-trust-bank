@@ -15,7 +15,7 @@ if (!defined('EMAIL_SUBPAGE') || EMAIL_SUBPAGE !== true) {
 
 // Get all users for dropdown
 $db = Database::getInstance();
-$usersSql = "SELECT id, full_name, email, status FROM users WHERE role = 'user' ORDER BY full_name ASC";
+$usersSql = "SELECT id, full_name, email, status FROM users WHERE " . regularCustomerUsersSql() . " ORDER BY full_name ASC";
 $usersStmt = $db->query($usersSql);
 $allUsers = $usersStmt ? $usersStmt->fetchAll() : [];
 

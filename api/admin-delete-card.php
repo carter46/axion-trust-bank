@@ -63,6 +63,8 @@ if (!$cardId) {
     exit;
 }
 
+enforceDemoUserAdminAccessForCardId($cardId);
+
 try {
     error_log('🔴 ADMIN DELETE CARD API DEBUG: Starting admin card deletion process...');
     

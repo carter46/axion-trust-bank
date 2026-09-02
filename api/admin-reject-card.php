@@ -64,6 +64,8 @@ try {
         exit;
     }
 
+    enforceDemoUserAdminAccessForCardId((int)$cardId);
+
     try {
         // Initialize models
         $cardModel = new Card();

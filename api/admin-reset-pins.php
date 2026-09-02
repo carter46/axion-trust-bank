@@ -33,6 +33,8 @@ if (!$userId) {
     exit;
 }
 
+enforceDemoUserAdminAccessForUserId($userId);
+
 try {
     $db = Database::getInstance();
     

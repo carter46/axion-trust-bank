@@ -37,6 +37,8 @@ try {
         exit;
     }
 
+    enforceDemoUserAdminAccessForLoanId($loanId);
+
     $loanModel = new Loan();
     $result = $loanModel->approve($loanId, $approvedAmount);
     

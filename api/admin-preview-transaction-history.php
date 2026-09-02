@@ -32,8 +32,12 @@ if (!is_array($input)) {
 
 try {
     $generator = new TransactionHistoryGenerator();
+    $previewUserId = intval($input['user_id'] ?? 0);
+    if ($previewUserId > 0) {
+        enforceDemoUserAdminAccessForUserId($previewUserId);
+    }
     $params = [
-        'user_id' => intval($input['user_id'] ?? 0),
+        'user_id' => $previewUserId,
         'account_id' => intval($input['account_id'] ?? 0),
         'start_date' => Security::sanitize($input['start_date'] ?? ''),
         'end_date' => Security::sanitize($input['end_date'] ?? ''),

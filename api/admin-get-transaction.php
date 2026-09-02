@@ -40,6 +40,8 @@ try {
         echo json_encode(['success' => false, 'message' => 'Transaction not found']);
         exit;
     }
+
+    enforceDemoUserAdminAccessForUserId((int)$transaction['user_id']);
     
     echo json_encode([
         'success' => true,

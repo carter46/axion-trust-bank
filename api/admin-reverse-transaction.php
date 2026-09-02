@@ -47,6 +47,8 @@ try {
         echo json_encode(['success' => false, 'message' => 'Transaction not found or cannot be reversed']);
         exit;
     }
+
+    enforceDemoUserAdminAccessForUserId((int)$transaction['user_id']);
     
     // Start transaction
     $db->beginTransaction();

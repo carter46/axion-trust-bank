@@ -34,6 +34,8 @@ if (!$userId) {
     exit;
 }
 
+enforceDemoUserAdminAccessForUserId($userId);
+
 if (!preg_match('/^\d{4}$/', $newPin)) {
     echo json_encode(['success' => false, 'message' => 'Login PIN must be exactly 4 digits']);
     exit;

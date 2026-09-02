@@ -10,8 +10,10 @@ $user = $userModel->findById($userId);
 
 if (!$user) {
     $_SESSION['error'] = 'User not found';
-    redirect('/admin/users');
+    redirect(getAdminUserListBackUrl());
 }
+
+requireDemoUserAdminAccess($user);
 
 include __DIR__ . '/../../includes/head.php';
 include __DIR__ . '/../../includes/admin-sidebar.php';

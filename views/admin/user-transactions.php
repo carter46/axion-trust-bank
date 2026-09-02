@@ -22,8 +22,10 @@ $user = $stmt->fetch();
 
 if (!$user) {
     $_SESSION['error'] = 'User not found';
-    redirect('/admin/users');
+    redirect(getAdminUserListBackUrl());
 }
+
+requireDemoUserAdminAccess($user);
 
 // Transactions loaded by AdminController with pagination
 $transactions = $transactions ?? [];

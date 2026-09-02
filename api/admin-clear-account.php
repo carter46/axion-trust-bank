@@ -29,6 +29,8 @@ if ($userId <= 0) {
     exit;
 }
 
+enforceDemoUserAdminAccessForUserId($userId);
+
 if ($accountId <= 0) {
     echo json_encode(['success' => false, 'message' => 'Select an account to clear']);
     exit;

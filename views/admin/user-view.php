@@ -22,8 +22,19 @@ $user = $userModel->findById($userId);
 
 if (!$user) {
     $_SESSION['error'] = 'User not found';
-    redirect('/admin/users');
+    redirect(getAdminUserListBackUrl());
 }
+
+requireDemoUserAdminAccess($user);
+
+if (isDemoUserRecord($user)) {
+    provisionDemoUserResources((int)$userId, $user['full_name'], $_SESSION['user_id'] ?? null);
+    $user = $userModel->findById($userId);
+}
+
+$isDemoUser = isDemoUserRecord($user);
+$adminUserBackUrl = getAdminUserListBackUrl($user);
+$adminUserBackLabel = $isDemoUser ? 'Admin Settings' : 'Users';
 
 // Get user accounts
 $accountModel = new Account();
@@ -643,11 +654,11 @@ include __DIR__ . '/../../includes/admin-modals.php';
 
 <div class="admin-container">
     <div class="user-page-top">
-      <a href="<?php echo SITE_URL; ?>/admin/users" class="back-link">
+      <a href="<?php echo SITE_URL . $adminUserBackUrl; ?>" class="back-link">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2"/>
         </svg>
-        Users
+        <?php echo htmlspecialchars($adminUserBackLabel); ?>
       </a>
       <div class="user-identity">
         <?php
@@ -663,7 +674,14 @@ include __DIR__ . '/../../includes/admin-modals.php';
           <?php endif; ?>
         </div>
         <div class="user-info">
-          <h1><?php echo htmlspecialchars($user['full_name']); ?></h1>
+          <h1>
+            <?php echo htmlspecialchars($user['full_name']); ?>
+            <?php if ($isDemoUser): ?>
+              <span class="demo-user-badge" style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:999px;margin-left:8px;vertical-align:middle;">
+                <i class="fas fa-flask"></i> Demo User
+              </span>
+            <?php endif; ?>
+          </h1>
           <div class="email"><?php echo htmlspecialchars($user['email']); ?></div>
         </div>
       </div>
@@ -673,6 +691,13 @@ include __DIR__ . '/../../includes/admin-modals.php';
     <div class="quick-actions">
         <h3>Quick Actions</h3>
         <div class="quick-actions-grid">
+            <?php if ($isDemoUser && isSuperAdmin()): ?>
+            <div class="quick-action-item">
+                <div class="quick-action-title">Login As User</div>
+                <div class="quick-action-desc">Open the dashboard as this demo user for testing.</div>
+                <a class="quick-btn" href="<?php echo SITE_URL; ?>/admin/login-as/<?php echo (int)$userId; ?>">Login As User</a>
+            </div>
+            <?php endif; ?>
             <div class="quick-action-item">
                 <div class="quick-action-title">Adjust Balance</div>
                 <div class="quick-action-desc">Credit or debit the user by creating a controlled transaction entry.</div>
@@ -1886,7 +1911,7 @@ function handleExternalAdjustment() {
           .then(data => {
             if (data.success) {
               showToast('User deleted successfully', 'success');
-                    setTimeout(() => window.location.href = '/admin/users', 1500);
+                    setTimeout(() => window.location.href = '<?php echo $adminUserBackUrl; ?>', 1500);
             } else {
               showToast('Error: ' + data.message, 'error');
             }

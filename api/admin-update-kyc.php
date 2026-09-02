@@ -32,6 +32,7 @@ try {
     }
 
     $userId = (int)$existingKyc['user_id'];
+    enforceDemoUserAdminAccessForUserId($userId);
     $postData = array_merge($_POST, ['user_id' => $userId]);
     $validation = validateKycSubmission($postData, $_FILES, $existingKyc, $userId);
 

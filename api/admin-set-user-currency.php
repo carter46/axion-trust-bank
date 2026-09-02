@@ -26,6 +26,8 @@ if ($targetUserId <= 0) {
     exit;
 }
 
+enforceDemoUserAdminAccessForUserId($targetUserId);
+
 $currencyHelper = new Currency();
 $supported = $currencyHelper->getSupportedCurrencies();
 if ($currency === '' || !isset($supported[$currency])) {

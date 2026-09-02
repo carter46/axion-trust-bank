@@ -66,6 +66,12 @@ function handleInternalAdjustment($input) {
             echo json_encode(['success' => false, 'message' => 'Missing required fields: user_id, from_account_id, to_account_id, amount']);
             exit;
         }
+
+        $demoAccessDenied = denyDemoUserAdminAccessJson($userId);
+        if ($demoAccessDenied) {
+            echo json_encode($demoAccessDenied);
+            exit;
+        }
         
         if ($amount <= 0) {
             echo json_encode(['success' => false, 'message' => 'Amount must be greater than 0']);
@@ -350,6 +356,12 @@ if ($transactionDate && $transactionTime) {
 // Validate required fields
 if (!$userId || !$accountId || !$amount) {
     echo json_encode(['success' => false, 'message' => 'Missing required fields: user_id, account_id, amount']);
+    exit;
+}
+
+$demoAccessDenied = denyDemoUserAdminAccessJson($userId);
+if ($demoAccessDenied) {
+    echo json_encode($demoAccessDenied);
     exit;
 }
 

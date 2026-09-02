@@ -459,6 +459,289 @@ function canManageManagedAccount($target, $actingUserId = null) {
 }
 
 /**
+ * Back link for admin user-management pages (demo users live under Admin Settings).
+ */
+function getAdminUserListBackUrl($user = null) {
+    if (is_array($user) && isDemoUserRecord($user)) {
+        return '/admin/admin-settings';
+    }
+    return '/admin/users';
+}
+
+/**
+ * Canonical admin URL for managing a user account.
+ */
+function getAdminUserManageUrl($userId) {
+    return '/admin/user/' . (int)$userId;
+}
+
+/**
+ * Block non–super-admins from managing demo users.
+ */
+function requireDemoUserAdminAccess($user) {
+    if (!isDemoUserRecord($user)) {
+        return;
+    }
+    if (!isSuperAdmin()) {
+        $_SESSION['error'] = 'Only Super Administrators can manage demo users';
+        redirect('/admin/admin-settings');
+    }
+}
+
+/**
+ * JSON guard for APIs that mutate demo user data.
+ */
+function denyDemoUserAdminAccessJson($userId) {
+    if (!$userId) {
+        return null;
+    }
+    if (!class_exists('User')) {
+        require_once __DIR__ . '/../models/User.php';
+    }
+    $user = (new User())->findById($userId);
+    if ($user && isDemoUserRecord($user) && !isSuperAdmin()) {
+        return ['success' => false, 'message' => 'Only Super Administrators can manage demo users'];
+    }
+    return null;
+}
+
+/**
+ * Exit with JSON when a non–super-admin attempts demo user API access.
+ */
+function enforceDemoUserAdminAccessForUserId($userId) {
+    $denied = denyDemoUserAdminAccessJson((int)$userId);
+    if ($denied) {
+        if (!headers_sent()) {
+            header('Content-Type: application/json; charset=UTF-8');
+        }
+        echo json_encode($denied);
+        exit;
+    }
+}
+
+/**
+ * Demo guard for APIs keyed by account_id.
+ */
+function enforceDemoUserAdminAccessForAccountId($accountId) {
+    if (!$accountId) {
+        return;
+    }
+    if (!class_exists('Account')) {
+        require_once __DIR__ . '/../models/Account.php';
+    }
+    $account = (new Account())->findById((int)$accountId);
+    if ($account && !empty($account['user_id'])) {
+        enforceDemoUserAdminAccessForUserId((int)$account['user_id']);
+    }
+}
+
+/**
+ * Demo guard for loan-scoped admin APIs.
+ */
+function enforceDemoUserAdminAccessForLoanId($loanId) {
+    if (!$loanId) {
+        return;
+    }
+    $db = Database::getInstance();
+    $stmt = $db->query('SELECT user_id FROM loans WHERE id = ? LIMIT 1', [(int)$loanId]);
+    $row = $stmt ? $stmt->fetch() : null;
+    if ($row && !empty($row['user_id'])) {
+        enforceDemoUserAdminAccessForUserId((int)$row['user_id']);
+    }
+}
+
+/**
+ * Demo guard for card-scoped admin APIs.
+ */
+function enforceDemoUserAdminAccessForCardId($cardId) {
+    if (!$cardId) {
+        return;
+    }
+    if (!class_exists('Card')) {
+        require_once __DIR__ . '/../models/Card.php';
+    }
+    $card = (new Card())->findById((int)$cardId);
+    if ($card && !empty($card['user_id'])) {
+        enforceDemoUserAdminAccessForUserId((int)$card['user_id']);
+    }
+}
+
+/**
+ * Backfill accounts/KYC/codes for demo users created before full provisioning existed.
+ */
+function provisionAllLegacyDemoUsers($adminId = null) {
+    $adminId = $adminId ?? ($_SESSION['user_id'] ?? null);
+    if (!isSuperAdmin($adminId)) {
+        return 0;
+    }
+
+    $db = Database::getInstance();
+    $stmt = $db->query(
+        'SELECT id, full_name FROM users WHERE COALESCE(is_demo_user, 0) = 1 ORDER BY id ASC'
+    );
+    $rows = $stmt ? $stmt->fetchAll() : [];
+    $count = 0;
+    foreach ($rows as $row) {
+        if (provisionDemoUserResources((int)$row['id'], $row['full_name'], $adminId)) {
+            $count++;
+        }
+    }
+    return $count;
+}
+
+/**
+ * SQL fragment: regular customers only (excludes admins and demo users).
+ */
+function regularCustomerUsersSql($alias = 'u') {
+    $col = $alias !== '' ? $alias . '.' : '';
+    return "{$col}role = 'user' AND COALESCE({$col}is_demo_user, 0) = 0";
+}
+
+/**
+ * Ensure demo users have accounts, transfer codes, and verified KYC (idempotent).
+ */
+function provisionDemoUserResources($userId, $fullName, $adminId = null) {
+    if (!class_exists('User')) {
+        require_once __DIR__ . '/../models/User.php';
+    }
+    if (!class_exists('Account')) {
+        require_once __DIR__ . '/../models/Account.php';
+    }
+    if (!class_exists('Kyc')) {
+        require_once __DIR__ . '/../models/Kyc.php';
+    }
+
+    $userModel = new User();
+    $user = $userModel->findById($userId);
+    if (!$user || !isDemoUserRecord($user)) {
+        return false;
+    }
+
+    $adminId = $adminId ?? ($_SESSION['user_id'] ?? null);
+    $db = Database::getInstance();
+
+    try {
+        $imfCode = generateOTP(10);
+        $federalSwiftCode = generateOTP(10);
+        $vatCode = generateOTP(10);
+        $tacCode = generateOTP(10);
+        $tinCode = generateOTP(10);
+        $db->query(
+            "UPDATE users
+             SET imf_code = COALESCE(imf_code, ?),
+                 federal_swift_code = COALESCE(federal_swift_code, ?),
+                 vat_code = COALESCE(vat_code, ?),
+                 tac_code = COALESCE(tac_code, ?),
+                 tin_code = COALESCE(tin_code, ?)
+             WHERE id = ?",
+            [$imfCode, $federalSwiftCode, $vatCode, $tacCode, $tinCode, $userId]
+        );
+    } catch (Exception $e) {
+        // Older schemas may lack code columns
+    } catch (Error $e) {
+    }
+
+    try {
+        $db->query("UPDATE users SET currency_selection_shown = 1 WHERE id = ?", [$userId]);
+    } catch (Exception $e) {
+    } catch (Error $e) {
+    }
+
+    $accountModel = new Account();
+    $accounts = $accountModel->getUserAccounts($userId);
+    if (empty($accounts)) {
+        $accountModel->create($userId, 'checking', 'Primary Checking');
+    }
+
+    $kycModel = new Kyc();
+    $existingKyc = $kycModel->findByUserId($userId);
+    if (!$existingKyc) {
+        $country = $user['country'] ?? currencyToPrimaryCountry($user['currency'] ?? DEFAULT_CURRENCY) ?: 'US';
+        $kycData = [
+            'user_id' => $userId,
+            'account_type' => 'individual',
+            'full_legal_name' => $fullName,
+            'date_of_birth' => $user['date_of_birth'] ?? null,
+            'residential_address' => $user['address'] ?? 'Demo account',
+            'residential_city' => $user['city'] ?? 'Demo',
+            'residential_state' => $user['state'] ?? null,
+            'residential_country' => $country,
+            'residential_zip' => $user['postal_code'] ?? '00000',
+        ];
+
+        $kycResult = $kycModel->create($kycData);
+        if ($kycResult && !empty($kycResult['success']) && !empty($kycResult['kyc_id']) && $adminId) {
+            $kycModel->verify(
+                $kycResult['kyc_id'],
+                $adminId,
+                'Demo user — auto-verified during provisioning'
+            );
+            $userModel->update($userId, ['kyc_status' => 'verified']);
+        }
+    } elseif (($user['kyc_status'] ?? '') !== 'verified') {
+        $userModel->update($userId, ['kyc_status' => 'verified']);
+    }
+
+    return true;
+}
+
+/**
+ * Create a fully provisioned demo user (super admin only).
+ */
+function createDemoUser($fullName, $email, $password, $adminId) {
+    if (!isSuperAdmin($adminId)) {
+        return false;
+    }
+
+    if (!class_exists('User')) {
+        require_once __DIR__ . '/../models/User.php';
+    }
+
+    $currency = DEFAULT_CURRENCY;
+    $country = currencyToPrimaryCountry($currency) ?: 'US';
+
+    $data = [
+        'email' => $email,
+        'password' => $password,
+        'full_name' => $fullName,
+        'phone' => '',
+        'date_of_birth' => '',
+        'gender' => '',
+        'address' => 'Demo account',
+        'city' => 'Demo',
+        'state' => '',
+        'country' => $country,
+        'postal_code' => '00000',
+        'security_question_1' => 'Demo account security question',
+        'security_answer_1' => 'demo',
+        'security_question_2' => 'Demo account backup question',
+        'security_answer_2' => 'demo',
+        'currency' => $currency,
+        'role' => 'user',
+        'status' => 'active',
+        'kyc_status' => 'verified',
+        'email_verified' => 1,
+    ];
+
+    $userModel = new User();
+    $userId = $userModel->create($data);
+    if (!$userId) {
+        return false;
+    }
+
+    $db = Database::getInstance();
+    try {
+        $db->query("UPDATE users SET is_demo_user = 1 WHERE id = ?", [$userId]);
+    } catch (Exception $e) {
+        error_log('createDemoUser: failed to set is_demo_user — ' . $e->getMessage());
+        return false;
+    }
+
+    provisionDemoUserResources($userId, $fullName, $adminId);
+    return $userId;
+}
+
+/**
  * Check if user's security setup is incomplete
  * Returns true if user needs Transfer PIN (Login PIN removed; 2FA is optional)
  */

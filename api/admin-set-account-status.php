@@ -41,6 +41,8 @@ if (!$userId) {
     exit;
 }
 
+enforceDemoUserAdminAccessForUserId($userId);
+
 if (!in_array($status, ['active', 'pending', 'suspended', 'blocked', 'hold'])) {
     echo json_encode(['success' => false, 'message' => 'Invalid status. Must be: active, pending, suspended, blocked, or hold']);
     exit;

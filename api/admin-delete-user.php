@@ -33,6 +33,12 @@ if (!$userIdToDelete) {
     exit;
 }
 
+$demoAccessDenied = denyDemoUserAdminAccessJson($userIdToDelete);
+if ($demoAccessDenied) {
+    echo json_encode($demoAccessDenied);
+    exit;
+}
+
 // Prevent deleting self
 if ($userIdToDelete == $_SESSION['user_id']) {
     echo json_encode(['success' => false, 'message' => 'You cannot delete your own account']);

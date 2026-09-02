@@ -36,6 +36,8 @@ try {
         echo json_encode(['success' => false, 'message' => 'KYC submission not found']);
         exit;
     }
+
+    enforceDemoUserAdminAccessForUserId((int)$kycCheck['user_id']);
     
     if ($kycModel->verify($id, $_SESSION['user_id'], $adminNotes)) {
         logActivity($_SESSION['user_id'], 'KYC_APPROVED', 'Approved KYC ID: ' . $id);

@@ -125,6 +125,8 @@ try {
             echo json_encode(['success' => false, 'message' => 'User not found']);
             exit;
         }
+
+        enforceDemoUserAdminAccessForUserId($user_id);
         
         error_log('Send custom email API: User found: ' . $user['email']);
         
@@ -145,7 +147,7 @@ try {
         
     } elseif ($recipientType === 'all') {
         // Send to all active users
-        $sql = "SELECT id, full_name, email FROM users WHERE role = 'user' AND status = 'active'";
+        $sql = "SELECT id, full_name, email FROM users WHERE " . regularCustomerUsersSql() . " AND status = 'active'";
         $stmt = $db->query($sql);
         $users = $stmt->fetchAll();
         

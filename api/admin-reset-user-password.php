@@ -41,6 +41,8 @@ try {
         echo json_encode(['success' => false, 'message' => 'User ID required']);
         exit;
     }
+
+    enforceDemoUserAdminAccessForUserId($userId);
     
     if (empty($newPassword)) {
         ob_end_clean();

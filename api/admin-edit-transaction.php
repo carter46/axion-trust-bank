@@ -95,6 +95,8 @@ try {
         exit;
     }
 
+    enforceDemoUserAdminAccessForUserId((int)$transaction['user_id']);
+
     $conn->beginTransaction();
 
     try {

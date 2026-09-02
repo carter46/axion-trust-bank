@@ -40,6 +40,10 @@ if ($reason === '') {
     exit;
 }
 
+if ($restrictUserId > 0) {
+    enforceDemoUserAdminAccessForUserId($restrictUserId);
+}
+
 if (count($transactionIds) > 100) {
     echo json_encode(['success' => false, 'message' => 'Maximum 100 transactions per bulk delete']);
     exit;
@@ -65,6 +69,7 @@ try {
             echo json_encode(['success' => false, 'message' => 'Cannot delete admin user transactions']);
             exit;
         }
+        enforceDemoUserAdminAccessForUserId((int)$row['user_id']);
         if ($restrictUserId > 0 && (int)$row['user_id'] !== $restrictUserId) {
             echo json_encode(['success' => false, 'message' => 'Selected transactions must belong to the same user']);
             exit;

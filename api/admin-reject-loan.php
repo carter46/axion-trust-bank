@@ -35,6 +35,8 @@ try {
         exit;
     }
 
+    enforceDemoUserAdminAccessForLoanId($loanId);
+
     $loanModel = new Loan();
     $result = $loanModel->reject($loanId, $rejectionReason);
     

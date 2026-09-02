@@ -489,7 +489,7 @@ class Admin {
         $sql = "SELECT COUNT(*) as total, 
                 SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
                 SUM(CASE WHEN status = 'suspended' THEN 1 ELSE 0 END) as suspended
-                FROM users WHERE role = 'user' AND COALESCE(is_demo_user, 0) = 0 AND COALESCE(is_demo_user, 0) = 0";
+                FROM users WHERE role = 'user' AND COALESCE(is_demo_user, 0) = 0";
         $stmt = $this->db->query($sql);
         $stats['users'] = $stmt->fetch();
         

@@ -53,6 +53,8 @@ try {
         echo json_encode(['success' => false, 'message' => 'Transaction not found']);
         exit;
     }
+
+    enforceDemoUserAdminAccessForUserId((int)$transaction['user_id']);
     
     // Admin can delete any transaction regardless of status
     // No status restriction for admin deletion

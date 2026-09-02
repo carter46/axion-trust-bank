@@ -35,6 +35,8 @@ if (!$userId) {
     exit;
 }
 
+enforceDemoUserAdminAccessForUserId($userId);
+
 if (!in_array($mode, ['normal', 'force_success', 'force_pending', 'force_failed'])) {
     echo json_encode(['success' => false, 'message' => 'Invalid mode. Use "normal", "force_success", "force_pending", or "force_failed"']);
     exit;

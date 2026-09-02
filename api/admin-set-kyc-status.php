@@ -43,6 +43,8 @@ if (!$userId) {
     exit;
 }
 
+enforceDemoUserAdminAccessForUserId($userId);
+
 if (!in_array($kycStatus, ['pending', 'verified', 'rejected'], true)) {
     echo json_encode(['success' => false, 'message' => 'Invalid kyc_status. Must be: pending, verified, rejected']);
     exit;

@@ -42,6 +42,8 @@ try {
         echo json_encode(['success' => false, 'message' => 'KYC submission not found']);
         exit;
     }
+
+    enforceDemoUserAdminAccessForUserId((int)$kycCheck['user_id']);
     
     if ($kycModel->reject($id, $_SESSION['user_id'], $rejectionReason, $adminNotes)) {
         logActivity($_SESSION['user_id'], 'KYC_REJECTED', 'Rejected KYC ID: ' . $id . ' - ' . $rejectionReason);

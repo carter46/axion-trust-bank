@@ -201,6 +201,28 @@ include __DIR__ . '/../../includes/admin-modals.php';
         background: #dc2626;
         transform: scale(1.05);
     }
+
+    .btn-manage {
+        background: #10b981;
+        color: white;
+        border: none;
+        padding: 10px 14px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 14px;
+        flex-shrink: 0;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-manage:hover {
+        background: #059669;
+        transform: scale(1.05);
+        color: white;
+    }
     
     /* Modal Styles */
     .modal-overlay {
@@ -709,6 +731,9 @@ include __DIR__ . '/../../includes/admin-modals.php';
                         </div>
                     </div>
                     <div class="admin-actions">
+                        <a href="<?php echo SITE_URL; ?>/admin/user/<?php echo (int)$demoUser['id']; ?>" class="btn-manage" title="Manage User">
+                            <i class="fas fa-user-cog"></i>
+                        </a>
                         <button class="btn-edit" onclick="openEditAdminModal(<?php echo (int)$demoUser['id']; ?>, '<?php echo htmlspecialchars($demoUser['full_name'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($demoUser['email'], ENT_QUOTES); ?>', 1)" title="Edit Demo User">
                             <i class="fas fa-edit"></i>
                         </button>

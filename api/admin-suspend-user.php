@@ -35,6 +35,8 @@ if (!$userId) {
     exit;
 }
 
+enforceDemoUserAdminAccessForUserId($userId);
+
 if (!in_array($action, ['suspend', 'activate'])) {
     echo json_encode(['success' => false, 'message' => 'Invalid action. Use "suspend" or "activate"']);
     exit;

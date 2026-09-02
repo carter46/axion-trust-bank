@@ -10,8 +10,10 @@ $user = $userModel->findById($userId);
 
 if (!$user) {
     $_SESSION['error'] = 'User not found';
-    redirect('/admin/users');
+    redirect(getAdminUserListBackUrl());
 }
+
+requireDemoUserAdminAccess($user);
 
 // Get user currency
 $userCurrency = getUserDisplayCurrency($user);

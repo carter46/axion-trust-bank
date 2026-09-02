@@ -110,6 +110,8 @@ try {
             echo json_encode(['success' => false, 'message' => 'Admin access required']);
             exit;
         }
+
+        enforceDemoUserAdminAccessForUserId($targetUserId);
         
         $userId = $targetUserId;
     } else {

@@ -26,6 +26,8 @@ if (!$userId) {
     exit;
 }
 
+enforceDemoUserAdminAccessForUserId($userId);
+
 try {
     $db = Database::getInstance();
     $stmt = $db->query("SELECT id, email FROM users WHERE id = ? AND role != 'admin'", [$userId]);
