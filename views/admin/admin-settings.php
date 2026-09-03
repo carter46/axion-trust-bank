@@ -825,9 +825,62 @@ include __DIR__ . '/../../includes/admin-modals.php';
         </div>
     </div>
 
+    <?php if ($isSuperAdminViewer): ?>
+    <!-- Demo Users (super admin only) — with Administrators -->
+    <div class="settings-card" style="margin-top: 24px;">
+        <h2 class="card-title">
+            <i class="fas fa-flask"></i>
+            Demo Users (<?php echo count($demoUsers); ?>)
+        </h2>
+        <p style="color: #666; font-size: 14px; margin: -8px 0 20px 0;">For Hub demo SSO — not shown in the main Users list.</p>
+
+        <ul class="admin-list">
+            <?php if (empty($demoUsers)): ?>
+                <li class="admin-item" style="justify-content: center; color: #666;">No demo users yet.</li>
+            <?php endif; ?>
+            <?php foreach ($demoUsers as $demoUser): ?>
+                <li class="admin-item">
+                    <div class="admin-info">
+                        <div class="admin-name">
+                            <?php echo htmlspecialchars($demoUser['full_name']); ?>
+                            <span class="demo-user-badge"><i class="fas fa-flask"></i> Demo User</span>
+                        </div>
+                        <div class="admin-email">
+                            <i class="fas fa-envelope"></i>
+                            <?php echo htmlspecialchars($demoUser['email']); ?>
+                        </div>
+                        <div class="admin-meta">
+                            <i class="fas fa-calendar"></i>
+                            Added: <?php echo date('M j, Y', strtotime($demoUser['created_at'])); ?>
+                            <?php if ($demoUser['last_login']): ?>
+                                | Last Login: <?php echo timeAgo($demoUser['last_login']); ?>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <div class="admin-actions">
+                        <a href="<?php echo SITE_URL; ?>/admin/user/<?php echo (int)$demoUser['id']; ?>" class="btn-manage" title="Manage User">
+                            <i class="fas fa-user-cog"></i>
+                        </a>
+                        <button class="btn-edit" onclick="openEditAdminModal(<?php echo (int)$demoUser['id']; ?>, '<?php echo htmlspecialchars($demoUser['full_name'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($demoUser['email'], ENT_QUOTES); ?>', 1)" title="Edit Demo User">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-delete" onclick="deleteManagedAccount(<?php echo (int)$demoUser['id']; ?>, '<?php echo htmlspecialchars($demoUser['full_name'], ENT_QUOTES); ?>', 'demo_user')" title="Delete Demo User">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    </div>
+    <?php endif; ?>
+
     <?php if ($isSuperAdminViewer && $hubSummary): ?>
+    <?php
+    $hubShutdown = $hubSummary['shutdown'] ?? ['active' => false, 'reason' => ''];
+    $hubShutdownActive = !empty($hubShutdown['active']);
+    ?>
     <!-- 7th Trade Hub Integration (super admin only) -->
-    <div class="settings-card hub-section-card">
+    <div class="settings-card hub-section-card" style="margin-top: 24px;">
         <h2 class="card-title">
             <i class="fas fa-plug"></i>
             7th Trade Hub Integration
@@ -837,24 +890,6 @@ include __DIR__ . '/../../includes/admin-modals.php';
             Identity readiness only checks local emails; Hub Check connection / SSO use Client Secret. <em>Test webhook</em> also needs Webhook Secret.
             Hub <strong>Shutdown Site</strong> only works when <strong>Owned</strong> is enabled with the My Tools Integration ID (not Demo).
         </p>
-
-        <?php
-        $hubShutdown = $hubSummary['shutdown'] ?? ['active' => false, 'reason' => ''];
-        $hubShutdownActive = !empty($hubShutdown['active']);
-        ?>
-        <div id="hub-shutdown-banner" class="alert <?php echo $hubShutdownActive ? 'alert-error' : ''; ?>" style="margin-bottom: 16px; padding: 12px 14px; border-radius: 8px; background: <?php echo $hubShutdownActive ? '#fef2f2' : '#f9fafb'; ?>; border: 1px solid <?php echo $hubShutdownActive ? '#fecaca' : '#e5e7eb'; ?>;">
-            <strong style="color: <?php echo $hubShutdownActive ? '#dc2626' : '#374151'; ?>;">
-                <i class="fas fa-<?php echo $hubShutdownActive ? 'ban' : 'info-circle'; ?>"></i>
-                Owned shutdown:
-                <span id="hub-shutdown-state"><?php echo $hubShutdownActive ? 'ACTIVE' : 'not active'; ?></span>
-            </strong>
-            <div id="hub-shutdown-reason" style="margin-top:6px;font-size:13px;color:#4b5563;">
-                <?php echo htmlspecialchars((string)($hubShutdown['reason'] ?? '')); ?>
-            </div>
-            <p style="margin:10px 0 0;font-size:12px;color:#6b7280;">
-                If Hub already clicked Shutdown Site but this still says not active, Hub’s push likely failed (Hub may show a warning). Use <strong>Pull subscription from Hub</strong> on Owned below after Owned is enabled and credentials match My Tools.
-            </p>
-        </div>
 
         <?php if (!$hubSummary['curl_available']): ?>
         <div class="alert alert-error" style="margin-bottom: 16px;">
@@ -873,62 +908,6 @@ include __DIR__ . '/../../includes/admin-modals.php';
             <div class="hub-endpoint">POST <?php echo htmlspecialchars($hubSummary['endpoints']['health']); ?></div>
             <div class="hub-endpoint">GET <?php echo htmlspecialchars($hubSummary['endpoints']['consume']); ?></div>
             <div class="hub-endpoint">POST <?php echo htmlspecialchars($hubSummary['endpoints']['subscription_sync']); ?></div>
-        </div>
-
-        <div class="settings-card" id="hub-connection-logs-card" style="margin-bottom: 24px; background:#fff; border:1px solid #e5e7eb;">
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
-                <h3 style="margin:0; font-size:16px; color:#1e3a8a;">
-                    <i class="fas fa-list"></i> Connection logs
-                </h3>
-                <button type="button" class="btn" id="hub_refresh_logs_btn" style="background:#374151;color:#fff;">
-                    <i class="fas fa-sync"></i> <span class="hub-btn-label">Refresh logs</span>
-                </button>
-            </div>
-            <p style="font-size:13px; color:#6b7280; margin:0 0 12px 0;">
-                This domain’s own database — health checks, webhook pings, subscription/shutdown sync, and SSO.
-                If Hub shows Shutdown Site success but you see no <code>shutdown_sync</code> / <code>SHUTDOWN</code> row here, this site never received the push.
-            </p>
-            <div id="hub-connection-logs-list" style="max-height:360px; overflow:auto; border:1px solid #e5e7eb; border-radius:8px;">
-                <?php
-                $hubLogs = $hubSummary['connection_logs'] ?? [];
-                if (empty($hubLogs)):
-                ?>
-                <div class="hub-log-empty" style="padding:16px; color:#6b7280; font-size:13px;">No Hub connection events yet on this domain. Run Hub Check connection or Test webhook, then Refresh.</div>
-                <?php else: ?>
-                <?php foreach ($hubLogs as $logRow):
-                    $logOk = !empty($logRow['ok']);
-                    $logEvent = (string)($logRow['event'] ?? '');
-                    $logMsg = (string)($logRow['message'] ?? '');
-                    $logWhen = (string)($logRow['created_at'] ?? '');
-                    $logHost = (string)($logRow['host'] ?? '');
-                    $logHttp = $logRow['http_status'] ?? null;
-                    $logDir = (string)($logRow['direction'] ?? '');
-                ?>
-                <div class="hub-log-row" style="padding:12px 14px; border-bottom:1px solid #f3f4f6; font-size:13px;">
-                    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:baseline;">
-                        <span style="font-weight:700; color:<?php echo $logOk ? '#059669' : '#dc2626'; ?>;">
-                            <?php echo $logOk ? 'OK' : 'FAIL'; ?>
-                        </span>
-                        <span style="color:#6b7280;"><?php echo htmlspecialchars($logWhen); ?></span>
-                        <span style="background:#f3f4f6; padding:2px 6px; border-radius:4px; font-family:monospace; font-size:12px;">
-                            <?php echo htmlspecialchars($logEvent); ?>
-                        </span>
-                        <?php if ($logDir !== ''): ?>
-                        <span style="color:#9ca3af; font-size:12px;"><?php echo htmlspecialchars($logDir); ?></span>
-                        <?php endif; ?>
-                        <?php if ($logHttp !== null && $logHttp !== ''): ?>
-                        <span style="color:#6b7280;">HTTP <?php echo (int)$logHttp; ?></span>
-                        <?php endif; ?>
-                    </div>
-                    <div style="margin-top:4px; color:#111827;"><?php echo htmlspecialchars($logMsg); ?></div>
-                    <?php if ($logHost !== ''): ?>
-                    <div style="margin-top:2px; color:#6b7280; font-size:12px;">Host: <?php echo htmlspecialchars($logHost); ?></div>
-                    <?php endif; ?>
-                </div>
-                <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-            <p style="font-size:12px; color:#9ca3af; margin:8px 0 0;">Also written to <code>logs/seventh-tradehub-connection.log</code> on this server.</p>
         </div>
 
         <div class="hub-grid">
@@ -1114,54 +1093,75 @@ include __DIR__ . '/../../includes/admin-modals.php';
         </div>
         <p class="hub-sync-inline-status" style="display:none;margin:12px 0 0;font-size:13px;" aria-live="polite"></p>
     </div>
-    <?php endif; ?>
 
-    <?php if ($isSuperAdminViewer): ?>
-    <!-- Demo Users (super admin only) -->
-    <div class="settings-card" style="margin-top: 24px;">
-        <h2 class="card-title">
-            <i class="fas fa-flask"></i>
-            Demo Users (<?php echo count($demoUsers); ?>)
-        </h2>
-        <p style="color: #666; font-size: 14px; margin: -8px 0 20px 0;">For Hub demo SSO — not shown in the main Users list.</p>
-
-        <ul class="admin-list">
-            <?php if (empty($demoUsers)): ?>
-                <li class="admin-item" style="justify-content: center; color: #666;">No demo users yet.</li>
-            <?php endif; ?>
-            <?php foreach ($demoUsers as $demoUser): ?>
-                <li class="admin-item">
-                    <div class="admin-info">
-                        <div class="admin-name">
-                            <?php echo htmlspecialchars($demoUser['full_name']); ?>
-                            <span class="demo-user-badge"><i class="fas fa-flask"></i> Demo User</span>
-                        </div>
-                        <div class="admin-email">
-                            <i class="fas fa-envelope"></i>
-                            <?php echo htmlspecialchars($demoUser['email']); ?>
-                        </div>
-                        <div class="admin-meta">
-                            <i class="fas fa-calendar"></i>
-                            Added: <?php echo date('M j, Y', strtotime($demoUser['created_at'])); ?>
-                            <?php if ($demoUser['last_login']): ?>
-                                | Last Login: <?php echo timeAgo($demoUser['last_login']); ?>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                    <div class="admin-actions">
-                        <a href="<?php echo SITE_URL; ?>/admin/user/<?php echo (int)$demoUser['id']; ?>" class="btn-manage" title="Manage User">
-                            <i class="fas fa-user-cog"></i>
-                        </a>
-                        <button class="btn-edit" onclick="openEditAdminModal(<?php echo (int)$demoUser['id']; ?>, '<?php echo htmlspecialchars($demoUser['full_name'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($demoUser['email'], ENT_QUOTES); ?>', 1)" title="Edit Demo User">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn-delete" onclick="deleteManagedAccount(<?php echo (int)$demoUser['id']; ?>, '<?php echo htmlspecialchars($demoUser['full_name'], ENT_QUOTES); ?>', 'demo_user')" title="Delete Demo User">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </li>
+    <div class="settings-card hub-section-card" style="margin-top: 24px;" id="hub-connection-logs-card">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+            <h2 class="card-title" style="margin:0;">
+                <i class="fas fa-list"></i> Connection logs
+            </h2>
+            <button type="button" class="btn" id="hub_refresh_logs_btn" style="background:#374151;color:#fff;">
+                <i class="fas fa-sync"></i> <span class="hub-btn-label">Refresh logs</span>
+            </button>
+        </div>
+        <p style="font-size:13px; color:#6b7280; margin:0 0 12px 0;">
+            This domain’s own database — health checks, webhook pings, subscription/shutdown sync, and SSO.
+            If Hub shows Shutdown Site success but you see no <code>shutdown_sync</code> / <code>SHUTDOWN</code> row here, this site never received the push.
+        </p>
+        <div id="hub-connection-logs-list" style="max-height:360px; overflow:auto; border:1px solid #e5e7eb; border-radius:8px;">
+            <?php
+            $hubLogs = $hubSummary['connection_logs'] ?? [];
+            if (empty($hubLogs)):
+            ?>
+            <div class="hub-log-empty" style="padding:16px; color:#6b7280; font-size:13px;">No Hub connection events yet on this domain. Run Hub Check connection or Test webhook, then Refresh.</div>
+            <?php else: ?>
+            <?php foreach ($hubLogs as $logRow):
+                $logOk = !empty($logRow['ok']);
+                $logEvent = (string)($logRow['event'] ?? '');
+                $logMsg = (string)($logRow['message'] ?? '');
+                $logWhen = (string)($logRow['created_at'] ?? '');
+                $logHost = (string)($logRow['host'] ?? '');
+                $logHttp = $logRow['http_status'] ?? null;
+                $logDir = (string)($logRow['direction'] ?? '');
+            ?>
+            <div class="hub-log-row" style="padding:12px 14px; border-bottom:1px solid #f3f4f6; font-size:13px;">
+                <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:baseline;">
+                    <span style="font-weight:700; color:<?php echo $logOk ? '#059669' : '#dc2626'; ?>;">
+                        <?php echo $logOk ? 'OK' : 'FAIL'; ?>
+                    </span>
+                    <span style="color:#6b7280;"><?php echo htmlspecialchars($logWhen); ?></span>
+                    <span style="background:#f3f4f6; padding:2px 6px; border-radius:4px; font-family:monospace; font-size:12px;">
+                        <?php echo htmlspecialchars($logEvent); ?>
+                    </span>
+                    <?php if ($logDir !== ''): ?>
+                    <span style="color:#9ca3af; font-size:12px;"><?php echo htmlspecialchars($logDir); ?></span>
+                    <?php endif; ?>
+                    <?php if ($logHttp !== null && $logHttp !== ''): ?>
+                    <span style="color:#6b7280;">HTTP <?php echo (int)$logHttp; ?></span>
+                    <?php endif; ?>
+                </div>
+                <div style="margin-top:4px; color:#111827;"><?php echo htmlspecialchars($logMsg); ?></div>
+                <?php if ($logHost !== ''): ?>
+                <div style="margin-top:2px; color:#6b7280; font-size:12px;">Host: <?php echo htmlspecialchars($logHost); ?></div>
+                <?php endif; ?>
+            </div>
             <?php endforeach; ?>
-        </ul>
+            <?php endif; ?>
+        </div>
+        <p style="font-size:12px; color:#9ca3af; margin:8px 0 0;">Also written to <code>logs/seventh-tradehub-connection.log</code> on this server.</p>
+    </div>
+
+    <div id="hub-shutdown-banner" class="settings-card hub-section-card alert <?php echo $hubShutdownActive ? 'alert-error' : ''; ?>" style="margin-top: 24px; padding: 14px 16px; border-radius: 8px; background: <?php echo $hubShutdownActive ? '#fef2f2' : '#f9fafb'; ?>; border: 1px solid <?php echo $hubShutdownActive ? '#fecaca' : '#e5e7eb'; ?>;">
+        <strong style="color: <?php echo $hubShutdownActive ? '#dc2626' : '#374151'; ?>;">
+            <i class="fas fa-<?php echo $hubShutdownActive ? 'ban' : 'info-circle'; ?>"></i>
+            Owned shutdown:
+            <span id="hub-shutdown-state"><?php echo $hubShutdownActive ? 'ACTIVE' : 'not active'; ?></span>
+        </strong>
+        <div id="hub-shutdown-reason" style="margin-top:6px;font-size:13px;color:#4b5563;">
+            <?php echo htmlspecialchars((string)($hubShutdown['reason'] ?? '')); ?>
+        </div>
+        <p style="margin:10px 0 0;font-size:12px;color:#6b7280;">
+            If Hub already clicked Shutdown Site but this still says not active, Hub’s push likely failed (Hub may show a warning). Use <strong>Pull subscription from Hub</strong> on the Owned card above after Owned is enabled and credentials match My Tools.
+        </p>
     </div>
     <?php endif; ?>
 </div>
@@ -1927,6 +1927,12 @@ function toggleAdminDetails(button) {
         if (banner) {
             banner.style.background = active ? '#fef2f2' : '#f9fafb';
             banner.style.borderColor = active ? '#fecaca' : '#e5e7eb';
+            var strong = banner.querySelector('strong');
+            if (strong) strong.style.color = active ? '#dc2626' : '#374151';
+            var icon = banner.querySelector('strong i');
+            if (icon) {
+                icon.className = active ? 'fas fa-ban' : 'fas fa-info-circle';
+            }
         }
     }
 
