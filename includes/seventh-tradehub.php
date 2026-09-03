@@ -31,6 +31,7 @@ function seventhTradeHubEnsureSchema(): void
         // Always ensure both context slots exist (migration may have created table but skipped seeds)
         seventhTradeHubEnsureContextRow(SEVENTH_TRADEHUB_CONTEXT_DEMO);
         seventhTradeHubEnsureContextRow(SEVENTH_TRADEHUB_CONTEXT_OWNED);
+        seventhTradeHubEnsureConnectionLogsTable();
     } catch (Throwable $e) {
         error_log('seventhTradeHubEnsureSchema: ' . $e->getMessage());
     }
@@ -320,13 +321,49 @@ function seventhTradeHubWebhookPing(array $integration): array
     if ($code >= 200 && $code < 300 && is_string($raw)) {
         $body = json_decode($raw, true);
         if (is_array($body) && ($body['ok'] ?? false) === true) {
+            seventhTradeHubConnectionLog([
+                'direction' => 'outbound',
+                'event' => 'webhook_ping',
+                'ok' => true,
+                'http_status' => $code,
+                'integration_id' => $integrationId,
+                'context' => trim((string)($integration['context'] ?? '')),
+                'message' => 'Webhook ping succeeded (Hub acknowledged ping)',
+            ]);
             return ['ok' => true, 'message' => 'Webhook ping succeeded'];
         }
+        seventhTradeHubConnectionLog([
+            'direction' => 'outbound',
+            'event' => 'webhook_ping',
+            'ok' => false,
+            'http_status' => $code,
+            'integration_id' => $integrationId,
+            'context' => trim((string)($integration['context'] ?? '')),
+            'message' => 'Webhook ping HTTP ' . $code . ' but body was not { ok: true }',
+        ]);
         return ['ok' => false, 'message' => 'Hub responded HTTP ' . $code . ' but body was not { ok: true }'];
     }
     if ($curlErr !== '') {
+        seventhTradeHubConnectionLog([
+            'direction' => 'outbound',
+            'event' => 'webhook_ping',
+            'ok' => false,
+            'http_status' => $code,
+            'integration_id' => $integrationId,
+            'context' => trim((string)($integration['context'] ?? '')),
+            'message' => 'Webhook ping failed: ' . $curlErr,
+        ]);
         return ['ok' => false, 'message' => 'Webhook ping failed: ' . $curlErr];
     }
+    seventhTradeHubConnectionLog([
+        'direction' => 'outbound',
+        'event' => 'webhook_ping',
+        'ok' => false,
+        'http_status' => $code,
+        'integration_id' => $integrationId,
+        'context' => trim((string)($integration['context'] ?? '')),
+        'message' => 'Webhook ping failed (HTTP ' . $code . ')',
+    ]);
     return ['ok' => false, 'message' => 'Webhook ping failed (HTTP ' . $code . ')'];
 }
 
@@ -885,10 +922,247 @@ function seventhTradeHubHeader(string $name): string
 }
 
 /**
- * Emit JSON error and exit (merchant endpoints).
+ * Create connection logs table if missing (per-domain DB).
  */
-function seventhTradeHubHubError(string $code, int $httpStatus = 401): void
+function seventhTradeHubEnsureConnectionLogsTable(): void
 {
+    static $ready = false;
+    if ($ready) {
+        return;
+    }
+    try {
+        if (!class_exists('Database')) {
+            return;
+        }
+        $db = Database::getInstance();
+        $db->query(
+            "CREATE TABLE IF NOT EXISTS `seventh_tradehub_connection_logs` (
+                `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+                `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `direction` varchar(16) NOT NULL DEFAULT 'inbound',
+                `event` varchar(64) NOT NULL,
+                `ok` tinyint(1) NOT NULL DEFAULT 0,
+                `http_status` int DEFAULT NULL,
+                `error_code` varchar(64) DEFAULT NULL,
+                `integration_id` varchar(36) DEFAULT NULL,
+                `context` varchar(32) DEFAULT NULL,
+                `host` varchar(255) DEFAULT NULL,
+                `message` varchar(512) NOT NULL,
+                `detail` text DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                KEY `idx_created_at` (`created_at`),
+                KEY `idx_event` (`event`),
+                KEY `idx_integration` (`integration_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        );
+        $ready = true;
+    } catch (Throwable $e) {
+        error_log('seventhTradeHubEnsureConnectionLogsTable: ' . $e->getMessage());
+    }
+}
+
+function seventhTradeHubRequestHost(): string
+{
+    $host = trim((string)($_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? ''));
+    if ($host !== '') {
+        return $host;
+    }
+    if (defined('SITE_URL')) {
+        $parsed = parse_url((string)SITE_URL);
+        return trim((string)($parsed['host'] ?? ''));
+    }
+    return '';
+}
+
+function seventhTradeHubGuessProtocolEvent(): string
+{
+    $uri = (string)($_SERVER['REQUEST_URI'] ?? '');
+    if (stripos($uri, 'subscription/sync') !== false) {
+        return 'subscription_sync';
+    }
+    if (stripos($uri, '/health') !== false) {
+        return 'health';
+    }
+    if (stripos($uri, 'consume') !== false) {
+        return 'sso_consume';
+    }
+    return 'protocol';
+}
+
+/**
+ * Merchant Connection log (DB + logs/seventh-tradehub-connection.log).
+ * Safe to call from HubError paths — never throws.
+ *
+ * @param array{
+ *   direction?: string,
+ *   event: string,
+ *   ok?: bool,
+ *   http_status?: int|null,
+ *   error_code?: string|null,
+ *   integration_id?: string|null,
+ *   context?: string|null,
+ *   message: string,
+ *   detail?: mixed
+ * } $entry
+ */
+function seventhTradeHubConnectionLog(array $entry): void
+{
+    try {
+        $direction = trim((string)($entry['direction'] ?? 'inbound'));
+        if (!in_array($direction, ['inbound', 'outbound', 'local'], true)) {
+            $direction = 'inbound';
+        }
+        $event = substr(trim((string)($entry['event'] ?? 'protocol')), 0, 64);
+        if ($event === '') {
+            $event = 'protocol';
+        }
+        $ok = !empty($entry['ok']) ? 1 : 0;
+        $httpStatus = isset($entry['http_status']) ? (int)$entry['http_status'] : null;
+        $errorCode = isset($entry['error_code']) ? substr(trim((string)$entry['error_code']), 0, 64) : null;
+        if ($errorCode === '') {
+            $errorCode = null;
+        }
+        $integrationId = isset($entry['integration_id']) ? substr(trim((string)$entry['integration_id']), 0, 36) : null;
+        if ($integrationId === '') {
+            $integrationId = null;
+        }
+        $context = isset($entry['context']) ? substr(trim((string)$entry['context']), 0, 32) : null;
+        if ($context === '') {
+            $context = null;
+        }
+        $host = seventhTradeHubRequestHost();
+        $message = substr(trim((string)($entry['message'] ?? '')), 0, 512);
+        if ($message === '') {
+            $message = $ok ? 'OK' : 'Failed';
+        }
+        $detail = null;
+        if (array_key_exists('detail', $entry) && $entry['detail'] !== null) {
+            if (is_string($entry['detail'])) {
+                $detail = $entry['detail'];
+            } else {
+                $detail = json_encode($entry['detail'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            }
+            if (is_string($detail) && strlen($detail) > 4000) {
+                $detail = substr($detail, 0, 3997) . '...';
+            }
+        }
+
+        $line = sprintf(
+            '[%s] %s %s %s host=%s integration=%s %s',
+            date('Y-m-d H:i:s'),
+            strtoupper($direction),
+            $event,
+            $ok ? 'OK' : 'FAIL',
+            $host !== '' ? $host : '-',
+            $integrationId ?? '-',
+            $message
+        );
+        $logDir = defined('LOG_PATH') ? LOG_PATH : (defined('BASE_PATH') ? BASE_PATH . '/logs' : sys_get_temp_dir());
+        if (!is_dir($logDir)) {
+            @mkdir($logDir, 0755, true);
+        }
+        @file_put_contents($logDir . '/seventh-tradehub-connection.log', $line . PHP_EOL, FILE_APPEND | LOCK_EX);
+
+        if (!class_exists('Database')) {
+            return;
+        }
+        seventhTradeHubEnsureConnectionLogsTable();
+        $db = Database::getInstance();
+        $db->query(
+            'INSERT INTO seventh_tradehub_connection_logs
+                (created_at, direction, event, ok, http_status, error_code, integration_id, context, host, message, detail)
+             VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [
+                $direction,
+                $event,
+                $ok,
+                $httpStatus,
+                $errorCode,
+                $integrationId,
+                $context,
+                $host !== '' ? $host : null,
+                $message,
+                $detail,
+            ]
+        );
+
+        // Cap growth — keep newest ~300 rows
+        $countStmt = $db->query('SELECT COUNT(*) AS c FROM seventh_tradehub_connection_logs');
+        $countRow = $countStmt ? $countStmt->fetch(PDO::FETCH_ASSOC) : null;
+        $count = (int)($countRow['c'] ?? 0);
+        if ($count > 400) {
+            $db->query(
+                'DELETE FROM seventh_tradehub_connection_logs
+                 WHERE id NOT IN (
+                    SELECT id FROM (
+                        SELECT id FROM seventh_tradehub_connection_logs ORDER BY id DESC LIMIT 300
+                    ) AS keep_rows
+                 )'
+            );
+        }
+    } catch (Throwable $e) {
+        error_log('seventhTradeHubConnectionLog: ' . $e->getMessage());
+    }
+}
+
+/**
+ * @return list<array<string, mixed>>
+ */
+function seventhTradeHubListConnectionLogs(int $limit = 50): array
+{
+    $limit = max(1, min(200, $limit));
+    try {
+        seventhTradeHubEnsureSchema();
+        seventhTradeHubEnsureConnectionLogsTable();
+        $db = Database::getInstance();
+        $stmt = $db->query(
+            'SELECT id, created_at, direction, event, ok, http_status, error_code, integration_id, context, host, message, detail
+             FROM seventh_tradehub_connection_logs
+             ORDER BY id DESC
+             LIMIT ' . (int)$limit
+        );
+        if (!$stmt) {
+            return [];
+        }
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return is_array($rows) ? $rows : [];
+    } catch (Throwable $e) {
+        error_log('seventhTradeHubListConnectionLogs: ' . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Emit JSON error and exit (merchant endpoints). Always writes a Connection log.
+ */
+function seventhTradeHubHubError(string $code, int $httpStatus = 401, array $extra = []): void
+{
+    $event = trim((string)($extra['event'] ?? seventhTradeHubGuessProtocolEvent()));
+    $integrationId = trim((string)($extra['integration_id'] ?? seventhTradeHubHeader('X-7TH-Integration-Id')));
+    if ($integrationId === '') {
+        $integrationId = trim((string)($extra['payload_integration_id'] ?? ''));
+    }
+    $context = trim((string)($extra['context'] ?? ''));
+    $message = trim((string)($extra['message'] ?? ''));
+    if ($message === '') {
+        $message = 'Rejected Hub request: ' . $code;
+    }
+
+    seventhTradeHubConnectionLog([
+        'direction' => 'inbound',
+        'event' => $event !== '' ? $event : 'protocol',
+        'ok' => false,
+        'http_status' => $httpStatus,
+        'error_code' => $code,
+        'integration_id' => $integrationId !== '' ? $integrationId : null,
+        'context' => $context !== '' ? $context : null,
+        'message' => $message,
+        'detail' => $extra['detail'] ?? [
+            'request_uri' => (string)($_SERVER['REQUEST_URI'] ?? ''),
+            'method' => (string)($_SERVER['REQUEST_METHOD'] ?? ''),
+        ],
+    ]);
+
     http_response_code($httpStatus);
     header('Content-Type: application/json');
     echo json_encode(['ok' => false, 'error' => $code], JSON_UNESCAPED_SLASHES);
@@ -902,40 +1176,65 @@ function seventhTradeHubHubError(string $code, int $httpStatus = 401): void
  */
 function seventhTradeHubVerifyInboundRequest(array $payload, array $integration): array
 {
+    $event = seventhTradeHubGuessProtocolEvent();
+    $integrationId = trim((string)($integration['integration_id'] ?? ''));
+    $context = trim((string)($integration['context'] ?? ''));
+    $logBase = [
+        'event' => $event,
+        'integration_id' => $integrationId,
+        'context' => $context,
+    ];
+
     if (!seventhTradeHubIsIntegrationOperational($integration)) {
-        seventhTradeHubHubError('integration_disabled', 401);
+        seventhTradeHubHubError('integration_disabled', 401, $logBase + [
+            'message' => 'Rejected: integration disabled or incomplete credentials (enable Owned/Demo and Save secrets)',
+        ]);
     }
 
     $payloadIntegrationId = trim((string)($payload['integration_id'] ?? ''));
     $rowIntegrationId = trim((string)($integration['integration_id'] ?? ''));
     if ($payloadIntegrationId === '' || !hash_equals($rowIntegrationId, $payloadIntegrationId)) {
-        seventhTradeHubHubError('unknown_integration', 404);
+        seventhTradeHubHubError('unknown_integration', 404, $logBase + [
+            'message' => 'Rejected: payload integration_id does not match local row',
+            'detail' => ['payload_integration_id' => $payloadIntegrationId],
+        ]);
     }
 
     $headerIntegrationId = seventhTradeHubHeader('X-7TH-Integration-Id');
     if ($headerIntegrationId === '' || !hash_equals($rowIntegrationId, $headerIntegrationId)) {
-        seventhTradeHubHubError('integration_id_mismatch', 401);
+        seventhTradeHubHubError('integration_id_mismatch', 401, $logBase + [
+            'message' => 'Rejected: X-7TH-Integration-Id header mismatch',
+        ]);
     }
 
     $headerClientId = seventhTradeHubHeader('X-7TH-Client-Id');
     $rowClientId = trim((string)($integration['client_id'] ?? ''));
     if ($headerClientId === '' || !hash_equals($rowClientId, $headerClientId)) {
-        seventhTradeHubHubError('client_id_mismatch', 401);
+        seventhTradeHubHubError('client_id_mismatch', 401, $logBase + [
+            'message' => 'Rejected: X-7TH-Client-Id header mismatch',
+        ]);
     }
 
     $payloadContext = trim((string)($payload['context'] ?? ''));
     $rowContext = trim((string)($integration['context'] ?? ''));
     if ($payloadContext === '' || !hash_equals($rowContext, $payloadContext)) {
-        seventhTradeHubHubError('context_mismatch', 401);
+        seventhTradeHubHubError('context_mismatch', 401, $logBase + [
+            'message' => 'Rejected: context mismatch (demo vs owned_tool)',
+            'detail' => ['payload_context' => $payloadContext, 'row_context' => $rowContext],
+        ]);
     }
 
     if (seventhTradeHubAssertionExpired($payload)) {
-        seventhTradeHubHubError('expired_assertion', 401);
+        seventhTradeHubHubError('expired_assertion', 401, $logBase + [
+            'message' => 'Rejected: assertion expired',
+        ]);
     }
 
     $secret = seventhTradeHubClientSecret($integration);
     if (!seventhTradeHubVerifyPayload($payload, $secret)) {
-        seventhTradeHubHubError('invalid_signature', 401);
+        seventhTradeHubHubError('invalid_signature', 401, $logBase + [
+            'message' => 'Rejected: invalid HMAC signature (Client Secret mismatch)',
+        ]);
     }
 
     seventhTradeHubRecordNonce($integration, $payload);
@@ -1226,6 +1525,7 @@ function seventhTradeHubGetSubscription(string $integrationId): ?array
     if ($integrationId === '') {
         return null;
     }
+    seventhTradeHubEnsureSchema();
     try {
         $db = Database::getInstance();
         $stmt = $db->query(
@@ -1235,6 +1535,7 @@ function seventhTradeHubGetSubscription(string $integrationId): ?array
         $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
         return $row ?: null;
     } catch (Throwable $e) {
+        error_log('seventhTradeHubGetSubscription: ' . $e->getMessage());
         return null;
     }
 }
@@ -1263,7 +1564,11 @@ function seventhTradeHubSubscriptionIsExpired(?array $subscription): bool
 function seventhTradeHubIsOwnedSiteShutdown(): bool
 {
     $owned = seventhTradeHubGetByContext(SEVENTH_TRADEHUB_CONTEXT_OWNED);
-    if (!$owned || empty($owned['enabled'])) {
+    if (!$owned) {
+        return false;
+    }
+    // Must be enabled — Demo-only sites never shut down from Hub Shutdown Site
+    if (empty($owned['enabled'])) {
         return false;
     }
     $integrationId = trim((string)($owned['integration_id'] ?? ''));
@@ -1272,6 +1577,41 @@ function seventhTradeHubIsOwnedSiteShutdown(): bool
     }
     $sub = seventhTradeHubGetSubscription($integrationId);
     return seventhTradeHubSubscriptionIsExpired($sub);
+}
+
+/**
+ * Human-readable why owned shutdown is / is not active (admin diagnostics).
+ *
+ * @return array{active: bool, reason: string}
+ */
+function seventhTradeHubShutdownDiagnostic(): array
+{
+    $owned = seventhTradeHubGetByContext(SEVENTH_TRADEHUB_CONTEXT_OWNED);
+    if (!$owned) {
+        return ['active' => false, 'reason' => 'No Owned integration row'];
+    }
+    if (empty($owned['enabled'])) {
+        return ['active' => false, 'reason' => 'Owned integration is disabled — enable Owned and Save (Demo-only sites ignore Hub Shutdown Site)'];
+    }
+    $op = seventhTradeHubOperationalStatus($owned);
+    if (empty($op['ok'])) {
+        return ['active' => false, 'reason' => 'Owned not ready: ' . ($op['reason'] ?? 'incomplete credentials')];
+    }
+    $integrationId = trim((string)($owned['integration_id'] ?? ''));
+    $sub = seventhTradeHubGetSubscription($integrationId);
+    if (!$sub) {
+        return ['active' => false, 'reason' => 'No local subscription row yet — Hub sync/poll has not written expiry state (check Owned Integration ID matches Hub My Tools, then use Pull subscription)'];
+    }
+    if (seventhTradeHubSubscriptionIsExpired($sub)) {
+        return [
+            'active' => true,
+            'reason' => 'Shutdown active (status=' . ($sub['status'] ?? '') . ', expires_at=' . ($sub['expires_at'] ?? '') . ')',
+        ];
+    }
+    return [
+        'active' => false,
+        'reason' => 'Subscription not expired locally (status=' . ($sub['status'] ?? '') . ', expires_at=' . ($sub['expires_at'] ?? 'none') . ', last_sync_at=' . ($sub['last_sync_at'] ?? 'never') . ')',
+    ];
 }
 
 function seventhTradeHubIsHubProtocolRequest(): bool
@@ -1374,13 +1714,17 @@ function seventhTradeHubRefuseNonSuperAdminDuringShutdown(): void
 
 /**
  * Apply monotonic subscription update from Hub sync/poll.
+ *
+ * @return array{applied: bool, skipped: bool, shutdown_active: bool, reason?: string}
  */
-function seventhTradeHubApplySubscription(string $integrationId, array $subscription): void
+function seventhTradeHubApplySubscription(string $integrationId, array $subscription): array
 {
     $integrationId = trim($integrationId);
     if ($integrationId === '') {
-        return;
+        return ['applied' => false, 'skipped' => true, 'shutdown_active' => false, 'reason' => 'empty_integration_id'];
     }
+
+    seventhTradeHubEnsureSchema();
 
     $incomingUpdated = trim((string)($subscription['updated_at'] ?? ''));
     $incomingExpires = trim((string)($subscription['expires_at'] ?? ''));
@@ -1396,7 +1740,13 @@ function seventhTradeHubApplySubscription(string $integrationId, array $subscrip
                 $storedDt = new DateTimeImmutable($storedUpdated);
                 $incomingDt = new DateTimeImmutable($incomingUpdated);
                 if ($incomingDt < $storedDt) {
-                    return;
+                    error_log('seventhTradeHubApplySubscription: skipped stale update for ' . $integrationId);
+                    return [
+                        'applied' => false,
+                        'skipped' => true,
+                        'shutdown_active' => seventhTradeHubIsOwnedSiteShutdown(),
+                        'reason' => 'stale_updated_at',
+                    ];
                 }
             } catch (Throwable $e) {
                 // If timestamps cannot be compared, fall through to expiry guards below
@@ -1416,21 +1766,50 @@ function seventhTradeHubApplySubscription(string $integrationId, array $subscrip
         // Fail closed: never let a non-expired payload un-expire without a strictly newer updated_at
         if ($storedExpired && !$incomingExpired) {
             if ($storedUpdated === '' || $incomingUpdated === '') {
-                return;
+                return [
+                    'applied' => false,
+                    'skipped' => true,
+                    'shutdown_active' => true,
+                    'reason' => 'refuse_unexpire_missing_updated_at',
+                ];
             }
             try {
                 if (new DateTimeImmutable($incomingUpdated) <= new DateTimeImmutable($storedUpdated)) {
-                    return;
+                    return [
+                        'applied' => false,
+                        'skipped' => true,
+                        'shutdown_active' => true,
+                        'reason' => 'refuse_unexpire_not_newer',
+                    ];
                 }
             } catch (Throwable $e) {
-                return;
+                return [
+                    'applied' => false,
+                    'skipped' => true,
+                    'shutdown_active' => true,
+                    'reason' => 'refuse_unexpire_bad_updated_at',
+                ];
             }
         }
     }
 
+    // Normalize ISO8601 → MySQL-friendly datetime when possible
+    $expiresForDb = $incomingExpires !== '' ? $incomingExpires : null;
+    $updatedForDb = $incomingUpdated !== '' ? $incomingUpdated : null;
+    try {
+        if ($expiresForDb !== null) {
+            $expiresForDb = (new DateTimeImmutable($expiresForDb))->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+        }
+        if ($updatedForDb !== null) {
+            $updatedForDb = (new DateTimeImmutable($updatedForDb))->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+        }
+    } catch (Throwable $e) {
+        // keep original strings
+    }
+
     try {
         $db = Database::getInstance();
-        $db->query(
+        $result = $db->query(
             'INSERT INTO seventh_tradehub_subscriptions
                 (integration_id, tool_id, public_id, status, expires_at, updated_at, last_sync_at)
              VALUES (?, ?, ?, ?, ?, ?, NOW())
@@ -1446,13 +1825,33 @@ function seventhTradeHubApplySubscription(string $integrationId, array $subscrip
                 $toolId,
                 $publicId !== '' ? $publicId : null,
                 $status,
-                $incomingExpires !== '' ? $incomingExpires : null,
-                $incomingUpdated !== '' ? $incomingUpdated : null,
+                $expiresForDb,
+                $updatedForDb,
             ]
         );
+        if ($result === false) {
+            error_log('seventhTradeHubApplySubscription: DB write failed for ' . $integrationId);
+            return ['applied' => false, 'skipped' => false, 'shutdown_active' => seventhTradeHubIsOwnedSiteShutdown(), 'reason' => 'db_write_failed'];
+        }
     } catch (Throwable $e) {
         error_log('seventhTradeHubApplySubscription: ' . $e->getMessage());
+        return ['applied' => false, 'skipped' => false, 'shutdown_active' => seventhTradeHubIsOwnedSiteShutdown(), 'reason' => 'db_exception'];
     }
+
+    $shutdown = seventhTradeHubIsOwnedSiteShutdown();
+    error_log(
+        'seventhTradeHubApplySubscription: applied integration=' . $integrationId .
+        ' status=' . $status .
+        ' expires_at=' . ($expiresForDb ?? '') .
+        ' shutdown_active=' . ($shutdown ? '1' : '0')
+    );
+
+    return [
+        'applied' => true,
+        'skipped' => false,
+        'shutdown_active' => $shutdown,
+        'reason' => 'ok',
+    ];
 }
 
 /**
@@ -1485,14 +1884,56 @@ function seventhTradeHubPollSubscription(array $integration): ?array
     curl_close($ch);
 
     if ($code !== 200 || !is_string($raw)) {
+        seventhTradeHubConnectionLog([
+            'direction' => 'outbound',
+            'event' => 'subscription_poll',
+            'ok' => false,
+            'http_status' => $code,
+            'integration_id' => $integrationId,
+            'context' => trim((string)($integration['context'] ?? '')),
+            'message' => 'Subscription poll failed (HTTP ' . $code . ')',
+        ]);
         return null;
     }
     $body = json_decode($raw, true);
     if (!is_array($body)) {
+        seventhTradeHubConnectionLog([
+            'direction' => 'outbound',
+            'event' => 'subscription_poll',
+            'ok' => false,
+            'http_status' => $code,
+            'integration_id' => $integrationId,
+            'context' => trim((string)($integration['context'] ?? '')),
+            'message' => 'Subscription poll returned invalid JSON',
+        ]);
         return null;
     }
 
-    seventhTradeHubApplySubscription($integrationId, $body);
+    $apply = seventhTradeHubApplySubscription($integrationId, $body);
+    $diag = seventhTradeHubShutdownDiagnostic();
+    $status = trim((string)($body['status'] ?? ''));
+    $shutdownActive = !empty($diag['active']);
+    $msg = 'Subscription poll OK; status=' . ($status !== '' ? $status : 'unknown');
+    if ($shutdownActive) {
+        $msg = 'SHUTDOWN via poll — site gate ACTIVE (' . $msg . ')';
+    } elseif (strtolower($status) === 'expired') {
+        $msg .= ' — Hub says expired but local gate NOT active: ' . ($diag['reason'] ?? '');
+    }
+
+    seventhTradeHubConnectionLog([
+        'direction' => 'outbound',
+        'event' => $shutdownActive ? 'shutdown_poll' : 'subscription_poll',
+        'ok' => true,
+        'http_status' => 200,
+        'integration_id' => $integrationId,
+        'context' => trim((string)($integration['context'] ?? '')),
+        'message' => $msg,
+        'detail' => [
+            'apply' => $apply,
+            'shutdown' => $diag,
+            'expires_at' => $body['expires_at'] ?? null,
+        ],
+    ]);
     return $body;
 }
 
@@ -1727,6 +2168,8 @@ function seventhTradeHubAdminSummary(): array
         ],
         'demo' => seventhTradeHubFormatIntegrationForAdmin($demo, SEVENTH_TRADEHUB_CONTEXT_DEMO),
         'owned' => seventhTradeHubFormatIntegrationForAdmin($owned, SEVENTH_TRADEHUB_CONTEXT_OWNED, $ownedSub),
+        'shutdown' => seventhTradeHubShutdownDiagnostic(),
+        'connection_logs' => seventhTradeHubListConnectionLogs(40),
         'curl_available' => function_exists('curl_init'),
     ];
 }
@@ -1755,6 +2198,8 @@ function seventhTradeHubFormatIntegrationForAdmin(?array $integration, string $c
         'capabilities' => seventhTradeHubCapabilitiesForContext($context),
         'readiness' => seventhTradeHubIdentityReadiness($context),
         'subscription' => $subscription,
-        'shutdown_active' => $context === SEVENTH_TRADEHUB_CONTEXT_OWNED && seventhTradeHubSubscriptionIsExpired($subscription),
+        'shutdown_active' => $context === SEVENTH_TRADEHUB_CONTEXT_OWNED
+            && !empty($integration['enabled'])
+            && seventhTradeHubSubscriptionIsExpired($subscription),
     ];
 }

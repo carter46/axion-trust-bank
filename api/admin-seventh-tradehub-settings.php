@@ -139,6 +139,57 @@ try {
         exit;
     }
 
+    if ($action === 'poll_owned_subscription') {
+        $owned = seventhTradeHubGetByContext(SEVENTH_TRADEHUB_CONTEXT_OWNED);
+        if (!$owned) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'Owned integration not found']);
+            exit;
+        }
+        $status = seventhTradeHubOperationalStatus($owned);
+        if (empty($status['ok'])) {
+            echo json_encode([
+                'success' => false,
+                'message' => $status['reason'] ?? 'Owned integration not ready',
+                'data' => seventhTradeHubAdminSummary(),
+            ]);
+            exit;
+        }
+        $body = seventhTradeHubPollSubscription($owned);
+        if ($body === null) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Hub poll failed — check Hub URL, Owned Integration ID / Client Secret, and that My Tools Setup completed',
+                'data' => seventhTradeHubAdminSummary(),
+            ]);
+            exit;
+        }
+        $summary = seventhTradeHubAdminSummary();
+        $diag = $summary['shutdown'] ?? seventhTradeHubShutdownDiagnostic();
+        $active = !empty($diag['active']);
+        echo json_encode([
+            'success' => true,
+            'message' => $active
+                ? ('Subscription pulled — shutdown is now ACTIVE. Non–super-admin traffic will see Session expired.')
+                : ('Subscription pulled — ' . ($diag['reason'] ?? 'not expired locally')),
+            'data' => $summary,
+            'shutdown' => $diag,
+        ]);
+        exit;
+    }
+
+    if ($action === 'get_connection_logs') {
+        $limit = (int)($input['limit'] ?? 50);
+        echo json_encode([
+            'success' => true,
+            'data' => [
+                'connection_logs' => seventhTradeHubListConnectionLogs($limit),
+                'shutdown' => seventhTradeHubShutdownDiagnostic(),
+            ],
+        ]);
+        exit;
+    }
+
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Invalid action']);
 } catch (Throwable $e) {

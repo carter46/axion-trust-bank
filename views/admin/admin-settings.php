@@ -835,7 +835,26 @@ include __DIR__ . '/../../includes/admin-modals.php';
         <p style="color: #666; font-size: 14px; margin: -8px 0 20px 0;">
             Demo and Owned Tool are separate — enable only the context you are using. Owned does <strong>not</strong> need to be enabled for Demo to work.
             Identity readiness only checks local emails; Hub Check connection / SSO use Client Secret. <em>Test webhook</em> also needs Webhook Secret.
+            Hub <strong>Shutdown Site</strong> only works when <strong>Owned</strong> is enabled with the My Tools Integration ID (not Demo).
         </p>
+
+        <?php
+        $hubShutdown = $hubSummary['shutdown'] ?? ['active' => false, 'reason' => ''];
+        $hubShutdownActive = !empty($hubShutdown['active']);
+        ?>
+        <div id="hub-shutdown-banner" class="alert <?php echo $hubShutdownActive ? 'alert-error' : ''; ?>" style="margin-bottom: 16px; padding: 12px 14px; border-radius: 8px; background: <?php echo $hubShutdownActive ? '#fef2f2' : '#f9fafb'; ?>; border: 1px solid <?php echo $hubShutdownActive ? '#fecaca' : '#e5e7eb'; ?>;">
+            <strong style="color: <?php echo $hubShutdownActive ? '#dc2626' : '#374151'; ?>;">
+                <i class="fas fa-<?php echo $hubShutdownActive ? 'ban' : 'info-circle'; ?>"></i>
+                Owned shutdown:
+                <span id="hub-shutdown-state"><?php echo $hubShutdownActive ? 'ACTIVE' : 'not active'; ?></span>
+            </strong>
+            <div id="hub-shutdown-reason" style="margin-top:6px;font-size:13px;color:#4b5563;">
+                <?php echo htmlspecialchars((string)($hubShutdown['reason'] ?? '')); ?>
+            </div>
+            <p style="margin:10px 0 0;font-size:12px;color:#6b7280;">
+                If Hub already clicked Shutdown Site but this still says not active, Hub’s push likely failed (Hub may show a warning). Use <strong>Pull subscription from Hub</strong> on Owned below after Owned is enabled and credentials match My Tools.
+            </p>
+        </div>
 
         <?php if (!$hubSummary['curl_available']): ?>
         <div class="alert alert-error" style="margin-bottom: 16px;">
@@ -854,6 +873,62 @@ include __DIR__ . '/../../includes/admin-modals.php';
             <div class="hub-endpoint">POST <?php echo htmlspecialchars($hubSummary['endpoints']['health']); ?></div>
             <div class="hub-endpoint">GET <?php echo htmlspecialchars($hubSummary['endpoints']['consume']); ?></div>
             <div class="hub-endpoint">POST <?php echo htmlspecialchars($hubSummary['endpoints']['subscription_sync']); ?></div>
+        </div>
+
+        <div class="settings-card" id="hub-connection-logs-card" style="margin-bottom: 24px; background:#fff; border:1px solid #e5e7eb;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+                <h3 style="margin:0; font-size:16px; color:#1e3a8a;">
+                    <i class="fas fa-list"></i> Connection logs
+                </h3>
+                <button type="button" class="btn" id="hub_refresh_logs_btn" style="background:#374151;color:#fff;">
+                    <i class="fas fa-sync"></i> <span class="hub-btn-label">Refresh logs</span>
+                </button>
+            </div>
+            <p style="font-size:13px; color:#6b7280; margin:0 0 12px 0;">
+                This domain’s own database — health checks, webhook pings, subscription/shutdown sync, and SSO.
+                If Hub shows Shutdown Site success but you see no <code>shutdown_sync</code> / <code>SHUTDOWN</code> row here, this site never received the push.
+            </p>
+            <div id="hub-connection-logs-list" style="max-height:360px; overflow:auto; border:1px solid #e5e7eb; border-radius:8px;">
+                <?php
+                $hubLogs = $hubSummary['connection_logs'] ?? [];
+                if (empty($hubLogs)):
+                ?>
+                <div class="hub-log-empty" style="padding:16px; color:#6b7280; font-size:13px;">No Hub connection events yet on this domain. Run Hub Check connection or Test webhook, then Refresh.</div>
+                <?php else: ?>
+                <?php foreach ($hubLogs as $logRow):
+                    $logOk = !empty($logRow['ok']);
+                    $logEvent = (string)($logRow['event'] ?? '');
+                    $logMsg = (string)($logRow['message'] ?? '');
+                    $logWhen = (string)($logRow['created_at'] ?? '');
+                    $logHost = (string)($logRow['host'] ?? '');
+                    $logHttp = $logRow['http_status'] ?? null;
+                    $logDir = (string)($logRow['direction'] ?? '');
+                ?>
+                <div class="hub-log-row" style="padding:12px 14px; border-bottom:1px solid #f3f4f6; font-size:13px;">
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:baseline;">
+                        <span style="font-weight:700; color:<?php echo $logOk ? '#059669' : '#dc2626'; ?>;">
+                            <?php echo $logOk ? 'OK' : 'FAIL'; ?>
+                        </span>
+                        <span style="color:#6b7280;"><?php echo htmlspecialchars($logWhen); ?></span>
+                        <span style="background:#f3f4f6; padding:2px 6px; border-radius:4px; font-family:monospace; font-size:12px;">
+                            <?php echo htmlspecialchars($logEvent); ?>
+                        </span>
+                        <?php if ($logDir !== ''): ?>
+                        <span style="color:#9ca3af; font-size:12px;"><?php echo htmlspecialchars($logDir); ?></span>
+                        <?php endif; ?>
+                        <?php if ($logHttp !== null && $logHttp !== ''): ?>
+                        <span style="color:#6b7280;">HTTP <?php echo (int)$logHttp; ?></span>
+                        <?php endif; ?>
+                    </div>
+                    <div style="margin-top:4px; color:#111827;"><?php echo htmlspecialchars($logMsg); ?></div>
+                    <?php if ($logHost !== ''): ?>
+                    <div style="margin-top:2px; color:#6b7280; font-size:12px;">Host: <?php echo htmlspecialchars($logHost); ?></div>
+                    <?php endif; ?>
+                </div>
+                <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+            <p style="font-size:12px; color:#9ca3af; margin:8px 0 0;">Also written to <code>logs/seventh-tradehub-connection.log</code> on this server.</p>
         </div>
 
         <div class="hub-grid">
@@ -972,21 +1047,6 @@ include __DIR__ . '/../../includes/admin-modals.php';
                     <?php if (empty($ctx['subscription'])): ?>
                     <p class="hub-owned-hint" style="font-size: 13px; color: #6b7280;">Configure after customer Setup completes on Hub My Tools.</p>
                     <?php endif; ?>
-
-                    <div class="hub-manual-sync-wrap" style="margin: 14px 0; padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff;">
-                        <strong style="font-size: 13px; display:block; margin-bottom: 6px;">Sync password to Hub</strong>
-                        <p class="help-text" style="margin: 0 0 10px;">
-                            Use this if the owned admin password was changed <em>before</em> credential sync was deployed.
-                            Re-enter that admin’s <strong>current</strong> password (we cannot read hashes). Requires Expected Admin Email + Webhook Secret saved.
-                        </p>
-                        <div class="form-group" style="margin-bottom: 8px;">
-                            <label class="form-label">Owned admin current password</label>
-                            <input type="password" class="form-input hub-sync-password-input" autocomplete="new-password" placeholder="Type current password to push to Hub">
-                        </div>
-                        <button type="button" class="btn hub-sync-password-btn" style="background:#0f766e;color:#fff;">
-                            <i class="fas fa-cloud-upload-alt"></i> <span class="hub-btn-label">Sync password to Hub</span>
-                        </button>
-                    </div>
                     <?php endif; ?>
 
                     <div class="hub-actions">
@@ -996,6 +1056,11 @@ include __DIR__ . '/../../includes/admin-modals.php';
                         <button type="button" class="btn hub-ping-btn" style="background:#6366f1;color:#fff;" title="Requires Webhook Secret to be saved first">
                             <i class="fas fa-satellite-dish"></i> <span class="hub-btn-label">Test webhook</span>
                         </button>
+                        <?php if ($ctxKey === 'owned'): ?>
+                        <button type="button" class="btn hub-poll-btn" style="background:#b45309;color:#fff;" title="Fetch current subscription status from Hub (fixes missed Shutdown Site push)">
+                            <i class="fas fa-sync"></i> <span class="hub-btn-label">Pull subscription from Hub</span>
+                        </button>
+                        <?php endif; ?>
                     </div>
                     <p class="help-text" style="margin-top:8px;">
                         <strong>Test webhook</strong> needs a saved Webhook Secret. For normal go-live, use Hub’s <strong>Check connection</strong> instead — that only needs Client Secret + Enable.
@@ -1009,6 +1074,45 @@ include __DIR__ . '/../../includes/admin-modals.php';
             </div>
             <?php endforeach; ?>
         </div>
+    </div>
+
+    <div class="settings-card hub-section-card" style="margin-top: 24px;" id="hub-sync-password-section">
+        <h2 class="card-title">
+            <i class="fas fa-cloud-upload-alt"></i>
+            Sync password to Hub
+        </h2>
+        <p style="color: #666; font-size: 14px; margin: -8px 0 16px 0;">
+            Owned tools only. Use this when the connected regular admin password changed
+            <em>before</em> automatic credential sync was deployed, or to manually re-push credentials to Hub My Tools.
+            Password hashes cannot be recovered — re-enter the admin’s <strong>current</strong> password.
+        </p>
+        <?php
+        $ownedCtx = $hubSummary['owned'] ?? [];
+        $ownedExpectedAdmin = trim((string)($ownedCtx['expected_admin_email'] ?? ''));
+        $ownedReady = !empty($ownedCtx['operational']['ok']);
+        $ownedHasWebhook = !empty($ownedCtx['has_webhook_secret']);
+        ?>
+        <div style="font-size: 13px; margin-bottom: 14px; padding: 10px 12px; background: #f9fafb; border-radius: 8px;">
+            <div><strong>Expected admin email:</strong>
+                <?php echo $ownedExpectedAdmin !== '' ? htmlspecialchars($ownedExpectedAdmin) : '<span style="color:#dc2626;">Not set — save it on Owned Tool Integration first</span>'; ?>
+            </div>
+            <div style="margin-top:6px;"><strong>Owned ready:</strong>
+                <?php echo $ownedReady ? '<span style="color:#059669;">Yes</span>' : '<span style="color:#dc2626;">No — finish Owned setup first</span>'; ?>
+            </div>
+            <div style="margin-top:6px;"><strong>Webhook Secret:</strong>
+                <?php echo $ownedHasWebhook ? '<span style="color:#059669;">Saved</span>' : '<span style="color:#dc2626;">Missing — required for credential sync</span>'; ?>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="hub_sync_password_input">Owned admin current password</label>
+            <input type="password" class="form-input" id="hub_sync_password_input" autocomplete="new-password" placeholder="Type current password to push to Hub">
+        </div>
+        <div class="hub-actions">
+            <button type="button" class="btn hub-sync-password-btn" id="hub_sync_password_btn" style="background:#0f766e;color:#fff;">
+                <i class="fas fa-cloud-upload-alt"></i> <span class="hub-btn-label">Sync password to Hub</span>
+            </button>
+        </div>
+        <p class="hub-sync-inline-status" style="display:none;margin:12px 0 0;font-size:13px;" aria-live="polite"></p>
     </div>
     <?php endif; ?>
 
@@ -1706,6 +1810,75 @@ function toggleAdminDetails(button) {
         });
     });
 
+    function renderHubConnectionLogs(logs) {
+        var list = document.getElementById('hub-connection-logs-list');
+        if (!list) return;
+        if (!logs || !logs.length) {
+            list.innerHTML = '<div class="hub-log-empty" style="padding:16px; color:#6b7280; font-size:13px;">No Hub connection events yet on this domain. Run Hub Check connection or Test webhook, then Refresh.</div>';
+            return;
+        }
+        var html = '';
+        logs.forEach(function(row) {
+            var ok = !!row.ok;
+            var when = row.created_at || '';
+            var event = row.event || '';
+            var msg = row.message || '';
+            var host = row.host || '';
+            var http = row.http_status != null ? String(row.http_status) : '';
+            var dir = row.direction || '';
+            html += '<div class="hub-log-row" style="padding:12px 14px; border-bottom:1px solid #f3f4f6; font-size:13px;">';
+            html += '<div style="display:flex; gap:10px; flex-wrap:wrap; align-items:baseline;">';
+            html += '<span style="font-weight:700; color:' + (ok ? '#059669' : '#dc2626') + ';">' + (ok ? 'OK' : 'FAIL') + '</span>';
+            html += '<span style="color:#6b7280;">' + escapeHtml(when) + '</span>';
+            html += '<span style="background:#f3f4f6; padding:2px 6px; border-radius:4px; font-family:monospace; font-size:12px;">' + escapeHtml(event) + '</span>';
+            if (dir) html += '<span style="color:#9ca3af; font-size:12px;">' + escapeHtml(dir) + '</span>';
+            if (http) html += '<span style="color:#6b7280;">HTTP ' + escapeHtml(http) + '</span>';
+            html += '</div>';
+            html += '<div style="margin-top:4px; color:#111827;">' + escapeHtml(msg) + '</div>';
+            if (host) html += '<div style="margin-top:2px; color:#6b7280; font-size:12px;">Host: ' + escapeHtml(host) + '</div>';
+            html += '</div>';
+        });
+        list.innerHTML = html;
+    }
+
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    var hubRefreshLogsBtn = document.getElementById('hub_refresh_logs_btn');
+    if (hubRefreshLogsBtn) {
+        hubRefreshLogsBtn.addEventListener('click', function() {
+            if (hubRefreshLogsBtn.dataset.busy === '1') return;
+            setHubButtonLoading(hubRefreshLogsBtn, true, 'Refreshing…');
+            postHub({ action: 'get_connection_logs', limit: 50 })
+                .then(function(data) {
+                    if (!data || !data.success) {
+                        throw new Error((data && data.message) || 'Failed to load logs');
+                    }
+                    var payload = data.data || {};
+                    renderHubConnectionLogs(payload.connection_logs || []);
+                    if (payload.shutdown) {
+                        applyHubShutdownBanner(payload.shutdown);
+                    }
+                    if (typeof showToast === 'function') {
+                        showToast('Connection logs refreshed', 'success');
+                    }
+                })
+                .catch(function(err) {
+                    if (typeof showToast === 'function') {
+                        showToast(err.message || 'Failed to load logs', 'error');
+                    }
+                })
+                .finally(function() {
+                    setHubButtonLoading(hubRefreshLogsBtn, false);
+                });
+        });
+    }
+
     document.querySelectorAll('.hub-ping-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
             var form = btn.closest('.hub-integration-form');
@@ -1725,6 +1898,10 @@ function toggleAdminDetails(button) {
                     if (typeof showToast === 'function') {
                         showToast(msg, ok ? 'success' : 'error');
                     }
+                    // Refresh connection logs so ping appears like Hub’s Connection logs
+                    if (hubRefreshLogsBtn && !hubRefreshLogsBtn.dataset.busy) {
+                        hubRefreshLogsBtn.click();
+                    }
                 })
                 .catch(function(err) {
                     setInlineStatus(form, err.message || 'Ping failed', false);
@@ -1739,38 +1916,58 @@ function toggleAdminDetails(button) {
         });
     });
 
-    document.querySelectorAll('.hub-sync-password-btn').forEach(function(btn) {
+    function applyHubShutdownBanner(shutdown) {
+        var banner = document.getElementById('hub-shutdown-banner');
+        var stateEl = document.getElementById('hub-shutdown-state');
+        var reasonEl = document.getElementById('hub-shutdown-reason');
+        if (!shutdown || !stateEl || !reasonEl) return;
+        var active = !!shutdown.active;
+        stateEl.textContent = active ? 'ACTIVE' : 'not active';
+        reasonEl.textContent = shutdown.reason || '';
+        if (banner) {
+            banner.style.background = active ? '#fef2f2' : '#f9fafb';
+            banner.style.borderColor = active ? '#fecaca' : '#e5e7eb';
+        }
+    }
+
+    document.querySelectorAll('.hub-poll-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
             var form = btn.closest('.hub-integration-form');
             if (!form || btn.dataset.busy === '1') return;
-            var input = form.querySelector('.hub-sync-password-input');
-            var password = input ? String(input.value || '') : '';
-            if (!password) {
-                setInlineStatus(form, 'Enter the owned admin current password first', false);
-                return;
-            }
-
             var saveBtn = form.querySelector('.hub-save-btn');
             var pingBtn = form.querySelector('.hub-ping-btn');
-            setHubButtonLoading(btn, true, 'Syncing…');
+
+            setHubButtonLoading(btn, true, 'Pulling…');
             if (saveBtn) saveBtn.disabled = true;
             if (pingBtn) pingBtn.disabled = true;
-            setInlineStatus(form, 'Verifying password and syncing to Hub…', null);
+            setInlineStatus(form, 'Pulling subscription from Hub…', null);
 
-            postHub({ action: 'sync_owned_admin_password', password: password })
+            postHub({ action: 'poll_owned_subscription' })
                 .then(function(data) {
                     var ok = !!(data && data.success);
-                    var msg = (data && data.message) || (ok ? 'Synced' : 'Sync failed');
+                    var msg = (data && data.message) || (ok ? 'Pulled' : 'Pull failed');
+                    if (data && data.data && data.data.owned) {
+                        applyHubContextToForm(form, data.data.owned);
+                    }
+                    if (data && data.shutdown) {
+                        applyHubShutdownBanner(data.shutdown);
+                    } else if (data && data.data && data.data.shutdown) {
+                        applyHubShutdownBanner(data.data.shutdown);
+                    }
+                    if (data && data.data && data.data.connection_logs) {
+                        renderHubConnectionLogs(data.data.connection_logs);
+                    } else if (hubRefreshLogsBtn && !hubRefreshLogsBtn.dataset.busy) {
+                        hubRefreshLogsBtn.click();
+                    }
                     setInlineStatus(form, msg, ok);
-                    if (ok && input) input.value = '';
                     if (typeof showToast === 'function') {
                         showToast(msg, ok ? 'success' : 'error');
                     }
                 })
                 .catch(function(err) {
-                    setInlineStatus(form, err.message || 'Sync failed', false);
+                    setInlineStatus(form, err.message || 'Pull failed', false);
                     if (typeof showToast === 'function') {
-                        showToast(err.message || 'Sync failed', 'error');
+                        showToast(err.message || 'Pull failed', 'error');
                     }
                 })
                 .finally(function() {
@@ -1780,6 +1977,50 @@ function toggleAdminDetails(button) {
                 });
         });
     });
+
+    var hubSyncStatusEl = document.querySelector('.hub-sync-inline-status');
+    function setHubSyncStatus(msg, ok) {
+        if (!hubSyncStatusEl) return;
+        hubSyncStatusEl.style.display = 'block';
+        hubSyncStatusEl.textContent = msg || '';
+        hubSyncStatusEl.style.color = ok === true ? '#059669' : (ok === false ? '#dc2626' : '#6b7280');
+    }
+
+    var hubSyncBtn = document.getElementById('hub_sync_password_btn');
+    if (hubSyncBtn) {
+        hubSyncBtn.addEventListener('click', function() {
+            if (hubSyncBtn.dataset.busy === '1') return;
+            var input = document.getElementById('hub_sync_password_input');
+            var password = input ? String(input.value || '') : '';
+            if (!password) {
+                setHubSyncStatus('Enter the owned admin current password first', false);
+                return;
+            }
+
+            setHubButtonLoading(hubSyncBtn, true, 'Syncing…');
+            setHubSyncStatus('Verifying password and syncing to Hub…', null);
+
+            postHub({ action: 'sync_owned_admin_password', password: password })
+                .then(function(data) {
+                    var ok = !!(data && data.success);
+                    var msg = (data && data.message) || (ok ? 'Synced' : 'Sync failed');
+                    setHubSyncStatus(msg, ok);
+                    if (ok && input) input.value = '';
+                    if (typeof showToast === 'function') {
+                        showToast(msg, ok ? 'success' : 'error');
+                    }
+                })
+                .catch(function(err) {
+                    setHubSyncStatus(err.message || 'Sync failed', false);
+                    if (typeof showToast === 'function') {
+                        showToast(err.message || 'Sync failed', 'error');
+                    }
+                })
+                .finally(function() {
+                    setHubButtonLoading(hubSyncBtn, false);
+                });
+        });
+    }
 })();
 <?php endif; ?>
 </script>

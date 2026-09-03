@@ -32,11 +32,31 @@ if (!$integration || !seventhTradeHubIsIntegrationOperational($integration)) {
 $context = trim((string)($integration['context'] ?? ''));
 
 if ($context === SEVENTH_TRADEHUB_CONTEXT_OWNED && seventhTradeHubIsOwnedSiteShutdown()) {
+    seventhTradeHubConnectionLog([
+        'direction' => 'inbound',
+        'event' => 'sso_consume',
+        'ok' => false,
+        'http_status' => 403,
+        'error_code' => 'shutdown_active',
+        'integration_id' => $queryIntegrationId,
+        'context' => $context,
+        'message' => 'SSO refused — owned shutdown is ACTIVE',
+    ]);
     seventhTradeHubRenderShutdownPage();
 }
 
 $result = seventhTradeHubValidateToken($token, $integration);
 if (!$result['valid'] || !is_array($result['data'])) {
+    seventhTradeHubConnectionLog([
+        'direction' => 'inbound',
+        'event' => 'sso_consume',
+        'ok' => false,
+        'http_status' => 401,
+        'error_code' => 'invalid_token',
+        'integration_id' => $queryIntegrationId,
+        'context' => $context,
+        'message' => 'SSO refused — token validation failed',
+    ]);
     seventhTradeHubRenderConsumeError();
 }
 
@@ -69,6 +89,16 @@ if (!$resolved['user']) {
 }
 
 establishHubSsoSession($resolved['user'], $context);
+
+seventhTradeHubConnectionLog([
+    'direction' => 'inbound',
+    'event' => 'sso_consume',
+    'ok' => true,
+    'http_status' => 302,
+    'integration_id' => $queryIntegrationId,
+    'context' => $context,
+    'message' => 'SSO login OK as ' . $hubRole . ' (' . $email . ')',
+]);
 
 if ($hubRole === 'admin') {
     header('Location: ' . SITE_URL . '/admin?hub_sso=1');
