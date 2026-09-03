@@ -572,6 +572,9 @@ class AuthController {
     
     private function createSession($user) {
         establishUserSession($user);
+        if (function_exists('seventhTradeHubRefuseNonSuperAdminDuringShutdown')) {
+            seventhTradeHubRefuseNonSuperAdminDuringShutdown();
+        }
     }
     
     private function sendLoginAlert($user) {

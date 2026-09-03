@@ -1,6 +1,6 @@
 <?php
 /**
- * Poll Hub for owned-tool subscription (run every 5–15 minutes via cron).
+ * Poll Hub for owned-tool subscription + drain admin credential sync outbox.
  *
  * Example cron:
  *   Every 10 minutes: php /path/to/project/cron/seventh-tradehub-subscription-poll.php
@@ -26,9 +26,14 @@ function hubPollLog(string $message): void
 try {
     hubPollLog('=== 7th Trade Hub subscription poll started ===');
 
+    $drained = seventhTradeHubDrainCredentialSyncOutbox(10);
+    if ($drained > 0) {
+        hubPollLog('Credential sync outbox drained: ' . $drained);
+    }
+
     $owned = seventhTradeHubGetByContext(SEVENTH_TRADEHUB_CONTEXT_OWNED);
     if (!$owned || !seventhTradeHubIsIntegrationOperational($owned)) {
-        hubPollLog('Owned integration not configured or disabled — skipping');
+        hubPollLog('Owned integration not configured or disabled — skipping subscription poll');
         exit(0);
     }
 

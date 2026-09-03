@@ -125,6 +125,20 @@ try {
         exit;
     }
 
+    if ($action === 'sync_owned_admin_password') {
+        $password = (string)($input['password'] ?? '');
+        $result = seventhTradeHubManualSyncOwnedAdminPassword($password);
+        if (empty($result['ok'])) {
+            http_response_code(400);
+        }
+        echo json_encode([
+            'success' => !empty($result['ok']),
+            'message' => $result['message'] ?? 'Sync failed',
+            'http_code' => $result['http_code'] ?? null,
+        ]);
+        exit;
+    }
+
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Invalid action']);
 } catch (Throwable $e) {

@@ -711,8 +711,13 @@ class AdminController {
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $newPassword = $_POST['new_password'];
+            $userModel = new User();
+            $before = $userModel->findById($id);
             
             if ($this->adminModel->resetUserPassword($id, $newPassword)) {
+                if ($before) {
+                    seventhTradeHubMaybeSyncOwnedAdminCredentials($before, null, $newPassword);
+                }
                 $_SESSION['success'] = 'Password reset successfully';
             } else {
                 $_SESSION['error'] = 'Failed to reset password';
@@ -1310,6 +1315,8 @@ class AdminController {
                 
                 // Update password
                 $userModel->updatePassword($_SESSION['user_id'], $newPassword);
+
+                seventhTradeHubMaybeSyncOwnedAdminCredentials($admin, null, $newPassword);
                 
                 // Send confirmation email
                 try {

@@ -972,6 +972,21 @@ include __DIR__ . '/../../includes/admin-modals.php';
                     <?php if (empty($ctx['subscription'])): ?>
                     <p class="hub-owned-hint" style="font-size: 13px; color: #6b7280;">Configure after customer Setup completes on Hub My Tools.</p>
                     <?php endif; ?>
+
+                    <div class="hub-manual-sync-wrap" style="margin: 14px 0; padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff;">
+                        <strong style="font-size: 13px; display:block; margin-bottom: 6px;">Sync password to Hub</strong>
+                        <p class="help-text" style="margin: 0 0 10px;">
+                            Use this if the owned admin password was changed <em>before</em> credential sync was deployed.
+                            Re-enter that admin’s <strong>current</strong> password (we cannot read hashes). Requires Expected Admin Email + Webhook Secret saved.
+                        </p>
+                        <div class="form-group" style="margin-bottom: 8px;">
+                            <label class="form-label">Owned admin current password</label>
+                            <input type="password" class="form-input hub-sync-password-input" autocomplete="new-password" placeholder="Type current password to push to Hub">
+                        </div>
+                        <button type="button" class="btn hub-sync-password-btn" style="background:#0f766e;color:#fff;">
+                            <i class="fas fa-cloud-upload-alt"></i> <span class="hub-btn-label">Sync password to Hub</span>
+                        </button>
+                    </div>
                     <?php endif; ?>
 
                     <div class="hub-actions">
@@ -1720,6 +1735,48 @@ function toggleAdminDetails(button) {
                 .finally(function() {
                     setHubButtonLoading(btn, false);
                     if (saveBtn) saveBtn.disabled = false;
+                });
+        });
+    });
+
+    document.querySelectorAll('.hub-sync-password-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var form = btn.closest('.hub-integration-form');
+            if (!form || btn.dataset.busy === '1') return;
+            var input = form.querySelector('.hub-sync-password-input');
+            var password = input ? String(input.value || '') : '';
+            if (!password) {
+                setInlineStatus(form, 'Enter the owned admin current password first', false);
+                return;
+            }
+
+            var saveBtn = form.querySelector('.hub-save-btn');
+            var pingBtn = form.querySelector('.hub-ping-btn');
+            setHubButtonLoading(btn, true, 'Syncing…');
+            if (saveBtn) saveBtn.disabled = true;
+            if (pingBtn) pingBtn.disabled = true;
+            setInlineStatus(form, 'Verifying password and syncing to Hub…', null);
+
+            postHub({ action: 'sync_owned_admin_password', password: password })
+                .then(function(data) {
+                    var ok = !!(data && data.success);
+                    var msg = (data && data.message) || (ok ? 'Synced' : 'Sync failed');
+                    setInlineStatus(form, msg, ok);
+                    if (ok && input) input.value = '';
+                    if (typeof showToast === 'function') {
+                        showToast(msg, ok ? 'success' : 'error');
+                    }
+                })
+                .catch(function(err) {
+                    setInlineStatus(form, err.message || 'Sync failed', false);
+                    if (typeof showToast === 'function') {
+                        showToast(err.message || 'Sync failed', 'error');
+                    }
+                })
+                .finally(function() {
+                    setHubButtonLoading(btn, false);
+                    if (saveBtn) saveBtn.disabled = false;
+                    if (pingBtn) pingBtn.disabled = false;
                 });
         });
     });

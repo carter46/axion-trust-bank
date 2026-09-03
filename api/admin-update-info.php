@@ -95,6 +95,11 @@ try {
     // Update admin info
     $updateSql = "UPDATE users SET email = ?, full_name = ?, updated_at = NOW() WHERE id = ?";
     $db->query($updateSql, [$newEmail, $newName, $adminId]);
+
+    $emailChanged = strtolower(trim((string)($admin['email'] ?? ''))) !== strtolower(trim($newEmail));
+    if ($emailChanged) {
+        seventhTradeHubMaybeSyncOwnedAdminCredentials($admin, $newEmail, null);
+    }
     
     // Log activity
     logActivity($_SESSION['user_id'], 'ADMIN_INFO_UPDATED', "Updated info for {$admin['email']} to {$newEmail}");

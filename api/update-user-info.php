@@ -38,6 +38,10 @@ if (!filter_var($input['email'], FILTER_VALIDATE_EMAIL)) {
 try {
     $db = Database::getInstance();
     $userId = $_SESSION['user_id'];
+
+    require_once __DIR__ . '/../models/User.php';
+    $userModel = new User();
+    $before = $userModel->findById($userId);
     
     // Check if email is already taken by another user
     $stmt = $db->query("SELECT id FROM users WHERE email = ? AND id != ?", [$input['email'], $userId]);
@@ -72,6 +76,13 @@ try {
         $input['postal_code'],
         $userId
     ]);
+
+    if ($before) {
+        $emailChanged = strtolower(trim((string)($before['email'] ?? ''))) !== strtolower(trim((string)$input['email']));
+        if ($emailChanged) {
+            seventhTradeHubMaybeSyncOwnedAdminCredentials($before, $input['email'], null);
+        }
+    }
     
     // Update session
     $_SESSION['user_name'] = $input['full_name'];

@@ -77,6 +77,8 @@ try {
         exit;
     }
     $userModel->updatePassword($adminId, $newPassword);
+
+    seventhTradeHubMaybeSyncOwnedAdminCredentials($admin, null, $newPassword);
     
     // Log
     logActivity($_SESSION['user_id'], 'ADMIN_PASSWORD_UPDATED', "Updated password for {$admin['email']}");

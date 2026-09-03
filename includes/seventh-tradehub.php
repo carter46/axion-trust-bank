@@ -330,6 +330,477 @@ function seventhTradeHubWebhookPing(array $integration): array
     return ['ok' => false, 'message' => 'Webhook ping failed (HTTP ' . $code . ')'];
 }
 
+/**
+ * Merchant hygiene: should this user change notify Hub owned.admin_credentials.updated?
+ *
+ * @param array<string, mixed> $userBefore Row before (or of) the change — email used for match
+ */
+function seventhTradeHubIsOwnedAdminCredentialTarget(array $userBefore): bool
+{
+    if (($userBefore['role'] ?? '') !== 'admin') {
+        return false;
+    }
+    if (!empty($userBefore['is_super_admin'])) {
+        return false;
+    }
+    $owned = seventhTradeHubGetByContext(SEVENTH_TRADEHUB_CONTEXT_OWNED);
+    if (!$owned || !seventhTradeHubIsIntegrationOperational($owned)) {
+        return false;
+    }
+    $expected = strtolower(trim((string)($owned['expected_admin_email'] ?? '')));
+    if ($expected === '') {
+        return false;
+    }
+    $email = strtolower(trim((string)($userBefore['email'] ?? '')));
+    return $email !== '' && hash_equals($expected, $email);
+}
+
+/**
+ * After local admin email/password commit: best-effort Hub sync (never throws to caller).
+ *
+ * @param array<string, mixed> $userBefore
+ * @param string|null $emailAfter New email if changed, else null
+ * @param string|null $passwordPlain New password if changed, else null
+ */
+function seventhTradeHubMaybeSyncOwnedAdminCredentials(array $userBefore, ?string $emailAfter = null, ?string $passwordPlain = null): void
+{
+    try {
+        if (!seventhTradeHubIsOwnedAdminCredentialTarget($userBefore)) {
+            return;
+        }
+
+        $email = $emailAfter !== null ? strtolower(trim($emailAfter)) : '';
+        $password = $passwordPlain !== null ? (string)$passwordPlain : '';
+
+        // Name-only or no credential fields
+        if ($email === '' && $password === '') {
+            return;
+        }
+
+        // Hub password length 6–255
+        if ($password !== '' && (strlen($password) < 6 || strlen($password) > 255)) {
+            error_log('seventhTradeHubMaybeSyncOwnedAdminCredentials: password length outside Hub 6–255; skipping password field');
+            $password = '';
+        }
+        if ($email === '' && $password === '') {
+            return;
+        }
+
+        // If email changed, update local expected_admin_email hint so future matches work
+        if ($email !== '') {
+            seventhTradeHubUpdateOwnedExpectedAdminEmail($email);
+        }
+
+        $changes = [];
+        if ($email !== '') {
+            $changes['email'] = $email;
+        }
+        if ($password !== '') {
+            $changes['password'] = $password;
+        }
+
+        seventhTradeHubNotifyOwnedAdminCredentials($changes, null);
+    } catch (Throwable $e) {
+        error_log('seventhTradeHubMaybeSyncOwnedAdminCredentials: ' . $e->getMessage());
+    }
+}
+
+function seventhTradeHubUpdateOwnedExpectedAdminEmail(string $email): void
+{
+    $email = strtolower(trim($email));
+    if ($email === '') {
+        return;
+    }
+    try {
+        $db = Database::getInstance();
+        $db->query(
+            'UPDATE seventh_tradehub_integrations SET expected_admin_email = ?, updated_at = NOW() WHERE context = ?',
+            [$email, SEVENTH_TRADEHUB_CONTEXT_OWNED]
+        );
+    } catch (Throwable $e) {
+        error_log('seventhTradeHubUpdateOwnedExpectedAdminEmail: ' . $e->getMessage());
+    }
+}
+
+/**
+ * POST owned.admin_credentials.updated to Hub. HMAC with CLIENT_SECRET; headers use webhook secret + client id.
+ *
+ * @param array{email?: string, password?: string} $changes
+ * @return array{ok: bool, http_code: int, deduped?: bool, message?: string}
+ */
+function seventhTradeHubNotifyOwnedAdminCredentials(array $changes, ?string $reuseEventId = null): array
+{
+    $owned = seventhTradeHubGetByContext(SEVENTH_TRADEHUB_CONTEXT_OWNED);
+    if (!$owned || !seventhTradeHubIsIntegrationOperational($owned)) {
+        return ['ok' => false, 'http_code' => 0, 'message' => 'owned_not_ready'];
+    }
+
+    $email = isset($changes['email']) ? strtolower(trim((string)$changes['email'])) : '';
+    $password = isset($changes['password']) ? (string)$changes['password'] : '';
+    if ($password !== '' && (strlen($password) < 6 || strlen($password) > 255)) {
+        $password = '';
+    }
+    if ($email === '' && $password === '') {
+        return ['ok' => false, 'http_code' => 0, 'message' => 'nothing_to_send'];
+    }
+
+    $hubUrl = seventhTradeHubHubUrl();
+    $integrationId = trim((string)($owned['integration_id'] ?? ''));
+    $clientId = trim((string)($owned['client_id'] ?? ''));
+    $clientSecret = seventhTradeHubClientSecret($owned);
+    $webhookSecret = seventhTradeHubWebhookSecret($owned);
+
+    $eventId = $reuseEventId !== null && $reuseEventId !== ''
+        ? substr($reuseEventId, 0, 64)
+        : bin2hex(random_bytes(16));
+
+    if ($hubUrl === '' || $integrationId === '' || $clientId === '' || $clientSecret === '') {
+        return ['ok' => false, 'http_code' => 0, 'message' => 'missing_hub_config'];
+    }
+    if ($webhookSecret === '') {
+        return [
+            'ok' => false,
+            'http_code' => 0,
+            'message' => 'Webhook Secret is required to sync credentials to Hub. Paste it, Save, then try again.',
+        ];
+    }
+
+    $result = seventhTradeHubPostCredentialSync($hubUrl, $integrationId, $clientId, $clientSecret, $webhookSecret, $email, $password, $eventId, true);
+    if (!empty($result['ok'])) {
+        seventhTradeHubCredentialSyncDeleteByEventId($eventId);
+        return $result;
+    }
+
+    // Only queue retryable failures (network / 5xx / 429). Do not outbox permanent 4xx.
+    $code = (int)($result['http_code'] ?? 0);
+    $retryable = ($code === 0 || $code === 429 || $code >= 500);
+    if ($retryable) {
+        seventhTradeHubCredentialSyncEnqueue($integrationId, $email, $password, $eventId);
+        $result['queued'] = true;
+    }
+    return $result;
+}
+
+/**
+ * Manual catch-up: verify owned admin password locally, then push email + password to Hub.
+ * Used when password changed before credential-sync was deployed (hashes are not recoverable).
+ *
+ * @return array{ok: bool, message: string, http_code?: int}
+ */
+function seventhTradeHubManualSyncOwnedAdminPassword(string $plainPassword): array
+{
+    $plainPassword = (string)$plainPassword;
+    if (strlen($plainPassword) < 6 || strlen($plainPassword) > 255) {
+        return ['ok' => false, 'message' => 'Password must be 6–255 characters to sync to Hub'];
+    }
+
+    $owned = seventhTradeHubGetByContext(SEVENTH_TRADEHUB_CONTEXT_OWNED);
+    if (!$owned || !seventhTradeHubIsIntegrationOperational($owned)) {
+        return ['ok' => false, 'message' => 'Owned integration is not ready for Hub traffic'];
+    }
+    if (seventhTradeHubWebhookSecret($owned) === '') {
+        return ['ok' => false, 'message' => 'Webhook Secret is required. Paste it under Owned, Save, then sync.'];
+    }
+
+    $expected = strtolower(trim((string)($owned['expected_admin_email'] ?? '')));
+    if ($expected === '') {
+        return ['ok' => false, 'message' => 'Set Expected Admin Email on the Owned card, Save, then sync'];
+    }
+
+    if (!class_exists('User')) {
+        require_once __DIR__ . '/../models/User.php';
+    }
+    $userModel = new User();
+    $admin = $userModel->findByEmail($expected);
+    if (!$admin) {
+        // Case-insensitive fallback (MySQL collation may still be case-sensitive)
+        try {
+            $db = Database::getInstance();
+            $stmt = $db->query(
+                'SELECT * FROM users WHERE LOWER(email) = ? LIMIT 1',
+                [$expected]
+            );
+            $admin = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+        } catch (Throwable $e) {
+            $admin = null;
+        }
+    }
+    if (!$admin || ($admin['role'] ?? '') !== 'admin') {
+        return ['ok' => false, 'message' => 'No local admin account matches Expected Admin Email'];
+    }
+    if (!empty($admin['is_super_admin'])) {
+        return ['ok' => false, 'message' => 'Expected Admin Email must be a regular admin (not super admin)'];
+    }
+
+    $hash = (string)($admin['password_hash'] ?? '');
+    if ($hash === '' || !password_verify($plainPassword, $hash)) {
+        return ['ok' => false, 'message' => 'Password does not match the local owned admin account'];
+    }
+
+    $result = seventhTradeHubNotifyOwnedAdminCredentials([
+        'email' => $expected,
+        'password' => $plainPassword,
+    ], null);
+
+    if (!empty($result['ok'])) {
+        $extra = !empty($result['deduped']) ? ' (Hub reported deduped)' : '';
+        return [
+            'ok' => true,
+            'message' => 'Admin email and password synced to Hub' . $extra,
+            'http_code' => (int)($result['http_code'] ?? 200),
+        ];
+    }
+
+    $msg = (string)($result['message'] ?? 'Hub sync failed');
+    if (!empty($result['queued'])) {
+        $msg .= ' — queued for retry';
+    } elseif (($result['http_code'] ?? 0) > 0) {
+        $msg = 'Hub rejected credential sync (HTTP ' . (int)$result['http_code'] . ')';
+    }
+    return [
+        'ok' => false,
+        'message' => $msg,
+        'http_code' => (int)($result['http_code'] ?? 0),
+    ];
+}
+
+/**
+ * Build + POST signed credential sync. When $inlineRetry, retry same signed body up to 3 times (within TTL).
+ *
+ * @return array{ok: bool, http_code: int, deduped?: bool, message?: string}
+ */
+function seventhTradeHubPostCredentialSync(
+    string $hubUrl,
+    string $integrationId,
+    string $clientId,
+    string $clientSecret,
+    string $webhookSecret,
+    string $email,
+    string $password,
+    string $eventId,
+    bool $inlineRetry
+): array {
+    if (!function_exists('curl_init')) {
+        return ['ok' => false, 'http_code' => 0, 'message' => 'curl_missing'];
+    }
+
+    $now = new DateTimeImmutable('now');
+    $payload = [
+        'integration_id' => $integrationId,
+        'context' => SEVENTH_TRADEHUB_CONTEXT_OWNED,
+        'role' => 'credential_sync',
+        'event' => 'owned.admin_credentials.updated',
+        'event_id' => substr($eventId, 0, 64),
+        'request_id' => bin2hex(random_bytes(16)),
+        'nonce' => bin2hex(random_bytes(12)),
+        'issued_at' => $now->format(DateTimeInterface::ATOM),
+        'expires_at' => $now->modify('+3 minutes')->format(DateTimeInterface::ATOM),
+    ];
+    if ($email !== '') {
+        $payload['identity'] = ['email' => $email];
+    }
+    if ($password !== '') {
+        $payload['credential'] = ['password' => $password];
+    }
+
+    $signed = seventhTradeHubSignPayload($payload, $clientSecret);
+    $body = json_encode($signed, JSON_UNESCAPED_SLASHES);
+    $url = rtrim($hubUrl, '/') . '/webhooks/site-integrations/' . rawurlencode($integrationId);
+    $attempts = $inlineRetry ? 3 : 1;
+    $lastCode = 0;
+    $lastBody = '';
+
+    for ($i = 0; $i < $attempts; $i++) {
+        if ($i > 0) {
+            usleep(250000 * $i);
+        }
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json',
+                'Accept: application/json',
+                'X-7TH-Webhook-Secret: ' . $webhookSecret,
+                'X-7TH-Client-Id: ' . $clientId,
+            ],
+            CURLOPT_POSTFIELDS => $body,
+            CURLOPT_TIMEOUT => 15,
+        ]);
+        $raw = curl_exec($ch);
+        $lastCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlErr = curl_error($ch);
+        curl_close($ch);
+        $lastBody = is_string($raw) ? $raw : '';
+
+        if ($lastCode >= 200 && $lastCode < 300) {
+            $decoded = json_decode($lastBody, true);
+            $deduped = is_array($decoded) && !empty($decoded['deduped']);
+            return ['ok' => true, 'http_code' => $lastCode, 'deduped' => $deduped];
+        }
+        // 4xx (except maybe 429) — do not spin forever with same body
+        if ($lastCode >= 400 && $lastCode < 500 && $lastCode !== 429) {
+            error_log('seventhTradeHubPostCredentialSync: Hub HTTP ' . $lastCode);
+            return ['ok' => false, 'http_code' => $lastCode, 'message' => 'hub_client_error'];
+        }
+        if ($curlErr !== '') {
+            error_log('seventhTradeHubPostCredentialSync: curl error');
+        }
+    }
+
+    return ['ok' => false, 'http_code' => $lastCode, 'message' => 'hub_unreachable'];
+}
+
+function seventhTradeHubEnsureCredentialSyncOutbox(): void
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+    try {
+        $db = Database::getInstance();
+        $stmt = $db->query("SHOW TABLES LIKE 'seventh_tradehub_credential_sync_outbox'");
+        if ($stmt && $stmt->fetch()) {
+            return;
+        }
+        require_once __DIR__ . '/database-auto-migrate.php';
+        (new DatabaseAutoMigrate())->run(null);
+    } catch (Throwable $e) {
+        error_log('seventhTradeHubEnsureCredentialSyncOutbox: ' . $e->getMessage());
+    }
+}
+
+function seventhTradeHubCredentialSyncEnqueue(string $integrationId, string $email, string $password, ?string $eventId): void
+{
+    seventhTradeHubEnsureCredentialSyncOutbox();
+    $eventId = $eventId !== null && $eventId !== ''
+        ? substr($eventId, 0, 64)
+        : bin2hex(random_bytes(16));
+    $passwordEnc = $password !== '' ? seventhTradeHubSealSecret($password) : null;
+    try {
+        $db = Database::getInstance();
+        // Upsert by event_id so retries keep the same change id
+        $existing = $db->query(
+            'SELECT id FROM seventh_tradehub_credential_sync_outbox WHERE event_id = ? LIMIT 1',
+            [$eventId]
+        );
+        if ($existing && $existing->fetch()) {
+            $db->query(
+                'UPDATE seventh_tradehub_credential_sync_outbox SET
+                    integration_id = ?, email = ?, password_enc = ?, attempts = attempts + 1,
+                    next_attempt_at = DATE_ADD(NOW(), INTERVAL 5 MINUTE), last_error = ?
+                 WHERE event_id = ?',
+                [
+                    $integrationId,
+                    $email !== '' ? $email : null,
+                    $passwordEnc,
+                    'pending_retry',
+                    $eventId,
+                ]
+            );
+            return;
+        }
+        $db->query(
+            'INSERT INTO seventh_tradehub_credential_sync_outbox
+                (event_id, integration_id, email, password_enc, attempts, next_attempt_at, created_at)
+             VALUES (?, ?, ?, ?, 0, NOW(), NOW())',
+            [
+                $eventId,
+                $integrationId,
+                $email !== '' ? $email : null,
+                $passwordEnc,
+            ]
+        );
+    } catch (Throwable $e) {
+        error_log('seventhTradeHubCredentialSyncEnqueue: ' . $e->getMessage());
+    }
+}
+
+function seventhTradeHubCredentialSyncDeleteByEventId(string $eventId): void
+{
+    if ($eventId === '') {
+        return;
+    }
+    try {
+        seventhTradeHubEnsureCredentialSyncOutbox();
+        $db = Database::getInstance();
+        $db->query('DELETE FROM seventh_tradehub_credential_sync_outbox WHERE event_id = ?', [$eventId]);
+    } catch (Throwable $e) {
+        error_log('seventhTradeHubCredentialSyncDeleteByEventId: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Drain outbox: re-sign with fresh TTL, keep same event_id.
+ */
+function seventhTradeHubDrainCredentialSyncOutbox(int $limit = 10): int
+{
+    seventhTradeHubEnsureCredentialSyncOutbox();
+    $sent = 0;
+    try {
+        $db = Database::getInstance();
+        $stmt = $db->query(
+            'SELECT * FROM seventh_tradehub_credential_sync_outbox
+             WHERE next_attempt_at <= NOW() AND attempts < 20
+             ORDER BY id ASC LIMIT ' . (int)$limit
+        );
+        if (!$stmt) {
+            return 0;
+        }
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $owned = seventhTradeHubGetByContext(SEVENTH_TRADEHUB_CONTEXT_OWNED);
+        if (!$owned || !seventhTradeHubIsIntegrationOperational($owned)) {
+            return 0;
+        }
+        $hubUrl = seventhTradeHubHubUrl();
+        $clientId = trim((string)($owned['client_id'] ?? ''));
+        $clientSecret = seventhTradeHubClientSecret($owned);
+        $webhookSecret = seventhTradeHubWebhookSecret($owned);
+        if ($hubUrl === '' || $clientId === '' || $clientSecret === '' || $webhookSecret === '') {
+            return 0;
+        }
+
+        foreach ($rows as $row) {
+            $eventId = (string)($row['event_id'] ?? '');
+            $integrationId = trim((string)($row['integration_id'] ?? ''));
+            $email = trim((string)($row['email'] ?? ''));
+            $password = seventhTradeHubUnsealSecret($row['password_enc'] ?? '');
+            if ($eventId === '' || $integrationId === '') {
+                continue;
+            }
+            // Re-sign (fresh issued_at/expires_at/nonce/request_id), same event_id
+            $result = seventhTradeHubPostCredentialSync(
+                $hubUrl,
+                $integrationId,
+                $clientId,
+                $clientSecret,
+                $webhookSecret,
+                $email,
+                $password,
+                $eventId,
+                false
+            );
+            if (!empty($result['ok'])) {
+                $db->query('DELETE FROM seventh_tradehub_credential_sync_outbox WHERE id = ?', [(int)$row['id']]);
+                $sent++;
+                continue;
+            }
+            $db->query(
+                'UPDATE seventh_tradehub_credential_sync_outbox SET
+                    attempts = attempts + 1,
+                    next_attempt_at = DATE_ADD(NOW(), INTERVAL LEAST(60, POW(2, LEAST(attempts + 1, 5))) MINUTE),
+                    last_error = ?
+                 WHERE id = ?',
+                ['http_' . (int)($result['http_code'] ?? 0), (int)$row['id']]
+            );
+        }
+    } catch (Throwable $e) {
+        error_log('seventhTradeHubDrainCredentialSyncOutbox: ' . $e->getMessage());
+    }
+    return $sent;
+}
+
 function seventhTradeHubCanonicalize($value): string
 {
     if (is_array($value)) {
@@ -375,6 +846,22 @@ function seventhTradeHubVerifyPayload(array $payload, string $clientSecret): boo
     ksort($copy);
     $expected = hash_hmac('sha256', seventhTradeHubCanonicalize($copy), $clientSecret);
     return hash_equals($expected, $signature);
+}
+
+/**
+ * Sign Protocol v1 payload with CLIENT_SECRET (not webhook secret).
+ *
+ * @param array<string, mixed> $payload
+ * @return array<string, mixed>
+ */
+function seventhTradeHubSignPayload(array $payload, string $clientSecret): array
+{
+    $payload['protocol'] = '7th-tradehub';
+    $payload['version'] = 1;
+    unset($payload['signature']);
+    ksort($payload);
+    $payload['signature'] = hash_hmac('sha256', seventhTradeHubCanonicalize($payload), $clientSecret);
+    return $payload;
 }
 
 function seventhTradeHubAssertionExpired(array $payload): bool
@@ -488,7 +975,13 @@ function seventhTradeHubCapabilitiesForContext(string $context): array
         return ['health', 'demo_user_login', 'demo_admin_login'];
     }
     if ($context === SEVENTH_TRADEHUB_CONTEXT_OWNED) {
-        return ['health', 'subscription_sync', 'shutdown_on_expiry', 'owned_admin_login'];
+        return [
+            'health',
+            'subscription_sync',
+            'shutdown_on_expiry',
+            'owned_admin_login',
+            'admin_credential_sync',
+        ];
     }
     return ['health'];
 }
@@ -783,16 +1276,47 @@ function seventhTradeHubIsOwnedSiteShutdown(): bool
 
 function seventhTradeHubIsHubProtocolRequest(): bool
 {
-    $uri = $_SERVER['REQUEST_URI'] ?? '';
-    $script = $_SERVER['SCRIPT_NAME'] ?? '';
+    $uri = (string)($_SERVER['REQUEST_URI'] ?? '');
     $patterns = [
         '/api/7th-tradehub/v1/health',
         '/api/7th-tradehub/v1/subscription/sync',
         '/auth/7th-tradehub/demo/consume',
     ];
     foreach ($patterns as $pattern) {
-        if (stripos($uri, $pattern) !== false || stripos($script, '7th-tradehub') !== false) {
+        if (stripos($uri, $pattern) !== false) {
             return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Auth routes that must stay reachable during owned shutdown.
+ * Login is required by Hub; forgot/reset/2FA are an operator choice for recovery.
+ */
+function seventhTradeHubIsShutdownAuthException(): bool
+{
+    $uri = (string)($_SERVER['REQUEST_URI'] ?? '');
+    $path = (string)(parse_url($uri, PHP_URL_PATH) ?: $uri);
+    $exceptions = [
+        '/auth/login',
+        '/auth/forgot-password',
+        '/auth/reset-password',
+        '/auth/verify-2fa',
+        '/auth/resend-2fa',
+    ];
+    foreach ($exceptions as $ex) {
+        if (stripos($path, $ex) !== false) {
+            return true;
+        }
+    }
+    // Legacy route query style
+    $route = (string)($_GET['route'] ?? '');
+    if ($route !== '') {
+        foreach (['auth/login', 'auth/forgot-password', 'auth/reset-password', 'auth/verify-2fa', 'auth/resend-2fa'] as $ex) {
+            if (stripos($route, $ex) === 0) {
+                return true;
+            }
         }
     }
     return false;
@@ -815,9 +1339,37 @@ function seventhTradeHubMaybeEnforceShutdown(): void
     if (seventhTradeHubIsCliRequest() || seventhTradeHubIsHubProtocolRequest()) {
         return;
     }
-    if (seventhTradeHubIsOwnedSiteShutdown()) {
-        seventhTradeHubRenderShutdownPage();
+    if (!seventhTradeHubIsOwnedSiteShutdown()) {
+        return;
     }
+    if (seventhTradeHubIsShutdownAuthException()) {
+        return;
+    }
+    if (function_exists('isLoggedIn') && isLoggedIn() && function_exists('isSuperAdmin') && isSuperAdmin()) {
+        return;
+    }
+    seventhTradeHubRenderShutdownPage();
+}
+
+/**
+ * After password/2FA login: refuse non–super-admin while owned shutdown is active.
+ */
+function seventhTradeHubRefuseNonSuperAdminDuringShutdown(): void
+{
+    if (!seventhTradeHubIsOwnedSiteShutdown()) {
+        return;
+    }
+    if (function_exists('isSuperAdmin') && isSuperAdmin()) {
+        return;
+    }
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        $_SESSION = [];
+        if (isset($_COOKIE[session_name()])) {
+            setcookie(session_name(), '', time() - 42000, '/');
+        }
+        session_destroy();
+    }
+    seventhTradeHubRenderShutdownPage();
 }
 
 /**
@@ -847,7 +1399,7 @@ function seventhTradeHubApplySubscription(string $integrationId, array $subscrip
                     return;
                 }
             } catch (Throwable $e) {
-                // proceed with update
+                // If timestamps cannot be compared, fall through to expiry guards below
             }
         }
         $storedExpired = seventhTradeHubSubscriptionIsExpired($existing);
@@ -861,7 +1413,11 @@ function seventhTradeHubApplySubscription(string $integrationId, array $subscrip
             } catch (Throwable $e) {
             }
         }
-        if ($storedExpired && !$incomingExpired && $storedUpdated !== '' && $incomingUpdated !== '') {
+        // Fail closed: never let a non-expired payload un-expire without a strictly newer updated_at
+        if ($storedExpired && !$incomingExpired) {
+            if ($storedUpdated === '' || $incomingUpdated === '') {
+                return;
+            }
             try {
                 if (new DateTimeImmutable($incomingUpdated) <= new DateTimeImmutable($storedUpdated)) {
                     return;

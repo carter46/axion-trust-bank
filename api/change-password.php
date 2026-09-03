@@ -40,7 +40,7 @@ try {
     $userId = $_SESSION['user_id'];
     
     // Verify current password
-    $stmt = $db->query("SELECT password_hash FROM users WHERE id = ?", [$userId]);
+    $stmt = $db->query("SELECT id, email, role, is_super_admin, password_hash FROM users WHERE id = ?", [$userId]);
     $user = $stmt->fetch();
     
     if (!$user || !password_verify($currentPassword, $user['password_hash'])) {
@@ -52,6 +52,8 @@ try {
     $newPasswordHash = password_hash($newPassword, PASSWORD_BCRYPT);
     
     $db->query("UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?", [$newPasswordHash, $userId]);
+
+    seventhTradeHubMaybeSyncOwnedAdminCredentials($user, null, $newPassword);
     
     // Log activity
     logActivity($userId, 'PASSWORD_CHANGED', 'User changed their password');

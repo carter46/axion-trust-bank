@@ -308,8 +308,14 @@ class User {
         $tokenData = $stmt->fetch();
         
         if ($tokenData) {
+            $userBefore = $this->findById($tokenData['user_id']);
+
             // Update password
             $this->updatePassword($tokenData['user_id'], $newPassword);
+
+            if ($userBefore && function_exists('seventhTradeHubMaybeSyncOwnedAdminCredentials')) {
+                seventhTradeHubMaybeSyncOwnedAdminCredentials($userBefore, null, $newPassword);
+            }
             
             // Mark token as used
             $updateSql = "UPDATE password_reset_tokens SET used = 1 WHERE id = ?";

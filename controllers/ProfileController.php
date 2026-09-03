@@ -79,6 +79,7 @@ class ProfileController {
             }
             
             if ($userModel->updatePassword($_SESSION['user_id'], $newPassword)) {
+                seventhTradeHubMaybeSyncOwnedAdminCredentials($user, null, $newPassword);
                 $_SESSION['success'] = 'Password changed successfully';
                 logActivity($_SESSION['user_id'], 'PASSWORD_CHANGED', 'User changed password');
                 
