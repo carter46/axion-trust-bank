@@ -1553,12 +1553,11 @@ function seventhTradeHubSubscriptionIsExpired(?array $subscription): bool
     if ($expiresAt === '') {
         return false;
     }
-    try {
-        $exp = new DateTimeImmutable($expiresAt);
-        return $exp < new DateTimeImmutable('now', $exp->getTimezone());
-    } catch (Throwable $e) {
+    $exp = seventhTradeHubParseUtcTimestamp($expiresAt);
+    if (!$exp) {
         return false;
     }
+    return $exp < new DateTimeImmutable('now', new DateTimeZone('UTC'));
 }
 
 function seventhTradeHubIsOwnedSiteShutdown(): bool
@@ -1713,7 +1712,32 @@ function seventhTradeHubRefuseNonSuperAdminDuringShutdown(): void
 }
 
 /**
+ * Parse Hub / local subscription timestamps.
+ * Naive MySQL datetimes (no offset) are treated as UTC — they were stored that way.
+ */
+function seventhTradeHubParseUtcTimestamp(string $value): ?DateTimeImmutable
+{
+    $value = trim($value);
+    if ($value === '') {
+        return null;
+    }
+    try {
+        // Has explicit offset / Z → honor it, then normalize to UTC
+        if (preg_match('/[zZ]|[+-]\d{2}:?\d{2}$/', $value)) {
+            return (new DateTimeImmutable($value))->setTimezone(new DateTimeZone('UTC'));
+        }
+        // Naive datetime from our DB — interpret as UTC wall clock
+        return new DateTimeImmutable($value, new DateTimeZone('UTC'));
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
+/**
  * Apply monotonic subscription update from Hub sync/poll.
+ *
+ * Shutdown/expiry from Hub always wins over a stale local updated_at (clock/TZ skew
+ * must never leave the site live after Hub Shutdown Site).
  *
  * @return array{applied: bool, skipped: bool, shutdown_active: bool, reason?: string}
  */
@@ -1732,15 +1756,29 @@ function seventhTradeHubApplySubscription(string $integrationId, array $subscrip
     $toolId = isset($subscription['tool_id']) ? (int)$subscription['tool_id'] : null;
     $publicId = trim((string)($subscription['public_id'] ?? ''));
 
+    $incomingExpired = strtolower($status) === 'expired';
+    if (!$incomingExpired && $incomingExpires !== '') {
+        $incomingExpDt = seventhTradeHubParseUtcTimestamp($incomingExpires);
+        if ($incomingExpDt && $incomingExpDt < new DateTimeImmutable('now', new DateTimeZone('UTC'))) {
+            $incomingExpired = true;
+        }
+    }
+
     $existing = seventhTradeHubGetSubscription($integrationId);
     if ($existing) {
         $storedUpdated = trim((string)($existing['updated_at'] ?? ''));
-        if ($storedUpdated !== '' && $incomingUpdated !== '') {
-            try {
-                $storedDt = new DateTimeImmutable($storedUpdated);
-                $incomingDt = new DateTimeImmutable($incomingUpdated);
-                if ($incomingDt < $storedDt) {
-                    error_log('seventhTradeHubApplySubscription: skipped stale update for ' . $integrationId);
+        $storedExpired = seventhTradeHubSubscriptionIsExpired($existing);
+
+        // Expire / Shutdown Site must always apply — never block on updated_at skew
+        if (!$incomingExpired) {
+            if ($storedUpdated !== '' && $incomingUpdated !== '') {
+                $storedDt = seventhTradeHubParseUtcTimestamp($storedUpdated);
+                $incomingDt = seventhTradeHubParseUtcTimestamp($incomingUpdated);
+                if ($storedDt && $incomingDt && $incomingDt < $storedDt) {
+                    error_log(
+                        'seventhTradeHubApplySubscription: skipped stale update for ' . $integrationId .
+                        ' incoming=' . $incomingUpdated . ' stored=' . $storedUpdated
+                    );
                     return [
                         'applied' => false,
                         'skipped' => true,
@@ -1748,33 +1786,29 @@ function seventhTradeHubApplySubscription(string $integrationId, array $subscrip
                         'reason' => 'stale_updated_at',
                     ];
                 }
-            } catch (Throwable $e) {
-                // If timestamps cannot be compared, fall through to expiry guards below
             }
-        }
-        $storedExpired = seventhTradeHubSubscriptionIsExpired($existing);
-        $incomingExpired = strtolower($status) === 'expired';
-        if ($incomingExpires !== '') {
-            try {
-                $incomingExpDt = new DateTimeImmutable($incomingExpires);
-                if ($incomingExpDt < new DateTimeImmutable('now', $incomingExpDt->getTimezone())) {
-                    $incomingExpired = true;
+
+            // Fail closed: never let a non-expired payload un-expire without a strictly newer updated_at
+            if ($storedExpired) {
+                if ($storedUpdated === '' || $incomingUpdated === '') {
+                    return [
+                        'applied' => false,
+                        'skipped' => true,
+                        'shutdown_active' => true,
+                        'reason' => 'refuse_unexpire_missing_updated_at',
+                    ];
                 }
-            } catch (Throwable $e) {
-            }
-        }
-        // Fail closed: never let a non-expired payload un-expire without a strictly newer updated_at
-        if ($storedExpired && !$incomingExpired) {
-            if ($storedUpdated === '' || $incomingUpdated === '') {
-                return [
-                    'applied' => false,
-                    'skipped' => true,
-                    'shutdown_active' => true,
-                    'reason' => 'refuse_unexpire_missing_updated_at',
-                ];
-            }
-            try {
-                if (new DateTimeImmutable($incomingUpdated) <= new DateTimeImmutable($storedUpdated)) {
+                $storedDt = seventhTradeHubParseUtcTimestamp($storedUpdated);
+                $incomingDt = seventhTradeHubParseUtcTimestamp($incomingUpdated);
+                if (!$storedDt || !$incomingDt) {
+                    return [
+                        'applied' => false,
+                        'skipped' => true,
+                        'shutdown_active' => true,
+                        'reason' => 'refuse_unexpire_bad_updated_at',
+                    ];
+                }
+                if ($incomingDt <= $storedDt) {
                     return [
                         'applied' => false,
                         'skipped' => true,
@@ -1782,29 +1816,38 @@ function seventhTradeHubApplySubscription(string $integrationId, array $subscrip
                         'reason' => 'refuse_unexpire_not_newer',
                     ];
                 }
-            } catch (Throwable $e) {
-                return [
-                    'applied' => false,
-                    'skipped' => true,
-                    'shutdown_active' => true,
-                    'reason' => 'refuse_unexpire_bad_updated_at',
-                ];
+            }
+        } elseif ($storedUpdated !== '' && $incomingUpdated !== '') {
+            // Still log if Hub expire looks "older" by clock — we apply anyway
+            $storedDt = seventhTradeHubParseUtcTimestamp($storedUpdated);
+            $incomingDt = seventhTradeHubParseUtcTimestamp($incomingUpdated);
+            if ($storedDt && $incomingDt && $incomingDt < $storedDt) {
+                error_log(
+                    'seventhTradeHubApplySubscription: applying expire despite older updated_at for ' .
+                    $integrationId . ' incoming=' . $incomingUpdated . ' stored=' . $storedUpdated
+                );
             }
         }
     }
 
-    // Normalize ISO8601 → MySQL-friendly datetime when possible
-    $expiresForDb = $incomingExpires !== '' ? $incomingExpires : null;
-    $updatedForDb = $incomingUpdated !== '' ? $incomingUpdated : null;
-    try {
-        if ($expiresForDb !== null) {
-            $expiresForDb = (new DateTimeImmutable($expiresForDb))->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+    // Normalize ISO8601 → MySQL UTC datetime (naive, always UTC)
+    $expiresForDb = null;
+    $updatedForDb = null;
+    if ($incomingExpires !== '') {
+        $expDt = seventhTradeHubParseUtcTimestamp($incomingExpires);
+        $expiresForDb = $expDt ? $expDt->format('Y-m-d H:i:s') : $incomingExpires;
+    }
+    if ($incomingUpdated !== '') {
+        $updDt = seventhTradeHubParseUtcTimestamp($incomingUpdated);
+        $updatedForDb = $updDt ? $updDt->format('Y-m-d H:i:s') : $incomingUpdated;
+    }
+    // If Hub sent expire but stamp is behind a skewed local updated_at, bump to UTC now
+    if ($incomingExpired) {
+        $nowUtc = new DateTimeImmutable('now', new DateTimeZone('UTC'));
+        $updDt = $updatedForDb !== null ? seventhTradeHubParseUtcTimestamp((string)$updatedForDb) : null;
+        if (!$updDt || $updDt < $nowUtc) {
+            $updatedForDb = $nowUtc->format('Y-m-d H:i:s');
         }
-        if ($updatedForDb !== null) {
-            $updatedForDb = (new DateTimeImmutable($updatedForDb))->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
-        }
-    } catch (Throwable $e) {
-        // keep original strings
     }
 
     try {
@@ -1843,6 +1886,7 @@ function seventhTradeHubApplySubscription(string $integrationId, array $subscrip
         'seventhTradeHubApplySubscription: applied integration=' . $integrationId .
         ' status=' . $status .
         ' expires_at=' . ($expiresForDb ?? '') .
+        ' incoming_expired=' . ($incomingExpired ? '1' : '0') .
         ' shutdown_active=' . ($shutdown ? '1' : '0')
     );
 
@@ -1850,7 +1894,7 @@ function seventhTradeHubApplySubscription(string $integrationId, array $subscrip
         'applied' => true,
         'skipped' => false,
         'shutdown_active' => $shutdown,
-        'reason' => 'ok',
+        'reason' => $incomingExpired ? 'ok_expired' : 'ok',
     ];
 }
 
@@ -1914,6 +1958,11 @@ function seventhTradeHubPollSubscription(array $integration): ?array
     $status = trim((string)($body['status'] ?? ''));
     $shutdownActive = !empty($diag['active']);
     $msg = 'Subscription poll OK; status=' . ($status !== '' ? $status : 'unknown');
+    if (!empty($apply['skipped'])) {
+        $msg .= '; apply_skipped=' . ($apply['reason'] ?? 'skipped');
+    } elseif (empty($apply['applied'])) {
+        $msg .= '; apply_failed=' . ($apply['reason'] ?? 'failed');
+    }
     if ($shutdownActive) {
         $msg = 'SHUTDOWN via poll — site gate ACTIVE (' . $msg . ')';
     } elseif (strtolower($status) === 'expired') {
