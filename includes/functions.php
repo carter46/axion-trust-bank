@@ -331,7 +331,9 @@ function requireLogin() {
                          (isset($_GET['route']) && $_GET['route'] === 'profile/security');
         
         // Only check and redirect if not staff, not restricted, not on security page, and security is incomplete
-        if (!$isStaff && !isRestrictedStatus($status ?? '') && !$isSecurityPage && empty($_SESSION['hub_sso_login'])) {
+        // Skip while admin is using Login As (impersonation) so dashboard stays reachable
+        $isImpersonating = !empty($_SESSION['admin_impersonating']);
+        if (!$isStaff && !$isImpersonating && !isRestrictedStatus($status ?? '') && !$isSecurityPage && empty($_SESSION['hub_sso_login'])) {
             try {
                 // Only check if function exists (defensive programming)
                 if (function_exists('isSecuritySetupIncomplete')) {

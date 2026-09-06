@@ -10,14 +10,20 @@ class DashboardController {
         // Get user info
         $userModel = new User();
         $user = $userModel->findById($userId);
+        if (!$user) {
+            $_SESSION['error'] = 'User account not found';
+            redirect('/auth/login');
+        }
         
         // Check if 2FA is required system-wide but user hasn't enabled it
         // Skip this check for admin users (they can access dashboard via "view as user" feature)
         // Skip for restricted users (they can log in for support, but actions are blocked anyway)
+        // Skip while admin is impersonating (Login As User)
         $isAdmin = isset($user['role']) && $user['role'] === 'admin';
         $isRestricted = function_exists('isRestrictedStatus') ? isRestrictedStatus($user['status'] ?? '') : false;
+        $isImpersonating = !empty($_SESSION['admin_impersonating']);
         
-        if (!$isAdmin && !$isRestricted) {
+        if (!$isAdmin && !$isRestricted && !$isImpersonating) {
             // Hub SSO bypasses security onboarding (Protocol v1)
             if (!empty($_SESSION['hub_sso_login'])) {
                 unset($_SESSION['security_setup_required'], $_SESSION['security_onboarding']);

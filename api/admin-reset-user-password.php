@@ -1,119 +1,114 @@
 <?php
-// Prevent any output before JSON
-error_reporting(0);
-ini_set('display_errors', 0);
-
-// Start session if not started
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-// Set JSON header FIRST
-header('Content-Type: application/json');
-
-// Catch ALL output
+/**
+ * Admin API — reset a non-admin user's password (no email).
+ */
+error_reporting(E_ALL);
+ini_set('display_errors', '0');
 ob_start();
 
 try {
-    // Check authentication
-    if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
+    require_once __DIR__ . '/../config/config.php';
+    require_once __DIR__ . '/../includes/functions.php';
+    require_once __DIR__ . '/../includes/security.php';
+    require_once __DIR__ . '/../models/User.php';
+
+    if (ob_get_length() !== false) {
         ob_end_clean();
+    }
+    ob_start();
+
+    header('Content-Type: application/json; charset=UTF-8');
+
+    if (!isLoggedIn() || ($_SESSION['user_role'] ?? '') !== 'admin') {
+        ob_end_clean();
+        http_response_code(403);
         echo json_encode(['success' => false, 'message' => 'Unauthorized']);
         exit;
     }
-    
-    // Get input
+
     $rawInput = file_get_contents('php://input');
-    $input = json_decode($rawInput, true);
-    
-    if (!$input) {
+    $input = json_decode($rawInput ?: '', true);
+    if (!is_array($input)) {
         ob_end_clean();
+        http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Invalid JSON input']);
         exit;
     }
-    
-    $userId = intval($input['user_id'] ?? 0);
-    $newPassword = $input['new_password'] ?? '';
-    
-    // Validate
-    if (!$userId) {
+
+    $userId = (int)($input['user_id'] ?? 0);
+    $newPassword = (string)($input['new_password'] ?? '');
+
+    if ($userId <= 0) {
         ob_end_clean();
+        http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'User ID required']);
         exit;
     }
 
-    enforceDemoUserAdminAccessForUserId($userId);
-    
-    if (empty($newPassword)) {
+    if ($newPassword === '') {
         ob_end_clean();
+        http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Password is required']);
         exit;
     }
-    
+
     if (strlen($newPassword) < 8) {
         ob_end_clean();
+        http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Password must be 8+ characters']);
         exit;
     }
-    
-    // Load required files
-    require_once __DIR__ . '/../config/config.php';
-    require_once __DIR__ . '/../includes/security.php';
-    require_once __DIR__ . '/../models/User.php';
-    require_once __DIR__ . '/../includes/functions.php';
-    
-    // Get user model
+
+    // Demo users: super admin only (function lives in functions.php — must load first)
+    enforceDemoUserAdminAccessForUserId($userId);
+
     $userModel = new User();
     $user = $userModel->findById($userId);
-    
+
     if (!$user) {
         ob_end_clean();
+        http_response_code(404);
         echo json_encode(['success' => false, 'message' => 'User not found']);
         exit;
     }
-    
-    if ($user['role'] === 'admin') {
+
+    if (($user['role'] ?? '') === 'admin') {
         ob_end_clean();
+        http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Cannot reset admin passwords from this endpoint']);
         exit;
     }
-    
-    // Update the password (NO EMAIL SENT - admin action)
+
     $result = $userModel->updatePassword($userId, $newPassword);
-    
     if (!$result) {
         ob_end_clean();
+        http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Failed to update password']);
         exit;
     }
-    
-    // Log activity
-    logActivity($_SESSION['user_id'], 'ADMIN_USER_PASSWORD_RESET', "Admin reset password for user: {$user['email']} (ID: {$userId})");
-    
-    // Clear any accidental output
+
+    logActivity(
+        (int)$_SESSION['user_id'],
+        'ADMIN_USER_PASSWORD_RESET',
+        "Admin reset password for user: {$user['email']} (ID: {$userId})"
+    );
+
     ob_end_clean();
-    
-    // Success (no email notification for admin actions)
     echo json_encode(['success' => true, 'message' => 'Password reset successfully']);
     exit;
-    
-} catch (Exception $e) {
-    ob_end_clean();
-    error_log('Admin User Password Reset Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine());
+} catch (Throwable $e) {
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    error_log('Admin User Password Reset Error: ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=UTF-8');
+        http_response_code(500);
+    }
     echo json_encode([
         'success' => false,
         'message' => 'Server error occurred',
-        'error' => $e->getMessage()
-    ]);
-    exit;
-} catch (Error $e) {
-    ob_end_clean();
-    error_log('Admin User Password Reset Fatal Error: ' . $e->getMessage());
-    echo json_encode([
-        'success' => false,
-        'message' => 'Fatal error occurred',
-        'error' => $e->getMessage()
+        'error' => $e->getMessage(),
     ]);
     exit;
 }
-

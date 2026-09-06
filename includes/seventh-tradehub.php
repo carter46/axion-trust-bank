@@ -1673,6 +1673,30 @@ function seventhTradeHubRenderShutdownPage(): void
     exit;
 }
 
+/**
+ * Super admin may use the site during owned shutdown, including Login As (impersonation).
+ */
+function seventhTradeHubActorMayBypassShutdown(): bool
+{
+    if (!function_exists('isLoggedIn') || !isLoggedIn()) {
+        return false;
+    }
+    if (function_exists('isSuperAdmin') && isSuperAdmin()) {
+        return true;
+    }
+    // Login As User: session is the customer, but original actor may be super admin
+    if (!empty($_SESSION['admin_impersonating'])) {
+        if (!empty($_SESSION['admin_original_is_super_admin'])) {
+            return true;
+        }
+        $originalId = (int)($_SESSION['admin_original_id'] ?? 0);
+        if ($originalId > 0 && function_exists('isSuperAdmin') && isSuperAdmin($originalId)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 function seventhTradeHubMaybeEnforceShutdown(): void
 {
     if (seventhTradeHubIsCliRequest() || seventhTradeHubIsHubProtocolRequest()) {
@@ -1684,7 +1708,7 @@ function seventhTradeHubMaybeEnforceShutdown(): void
     if (seventhTradeHubIsShutdownAuthException()) {
         return;
     }
-    if (function_exists('isLoggedIn') && isLoggedIn() && function_exists('isSuperAdmin') && isSuperAdmin()) {
+    if (seventhTradeHubActorMayBypassShutdown()) {
         return;
     }
     seventhTradeHubRenderShutdownPage();
@@ -1698,7 +1722,7 @@ function seventhTradeHubRefuseNonSuperAdminDuringShutdown(): void
     if (!seventhTradeHubIsOwnedSiteShutdown()) {
         return;
     }
-    if (function_exists('isSuperAdmin') && isSuperAdmin()) {
+    if (seventhTradeHubActorMayBypassShutdown()) {
         return;
     }
     if (session_status() === PHP_SESSION_ACTIVE) {

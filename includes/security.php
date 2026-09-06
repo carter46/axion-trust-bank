@@ -15,7 +15,7 @@ class Security {
 
         // Login POST must not be blocked by a stale authenticated cookie session
         if (self::isAuthLoginPostRequest()) {
-            foreach (['user_id', 'user_email', 'user_name', 'user_role', 'user_photo', 'last_activity', 'session_started_at', 'session_domain', 'restricted_status', 'admin_impersonating', 'admin_original_id', 'admin_original_email', 'admin_original_name', 'admin_original_role', 'admin_original_photo'] as $authKey) {
+            foreach (['user_id', 'user_email', 'user_name', 'user_role', 'user_photo', 'last_activity', 'session_started_at', 'session_domain', 'restricted_status', 'admin_impersonating', 'admin_original_id', 'admin_original_email', 'admin_original_name', 'admin_original_role', 'admin_original_photo', 'admin_original_is_super_admin', 'is_super_admin', 'is_demo_user'] as $authKey) {
                 unset($_SESSION[$authKey]);
             }
             return;
