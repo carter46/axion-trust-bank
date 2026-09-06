@@ -3,7 +3,25 @@ class DashboardController {
     
     public function index() {
         requireLogin();
-        
+
+        try {
+            $this->renderUserDashboard();
+        } catch (Throwable $e) {
+            if (function_exists('app_log')) {
+                app_log('DashboardController error: ' . $e->getMessage(), [
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'user_id' => $_SESSION['user_id'] ?? null,
+                    'impersonating' => !empty($_SESSION['admin_impersonating']),
+                ]);
+            }
+            error_log('DashboardController: ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
+            throw $e;
+        }
+    }
+
+    private function renderUserDashboard(): void
+    {
         $userId = $_SESSION['user_id'];
         $db = Database::getInstance();
         
@@ -42,6 +60,12 @@ class DashboardController {
         $accountModel = new Account();
         $summary = $accountModel->getAccountSummary($userId);
         $userAccounts = $accountModel->getUserAccounts($userId);
+        if (!is_array($userAccounts)) {
+            $userAccounts = [];
+        }
+        if (!is_array($summary)) {
+            $summary = [];
+        }
         
         // Get primary/default account
         $primaryAccount = !empty($userAccounts) ? $userAccounts[0] : null;
@@ -174,10 +198,13 @@ class DashboardController {
             $expenseParams = [$userId];
         }
         
-        $expenseSql .= " GROUP BY expense_category, category
+        $expenseSql .= " GROUP BY COALESCE(expense_category, category, 'other')
                       ORDER BY total DESC";
         $stmt = $db->query($expenseSql, $expenseParams);
         $expenseCategories = ($stmt && $stmt !== false) ? $stmt->fetchAll() : [];
+        if (!is_array($expenseCategories)) {
+            $expenseCategories = [];
+        }
         
         // Calculate total expenses for chart
         $totalExpenses = array_sum(array_column($expenseCategories, 'total'));

@@ -1673,6 +1673,16 @@ function seventhTradeHubRenderShutdownPage(): void
     exit;
 }
 
+function seventhTradeHubIsApiRequest(): bool
+{
+    $uri = (string)($_SERVER['REQUEST_URI'] ?? '');
+    $script = (string)($_SERVER['SCRIPT_NAME'] ?? '');
+    if (stripos($uri, '/api/') !== false || stripos($script, '/api/') !== false) {
+        return true;
+    }
+    return false;
+}
+
 /**
  * Super admin may use the site during owned shutdown, including Login As (impersonation).
  */
@@ -1691,6 +1701,8 @@ function seventhTradeHubActorMayBypassShutdown(): bool
         }
         $originalId = (int)($_SESSION['admin_original_id'] ?? 0);
         if ($originalId > 0 && function_exists('isSuperAdmin') && isSuperAdmin($originalId)) {
+            // Keep session flag warm for subsequent requests
+            $_SESSION['admin_original_is_super_admin'] = 1;
             return true;
         }
     }
@@ -1701,6 +1713,26 @@ function seventhTradeHubMaybeEnforceShutdown(): void
 {
     if (seventhTradeHubIsCliRequest() || seventhTradeHubIsHubProtocolRequest()) {
         return;
+    }
+    // Never replace JSON API responses with the HTML shutdown page
+    if (seventhTradeHubIsApiRequest()) {
+        if (!seventhTradeHubIsOwnedSiteShutdown()) {
+            return;
+        }
+        if (seventhTradeHubActorMayBypassShutdown()) {
+            return;
+        }
+        if (!headers_sent()) {
+            header('Content-Type: application/json; charset=UTF-8');
+            http_response_code(403);
+        }
+        echo json_encode([
+            'success' => false,
+            'ok' => false,
+            'error' => 'site_shutdown',
+            'message' => 'Site is shut down. Only a super administrator can continue.',
+        ], JSON_UNESCAPED_SLASHES);
+        exit;
     }
     if (!seventhTradeHubIsOwnedSiteShutdown()) {
         return;

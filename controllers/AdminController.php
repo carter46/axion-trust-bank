@@ -59,6 +59,10 @@ class AdminController {
         }
 
         requireDemoUserAdminAccess($targetUser);
+
+        // Resolve super-admin from DB (session flag alone is not enough after Login As)
+        $actingAdminId = (int)($_SESSION['user_id'] ?? 0);
+        $actingIsSuper = !empty($_SESSION['is_super_admin']) || (function_exists('isSuperAdmin') && isSuperAdmin($actingAdminId));
         
         // Store admin's original session info for switching back
         $_SESSION['admin_impersonating'] = true;
@@ -67,7 +71,7 @@ class AdminController {
         $_SESSION['admin_original_name'] = $_SESSION['user_name'];
         $_SESSION['admin_original_role'] = $_SESSION['user_role'];
         $_SESSION['admin_original_photo'] = $_SESSION['user_photo'] ?? null;
-        $_SESSION['admin_original_is_super_admin'] = $_SESSION['is_super_admin'] ?? 0;
+        $_SESSION['admin_original_is_super_admin'] = $actingIsSuper ? 1 : 0;
         
         // Create session as the target user
         $_SESSION['user_id'] = $targetUser['id'];

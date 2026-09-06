@@ -22,7 +22,12 @@ try {
     if (!isLoggedIn() || ($_SESSION['user_role'] ?? '') !== 'admin') {
         ob_end_clean();
         http_response_code(403);
-        echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Unauthorized',
+            'api' => 'admin-reset-user-password',
+            'v' => 2,
+        ]);
         exit;
     }
 
@@ -31,7 +36,7 @@ try {
     if (!is_array($input)) {
         ob_end_clean();
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Invalid JSON input']);
+        echo json_encode(['success' => false, 'message' => 'Invalid JSON input', 'api' => 'admin-reset-user-password', 'v' => 2]);
         exit;
     }
 
@@ -94,7 +99,12 @@ try {
     );
 
     ob_end_clean();
-    echo json_encode(['success' => true, 'message' => 'Password reset successfully']);
+    echo json_encode([
+        'success' => true,
+        'message' => 'Password reset successfully',
+        'api' => 'admin-reset-user-password',
+        'v' => 2,
+    ]);
     exit;
 } catch (Throwable $e) {
     while (ob_get_level() > 0) {
@@ -107,8 +117,11 @@ try {
     }
     echo json_encode([
         'success' => false,
-        'message' => 'Server error occurred',
-        'error' => $e->getMessage(),
+        'message' => 'Server error: ' . $e->getMessage(),
+        'api' => 'admin-reset-user-password',
+        'v' => 2,
+        'file' => basename($e->getFile()),
+        'line' => $e->getLine(),
     ]);
     exit;
 }
