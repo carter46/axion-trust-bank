@@ -1163,6 +1163,38 @@ include __DIR__ . '/../../includes/admin-modals.php';
             If Hub already clicked Shutdown Site but this still says not active, Hub’s push likely failed (Hub may show a warning). Use <strong>Pull subscription from Hub</strong> on the Owned card above after Owned is enabled and credentials match My Tools.
         </p>
     </div>
+
+    <?php
+    $runtimeErrors = function_exists('listRuntimeErrors') ? listRuntimeErrors(30) : [];
+    ?>
+    <div class="settings-card hub-section-card" style="margin-top: 24px;" id="runtime-errors-card">
+        <h2 class="card-title" style="margin:0 0 12px;">
+            <i class="fas fa-bug"></i> Runtime errors
+        </h2>
+        <p style="font-size:13px; color:#6b7280; margin:0 0 12px 0;">
+            This domain’s own log for dashboard crashes, password reset denials, and router errors.
+            After you reproduce a failure, refresh this page — the real PHP message will be here.
+        </p>
+        <div style="max-height:360px; overflow:auto; border:1px solid #e5e7eb; border-radius:8px;">
+            <?php if (empty($runtimeErrors)): ?>
+            <div style="padding:16px; color:#6b7280; font-size:13px;">No runtime errors recorded yet on this domain.</div>
+            <?php else: ?>
+            <?php foreach ($runtimeErrors as $errRow): ?>
+            <div style="padding:12px 14px; border-bottom:1px solid #f3f4f6; font-size:13px;">
+                <div style="color:#6b7280;">
+                    <?php echo htmlspecialchars((string)($errRow['created_at'] ?? '')); ?>
+                    · <code><?php echo htmlspecialchars((string)($errRow['source'] ?? '')); ?></code>
+                    <?php if (!empty($errRow['uri'])): ?>
+                    · <?php echo htmlspecialchars((string)$errRow['uri']); ?>
+                    <?php endif; ?>
+                </div>
+                <div style="margin-top:4px; color:#111827;"><?php echo htmlspecialchars((string)($errRow['message'] ?? '')); ?></div>
+            </div>
+            <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+        <p style="font-size:12px; color:#9ca3af; margin:8px 0 0;">Also written to <code>logs/runtime-errors.log</code>.</p>
+    </div>
     <?php endif; ?>
 </div>
 

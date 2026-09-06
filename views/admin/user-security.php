@@ -449,8 +449,9 @@ function updatePassword(event) {
     
     const userId = <?php echo $userId; ?>;
     
-    fetch('<?php echo SITE_URL; ?>/api/admin-reset-user-password.php', {
+    fetch('/api/admin-reset-user-password.php', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: {
             'Content-Type': 'application/json',
         },

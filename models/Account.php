@@ -169,7 +169,7 @@ class Account {
         // Fallback to original query
         $sql = "SELECT SUM(balance) as total FROM accounts WHERE user_id = ? AND status = 'active'";
         $stmt = $this->db->query($sql, [$userId]);
-        $result = $stmt->fetch();
+        $result = $stmt ? $stmt->fetch() : null;
         return $result['total'] ?: 0;
     }
     

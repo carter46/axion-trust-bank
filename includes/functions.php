@@ -30,6 +30,110 @@ function app_log($message, $context = []) {
     error_log($message . (!empty($context) ? ' ' . json_encode($context) : ''));
 }
 
+/**
+ * Visible diagnostic log (file + DB) for super-admin Admin Settings.
+ */
+function runtimeLog(string $source, string $message, array $context = []): void
+{
+    try {
+        app_log($source . ': ' . $message, $context);
+        $logDir = defined('LOG_PATH') ? LOG_PATH : (defined('BASE_PATH') ? BASE_PATH . '/logs' : sys_get_temp_dir());
+        if (!is_dir($logDir)) {
+            @mkdir($logDir, 0755, true);
+        }
+        $row = [
+            'at' => date('Y-m-d H:i:s'),
+            'source' => $source,
+            'message' => $message,
+            'host' => $_SERVER['HTTP_HOST'] ?? '',
+            'uri' => $_SERVER['REQUEST_URI'] ?? '',
+            'user_id' => $_SESSION['user_id'] ?? null,
+            'role' => $_SESSION['user_role'] ?? null,
+            'impersonating' => !empty($_SESSION['admin_impersonating']),
+            'context' => $context,
+        ];
+        @file_put_contents(
+            $logDir . '/runtime-errors.log',
+            json_encode($row, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . PHP_EOL,
+            FILE_APPEND | LOCK_EX
+        );
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $_SESSION['last_runtime_error'] = $row;
+        }
+        if (!class_exists('Database')) {
+            return;
+        }
+        $db = Database::getInstance();
+        $db->query(
+            "CREATE TABLE IF NOT EXISTS `runtime_errors` (
+                `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+                `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `source` varchar(64) NOT NULL,
+                `message` varchar(512) NOT NULL,
+                `host` varchar(255) DEFAULT NULL,
+                `uri` varchar(512) DEFAULT NULL,
+                `user_id` int DEFAULT NULL,
+                `detail` text DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                KEY `idx_created_at` (`created_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        );
+        $db->query(
+            'INSERT INTO runtime_errors (created_at, source, message, host, uri, user_id, detail)
+             VALUES (NOW(), ?, ?, ?, ?, ?, ?)',
+            [
+                substr($source, 0, 64),
+                substr($message, 0, 512),
+                substr((string)($row['host'] ?? ''), 0, 255),
+                substr((string)($row['uri'] ?? ''), 0, 512),
+                $row['user_id'] !== null ? (int)$row['user_id'] : null,
+                json_encode($row, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+            ]
+        );
+    } catch (Throwable $e) {
+        error_log('runtimeLog failed: ' . $e->getMessage());
+    }
+}
+
+/**
+ * @return list<array<string, mixed>>
+ */
+function listRuntimeErrors(int $limit = 30): array
+{
+    $limit = max(1, min(100, $limit));
+    try {
+        if (!class_exists('Database')) {
+            return [];
+        }
+        $db = Database::getInstance();
+        $stmt = $db->query(
+            'SELECT id, created_at, source, message, host, uri, user_id, detail
+             FROM runtime_errors ORDER BY id DESC LIMIT ' . (int)$limit
+        );
+        if (!$stmt) {
+            return [];
+        }
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return is_array($rows) ? $rows : [];
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+/**
+ * Admin id for the current request — original admin while using Login As.
+ */
+function getActingAdminId(): int
+{
+    if (!empty($_SESSION['admin_impersonating'])) {
+        return (int)($_SESSION['admin_original_id'] ?? 0);
+    }
+    if (isLoggedIn() && ($_SESSION['user_role'] ?? '') === 'admin') {
+        return (int)($_SESSION['user_id'] ?? 0);
+    }
+    return 0;
+}
+
 function isLoggedIn() {
     return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
 }
@@ -102,7 +206,7 @@ function requireApiLogin() {
  */
 function requireApiAdmin() {
     requireApiLogin();
-    if (($_SESSION['user_role'] ?? '') !== 'admin') {
+    if (getActingAdminId() <= 0) {
         if (!headers_sent()) {
             header('Content-Type: application/json; charset=UTF-8');
             http_response_code(403);
@@ -192,7 +296,11 @@ function shouldShowKycDashboardPrompt($userId) {
             "SELECT kyc_status, kyc_prompt_dismissed FROM users WHERE id = ?",
             [$userId]
         );
-        $user = $stmt->fetch();
+        if (!$stmt) {
+            // Column may be missing on this domain DB — do not crash the dashboard
+            $stmt = $db->query("SELECT kyc_status FROM users WHERE id = ?", [$userId]);
+        }
+        $user = $stmt ? $stmt->fetch() : null;
         if (!$user) {
             return false;
         }
@@ -206,7 +314,7 @@ function shouldShowKycDashboardPrompt($userId) {
             "SELECT status FROM kyc_verifications WHERE user_id = ? ORDER BY id DESC LIMIT 1",
             [$userId]
         );
-        $submission = $kycStmt->fetch();
+        $submission = $kycStmt ? $kycStmt->fetch() : null;
         if ($submission) {
             $subStatus = $submission['status'] ?? '';
             if (in_array($subStatus, ['pending', 'under_review'], true)) {
@@ -223,7 +331,7 @@ function shouldShowKycDashboardPrompt($userId) {
             return true;
         }
         return false;
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         error_log('shouldShowKycDashboardPrompt error: ' . $e->getMessage());
         return false;
     }

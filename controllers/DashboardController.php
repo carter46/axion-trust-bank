@@ -7,8 +7,8 @@ class DashboardController {
         try {
             $this->renderUserDashboard();
         } catch (Throwable $e) {
-            if (function_exists('app_log')) {
-                app_log('DashboardController error: ' . $e->getMessage(), [
+            if (function_exists('runtimeLog')) {
+                runtimeLog('dashboard', $e->getMessage(), [
                     'file' => $e->getFile(),
                     'line' => $e->getLine(),
                     'user_id' => $_SESSION['user_id'] ?? null,

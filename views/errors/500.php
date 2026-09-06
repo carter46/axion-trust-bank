@@ -160,6 +160,25 @@ $siteName = getSiteName() ?? 'SecureBank';
         <h1>500</h1>
         <h2>Server Error</h2>
         <p>We're experiencing technical difficulties. Our team has been notified and is working to fix the issue. Please try again later.</p>
+        <?php
+        $runtimeError = $_SESSION['last_runtime_error'] ?? null;
+        $canSeeError = !empty($_SESSION['admin_impersonating'])
+            || !empty($_SESSION['is_super_admin'])
+            || (($_SESSION['user_role'] ?? '') === 'admin');
+        if ($canSeeError && is_array($runtimeError) && !empty($runtimeError['message'])):
+        ?>
+        <div style="margin:20px auto 0;max-width:640px;text-align:left;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 14px;font-size:13px;color:#991b1b;">
+            <strong>Logged error (admin only)</strong>
+            <div style="margin-top:6px;"><?php echo htmlspecialchars((string)($runtimeError['source'] ?? 'app')); ?>:
+                <?php echo htmlspecialchars((string)$runtimeError['message']); ?></div>
+            <?php if (!empty($runtimeError['context']['file'])): ?>
+            <div style="margin-top:4px;color:#7f1d1d;font-size:12px;">
+                <?php echo htmlspecialchars(basename((string)$runtimeError['context']['file'])); ?>:<?php echo htmlspecialchars((string)($runtimeError['context']['line'] ?? '')); ?>
+            </div>
+            <?php endif; ?>
+            <div style="margin-top:8px;color:#7f1d1d;font-size:12px;">Also listed under Admin Settings → Runtime errors.</div>
+        </div>
+        <?php endif; ?>
         
         <div>
             <a href="<?php echo SITE_URL; ?>/" class="btn btn-primary">

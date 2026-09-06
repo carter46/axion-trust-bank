@@ -209,7 +209,13 @@ try {
     }
     
 } catch (Throwable $e) {
-    if (function_exists('app_log')) {
+    if (function_exists('runtimeLog')) {
+        runtimeLog('router', $e->getMessage(), [
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'route' => $_GET['route'] ?? null,
+        ]);
+    } elseif (function_exists('app_log')) {
         app_log('Router error: ' . $e->getMessage(), [
             'file' => $e->getFile(),
             'line' => $e->getLine(),

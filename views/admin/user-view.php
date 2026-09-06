@@ -1790,8 +1790,9 @@ function handleExternalAdjustment() {
       
       const userId = <?php echo $userId; ?>;
       
-      fetch('<?php echo SITE_URL; ?>/api/admin-reset-user-password.php', {
+      fetch('/api/admin-reset-user-password.php', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId, new_password: newPassword })
     })
