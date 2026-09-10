@@ -20,12 +20,12 @@ try {
 } catch (Exception $e) {
     ob_end_clean();
     header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'Setup error: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => 'We could not start this transfer. Please try again.']);
     exit;
 } catch (Error $e) {
     ob_end_clean();
     header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'Fatal setup error: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => 'We could not start this transfer. Please try again.']);
     exit;
 }
 
@@ -98,7 +98,15 @@ try {
          FROM users WHERE id = ?",
         [$userId]
     );
-    $userStatus = $userStmt->fetch();
+    $userStatus = dbFetchRow($userStmt);
+    if (!$userStatus) {
+        $userStmt = $db->query(
+            "SELECT email, full_name, status, role, currency, currency_selection_shown, transaction_override, transfer_pin
+             FROM users WHERE id = ?",
+            [$userId]
+        );
+        $userStatus = dbFetchRow($userStmt);
+    }
     
     if (!$userStatus) {
         http_response_code(403);
@@ -119,7 +127,7 @@ try {
     // Fee settings (needed for balance check)
     $sql = "SELECT * FROM system_settings WHERE setting_key LIKE 'transfer_%'";
     $stmt = $db->query($sql);
-    $settings = $stmt->fetchAll();
+    $settings = dbFetchAllRows($stmt);
     $chargeSettings = [];
     foreach ($settings as $setting) {
         $chargeSettings[$setting['setting_key']] = floatval($setting['setting_value']);
@@ -150,7 +158,7 @@ try {
     }
     
     $accountStmt = $db->query("SELECT * FROM accounts WHERE id = ?", [$fromAccountId]);
-    $account = $accountStmt->fetch();
+    $account = dbFetchRow($accountStmt);
     
     if (!$account) {
         http_response_code(400);
@@ -211,7 +219,8 @@ try {
     $sql = "SELECT COALESCE(SUM(amount), 0) as total_today FROM transactions
             WHERE account_id = ? AND transaction_type = 'debit' AND category = 'transfer'
             AND status IN ('pending', 'processing', 'successful', 'completed') AND DATE(created_at) = CURDATE()";
-    $totalToday = floatval($db->query($sql, [$fromAccountId])->fetch()['total_today'] ?? 0);
+    $todayRow = dbFetchRow($db->query($sql, [$fromAccountId]));
+    $totalToday = floatval($todayRow['total_today'] ?? 0);
     if (($totalToday + $amountForLimitCheck) > $dailyLimit) {
         $remaining = max(0, $dailyLimit - $totalToday);
         http_response_code(400);
@@ -227,7 +236,8 @@ try {
             WHERE account_id = ? AND transaction_type = 'debit' AND category = 'transfer'
             AND status IN ('pending', 'processing', 'successful', 'completed')
             AND DATE_FORMAT(created_at, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')";
-    $totalMonth = floatval($db->query($sql, [$fromAccountId])->fetch()['total_month'] ?? 0);
+    $monthRow = dbFetchRow($db->query($sql, [$fromAccountId]));
+    $totalMonth = floatval($monthRow['total_month'] ?? 0);
     if (($totalMonth + $amountForLimitCheck) > $monthlyLimit) {
         $remaining = max(0, $monthlyLimit - $totalMonth);
         http_response_code(400);
@@ -275,13 +285,13 @@ try {
     $requireKYC = $systemSettings->isKYCRequired();
     
     $userDataSql = "SELECT kyc_status FROM users WHERE id = ?";
-    $userData = $db->query($userDataSql, [$userId])->fetch();
+    $userData = dbFetchRow($db->query($userDataSql, [$userId]));
     $kycStatus = $userData['kyc_status'] ?? '';
     
-    $kycSubmission = $db->query(
+    $kycSubmission = dbFetchRow($db->query(
         "SELECT id, status FROM kyc_verifications WHERE user_id = ? ORDER BY id DESC LIMIT 1",
         [$userId]
-    )->fetch();
+    ));
     $hasKycSubmission = !empty($kycSubmission);
     
     if (($requireKYC || $requireKYCForTransfer) && $kycStatus !== 'verified') {
@@ -557,7 +567,7 @@ try {
     
     // Re-fetch account inside transaction for consistency
     $stmt = $db->query("SELECT * FROM accounts WHERE id = ? AND status = 'active'", [$fromAccountId]);
-    $account = $stmt->fetch();
+    $account = dbFetchRow($stmt);
     
     if (!$account) {
         throw new Exception('Account is no longer available for transfers');
@@ -613,9 +623,9 @@ try {
     $recipientInfo = [];
     $paymentMethod = null;
 
-    $operatingCountryRow = $db->query(
+    $operatingCountryRow = dbFetchRow($db->query(
         "SELECT setting_value FROM system_settings WHERE setting_key = 'bank_operating_country' LIMIT 1"
-    )->fetch();
+    ));
     $bankOperatingCountry = $operatingCountryRow['setting_value'] ?? 'United States';
     // Domestic rails / bank list follow the user's display-currency country
     $userDomesticCountry = currencyToPrimaryCountry(getUserDisplayCurrency($user));
@@ -637,20 +647,10 @@ try {
         $domesticRules = getDomesticAccountNumberRules(normalizeCountryCode($operatingCountry));
         $acctLen = strlen(trim($accountNumber));
         if ($acctLen < (int)$domesticRules['min'] || $acctLen > (int)$domesticRules['max']) {
-            http_response_code(400);
-            echo json_encode([
-                'success' => false,
-                'message' => 'Account number length is invalid' . (!empty($domesticRules['hint']) ? ' (' . $domesticRules['hint'] . ')' : ''),
-            ]);
-            exit;
+            throw new Exception('Account number length is invalid' . (!empty($domesticRules['hint']) ? ' (' . $domesticRules['hint'] . ')' : ''));
         }
         if (!empty($domesticRules['pattern']) && !preg_match('/' . $domesticRules['pattern'] . '/i', $accountNumber)) {
-            http_response_code(400);
-            echo json_encode([
-                'success' => false,
-                'message' => 'Account number must contain only numbers' . (!empty($domesticRules['hint']) ? ' (' . $domesticRules['hint'] . ')' : ''),
-            ]);
-            exit;
+            throw new Exception('Account number must contain only numbers' . (!empty($domesticRules['hint']) ? ' (' . $domesticRules['hint'] . ')' : ''));
         }
 
         $railResult = buildTransferMetadata('domestic', array_merge($input, [
@@ -694,7 +694,7 @@ try {
         $recipientAccountNumber = $recipientInfo['account_number'];
         $sqlRecipient = "SELECT * FROM accounts WHERE account_number = ? AND status = 'active' LIMIT 1";
         $stmtRecipient = $db->query($sqlRecipient, [$recipientAccountNumber]);
-        $recipientAccount = $stmtRecipient->fetch();
+        $recipientAccount = dbFetchRow($stmtRecipient);
         
         if ($recipientAccount) {
             // Credit recipient in their account ledger currency (convert if needed)
@@ -704,13 +704,7 @@ try {
             if ($recipientLedgerCurrency !== $accountCurrency) {
                 $creditRate = getExchangeRate($accountCurrency, $recipientLedgerCurrency);
                 if ($creditRate === null || $creditRate <= 0) {
-                    http_response_code(503);
-                    echo json_encode([
-                        'success' => false,
-                        'error_type' => 'exchange_rate_unavailable',
-                        'message' => 'Exchange rate unavailable for recipient credit (' . $accountCurrency . ' → ' . $recipientLedgerCurrency . ').',
-                    ]);
-                    exit;
+                    throw new Exception('Exchange rate unavailable for recipient credit. Please try again later.');
                 }
                 $creditAmount = round($amount * $creditRate, 2);
             }
@@ -726,7 +720,7 @@ try {
             // Get sender info
             $sqlSender = "SELECT full_name FROM users WHERE id = ?";
             $stmtSender = $db->query($sqlSender, [$userId]);
-            $senderInfo = $stmtSender->fetch();
+            $senderInfo = dbFetchRow($stmtSender);
             $senderName = $senderInfo['full_name'] ?? 'Unknown Sender';
             
             $recipientDescription = "Internal Transfer from " . $senderName;
@@ -805,7 +799,7 @@ try {
                     recipient_account, recipient_name, recipient_bank, status, payment_method, fee, metadata,
                     ip_address, created_at, completed_at
                 ) VALUES (?, ?, ?, 'debit', 'transfer', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), {$completedAtSql})";
-        $db->query($sql, [
+        $insertOk = $db->query($sql, [
             $transactionRef,
             $userId,
             $fromAccountId,
@@ -824,6 +818,9 @@ try {
             json_encode($transactionMetadata),
             $ipAddress,
         ]);
+        if (!$insertOk) {
+            throw new Exception('Could not save this transfer. Please try again.');
+        }
     } else {
         $sql = "INSERT INTO transactions (
                     transaction_ref, user_id, account_id, transaction_type, category, expense_category,
@@ -831,7 +828,7 @@ try {
                     recipient_account, recipient_name, recipient_bank, status, fee, metadata,
                     ip_address, created_at, completed_at
                 ) VALUES (?, ?, ?, 'debit', 'transfer', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), {$completedAtSql})";
-        $db->query($sql, [
+        $insertOk = $db->query($sql, [
             $transactionRef,
             $userId,
             $fromAccountId,
@@ -849,6 +846,9 @@ try {
             json_encode($transactionMetadata),
             $ipAddress,
         ]);
+        if (!$insertOk) {
+            throw new Exception('Could not save this transfer. Please try again.');
+        }
     }
     
     // Log activity
@@ -860,7 +860,10 @@ try {
             // Get sender info with display currency preference
             $sqlSender = "SELECT full_name, email, currency, currency_selection_shown, notification_preferences FROM users WHERE id = ?";
             $stmtSender = $db->query($sqlSender, [$userId]);
-            $senderUser = $stmtSender->fetch();
+            $senderUser = dbFetchRow($stmtSender);
+            if (!$senderUser) {
+                throw new Exception('Could not load your account details for this transfer.');
+            }
             $senderDisplayCurrency = getUserDisplayCurrency($senderUser);
             $senderAccountCurrency = getAccountStoredCurrency($account);
 
@@ -896,7 +899,7 @@ try {
                 // Get recipient user info with display currency preference
                 $sqlRecipient = "SELECT full_name, email, currency, currency_selection_shown, notification_preferences FROM users WHERE id = ?";
                 $stmtRecipient = $db->query($sqlRecipient, [$recipientAccount['user_id']]);
-                $recipientUser = $stmtRecipient->fetch();
+                $recipientUser = dbFetchRow($stmtRecipient);
                 $recipientDisplayCurrency = getUserDisplayCurrency($recipientUser);
                 $recipientAccountCurrency = getAccountStoredCurrency($recipientAccount);
                 
@@ -940,7 +943,7 @@ try {
     } elseif ($transactionStatus === 'processing') {
         $successMessage = 'Transfer is being processed.';
     } elseif ($transactionStatus === 'failed') {
-        $successMessage = 'Transfer failed. Please contact support for assistance.';
+        $successMessage = 'This transfer could not be completed.';
     }
 
     echo json_encode([
@@ -963,13 +966,18 @@ try {
     
     error_log('Transfer API Error: ' . $e->getMessage());
     error_log('Stack trace: ' . $e->getTraceAsString());
+    if (function_exists('runtimeLog')) {
+        runtimeLog('process-transfer', $e->getMessage(), [
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+        ]);
+    }
     
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => 'Transfer failed: ' . $e->getMessage(),
-        'file' => $e->getFile(),
-        'line' => $e->getLine()
+        'error_type' => 'transfer_unavailable',
+        'message' => publicTransferFailureMessage($e),
     ]);
 } catch (Error $e) {
     // Rollback on error
@@ -979,13 +987,18 @@ try {
     
     error_log('Transfer API Fatal Error: ' . $e->getMessage());
     error_log('Stack trace: ' . $e->getTraceAsString());
+    if (function_exists('runtimeLog')) {
+        runtimeLog('process-transfer', $e->getMessage(), [
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+        ]);
+    }
     
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => 'Transfer failed: ' . $e->getMessage(),
-        'file' => $e->getFile(),
-        'line' => $e->getLine()
+        'error_type' => 'transfer_unavailable',
+        'message' => publicTransferFailureMessage($e),
     ]);
 }
 ?>

@@ -2485,6 +2485,52 @@ function uploadFile($file, $folder = 'documents') {
     return ['success' => false, 'message' => 'Failed to move uploaded file'];
 }
 
+function dbFetchRow($stmt): ?array
+{
+    if (!$stmt) {
+        return null;
+    }
+    try {
+        $row = $stmt->fetch();
+        return is_array($row) ? $row : null;
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
+function dbFetchAllRows($stmt): array
+{
+    if (!$stmt) {
+        return [];
+    }
+    try {
+        $rows = $stmt->fetchAll();
+        return is_array($rows) ? $rows : [];
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+/**
+ * Customer-facing transfer error. Never leak SQL/PHP internals.
+ */
+function publicTransferFailureMessage($error = null): string
+{
+    $raw = '';
+    if ($error instanceof Throwable) {
+        $raw = $error->getMessage();
+    } elseif (is_string($error)) {
+        $raw = $error;
+    }
+    if ($raw !== '' && !preg_match('/fetch\s*\(|on bool|on false|SQLSTATE|PDO|stack trace|undefined |fatal |exception|syntax error|column .* unknown|doesn\'t exist/i', $raw)) {
+        $clean = trim($raw);
+        if ($clean !== '' && strlen($clean) < 180 && strpos($clean, '/') === false && strpos($clean, '\\') === false) {
+            return $clean;
+        }
+    }
+    return 'We could not complete this transfer right now. Please try again. If it keeps happening, contact support.';
+}
+
 function jsonResponse($data, $statusCode = 200) {
     http_response_code($statusCode);
     header('Content-Type: application/json');

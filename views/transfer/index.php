@@ -2840,9 +2840,17 @@ include __DIR__ . '/../../includes/sidebar.php';
         const errorModalOkBtn = document.getElementById('errorModalOkBtn');
         let errorModalRedirect = null;
         
+        function userFacingTransferMessage(message) {
+            const text = (message || '').toString();
+            if (!text || /fetch\s*\(|on bool|on false|SQLSTATE|PDO|stack trace|undefined |fatal |exception|syntax error/i.test(text)) {
+                return 'We could not complete this transfer right now. Please try again. If it keeps happening, contact support.';
+            }
+            return text;
+        }
+
         function showErrorModal(title, message, type = 'error', redirect = null) {
             errorTitle.textContent = title;
-            errorMessage.textContent = message;
+            errorMessage.textContent = userFacingTransferMessage(message);
             errorModalRedirect = redirect;
             
             // Set icon based on type

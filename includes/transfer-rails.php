@@ -1149,9 +1149,9 @@ function transactionsHasPaymentMethodColumn() {
             "SELECT COUNT(*) AS cnt FROM information_schema.columns
              WHERE table_schema = DATABASE() AND table_name = 'transactions' AND column_name = 'payment_method'"
         );
-        $row = $stmt->fetch();
+        $row = dbFetchRow($stmt);
         $hasColumn = ((int)($row['cnt'] ?? 0)) > 0;
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         $hasColumn = false;
     }
     return $hasColumn;
