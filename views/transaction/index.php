@@ -852,9 +852,13 @@ include __DIR__ . '/../../includes/sidebar.php';
                     <label for="status">Status</label>
                     <select id="status" name="status">
                         <option value="">All Status</option>
-                        <option value="completed" <?php echo $data['status'] === 'completed' ? 'selected' : ''; ?>>Completed</option>
+                        <option value="successful" <?php echo in_array($data['status'], ['successful', 'completed'], true) ? 'selected' : ''; ?>>Successful</option>
                         <option value="pending" <?php echo $data['status'] === 'pending' ? 'selected' : ''; ?>>Pending</option>
+                        <option value="processing" <?php echo $data['status'] === 'processing' ? 'selected' : ''; ?>>Processing</option>
+                        <option value="on_hold" <?php echo $data['status'] === 'on_hold' ? 'selected' : ''; ?>>On Hold</option>
                         <option value="failed" <?php echo $data['status'] === 'failed' ? 'selected' : ''; ?>>Failed</option>
+                        <option value="reversed" <?php echo $data['status'] === 'reversed' ? 'selected' : ''; ?>>Reversed</option>
+                        <option value="cancelled" <?php echo $data['status'] === 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
                     </select>
                 </div>
                 <div class="filter-group">
@@ -965,20 +969,9 @@ include __DIR__ . '/../../includes/sidebar.php';
                     
                     $date = date('M d, Y', strtotime($transaction['created_at']));
                     
-                    // Get status
-                    $status = $transaction['status'] ?? 'completed';
-                    $statusDotColor = '#00c853'; // Default completed (green)
-                    $statusLabel = 'COMPLETED';
-                    if ($status === 'failed') {
-                        $statusDotColor = '#ef4444';
-                        $statusLabel = 'FAILED';
-                    } elseif ($status === 'pending') {
-                        $statusDotColor = '#f59e0b';
-                        $statusLabel = 'PENDING';
-                    } elseif ($status === 'processing') {
-                        $statusDotColor = '#4f46e5';
-                        $statusLabel = 'PROCESSING';
-                    }
+                    $statusMeta = getTransactionStatusMeta($transaction['status'] ?? 'pending');
+                    $statusDotColor = $statusMeta['dot'];
+                    $statusLabel = $statusMeta['label'];
             ?>
             <div class="transaction-item" onclick="window.location.href='<?php echo SITE_URL; ?>/transaction?id=<?php echo $transaction['id']; ?>'">
                 <div class="transaction-top">

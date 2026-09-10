@@ -36,15 +36,22 @@ if (!$transaction) {
     exit;
 }
 
-// Determine status
 $status = strtolower($transaction['status']);
-$isSuccess = isSuccessfulTransactionStatus($status);
-$statusClass = 'status-' . ($isSuccess ? 'success' : ($status === 'failed' ? 'failed' : 'pending'));
-$statusIcon = $isSuccess ? 'check' : ($status === 'failed' ? 'times' : 'clock');
-$statusTitle = $isSuccess ? 'Transfer Successful' : ($status === 'failed' ? 'Transfer Failed' : 'Transfer Pending');
-$statusText = $isSuccess
-    ? ($status === 'completed' ? 'Completed' : 'Successful')
-    : ($status === 'failed' ? 'Failed' : 'Pending');
+$statusMeta = getTransactionStatusMeta($status);
+$isSuccess = $statusMeta['family'] === 'success';
+$statusClass = 'status-' . $statusMeta['key'] . ($isSuccess ? ' status-success' : '');
+$iconMap = [
+    'check' => 'check',
+    'clock' => 'clock',
+    'spinner' => 'spinner',
+    'pause' => 'pause',
+    'times' => 'times',
+    'undo' => 'undo',
+    'ban' => 'ban',
+];
+$statusIcon = $iconMap[$statusMeta['icon']] ?? 'clock';
+$statusTitle = $statusMeta['title'];
+$statusText = ucwords(strtolower(str_replace('_', ' ', $statusMeta['label'])));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -383,6 +390,32 @@ $statusText = $isSuccess
         .status-pending {
             --status-color: #FFC107;
             --status-color-dark: #FFA000;
+        }
+
+        .status-processing {
+            --status-color: #3b82f6;
+            --status-color-dark: #1d4ed8;
+        }
+
+        .status-on_hold {
+            --status-color: #8b5cf6;
+            --status-color-dark: #6d28d9;
+        }
+
+        .status-reversed {
+            --status-color: #64748b;
+            --status-color-dark: #475569;
+        }
+
+        .status-cancelled {
+            --status-color: #6b7280;
+            --status-color-dark: #4b5563;
+        }
+
+        .status-successful,
+        .status-completed {
+            --status-color: #4CAF50;
+            --status-color-dark: #3d8b40;
         }
     </style>
     <?php include __DIR__ . '/../../includes/translation.php'; ?>

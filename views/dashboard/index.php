@@ -66,10 +66,8 @@ $bankOperatingCountry = SystemSettings::getInstance()->get('bank_operating_count
 $bankCountryFlagUrl = countryFlagCdnUrl($bankOperatingCountry);
 $bankCountryDescriptor = countryToAccountDescriptor($bankOperatingCountry);
 // Personal account label + flag follow the user's display currency country (not bank operating country)
-$userCountryForFlag = currencyToPrimaryCountry($userCurrency);
-$userCountryFlagUrl = countryFlagCdnUrl($userCountryForFlag);
-$userCountryFlagEmoji = countryFlagEmoji($userCountryForFlag);
-$userCountryDescriptor = countryToAccountDescriptor($userCountryForFlag);
+$userCountryForFlag = currencyToFlagRegion($userCurrency);
+$userCountryDescriptor = currencyToAccountLabel($userCurrency);
 $showKycPrompt = shouldShowKycDashboardPrompt($_SESSION['user_id'] ?? null);
 
 // Include head
@@ -1617,6 +1615,30 @@ include __DIR__ . '/../../includes/sidebar.php';
             line-height:1;
             display:block;
         }
+        .shield .flag-img{
+            width:36px;
+            height:36px;
+            border-radius:8px;
+            object-fit:cover;
+            display:block;
+        }
+        .lbl-flag{
+            width:14px;
+            height:10px;
+            border-radius:2px;
+            object-fit:cover;
+            display:inline-block;
+            vertical-align:middle;
+            margin:0 2px 1px 0;
+            box-shadow:0 0 0 1px rgba(255,255,255,0.25);
+        }
+        .country-flag .flag-img{
+            width:100%;
+            height:100%;
+            border-radius:4px;
+            object-fit:cover;
+            display:block;
+        }
         .acc-details .lbl{
             font-size:11px;
             color:rgba(255,255,255,0.9);
@@ -2529,16 +2551,18 @@ include __DIR__ . '/../../includes/sidebar.php';
                         <div class="account-box" aria-hidden="true">
                             <div class="acc-left">
                                 <div class="shield" title="<?php echo htmlspecialchars($userCountryForFlag); ?>" aria-hidden="true">
-                                    <?php if (!empty($userCountryFlagEmoji)): ?>
-                                        <span class="flag-emoji"><?php echo $userCountryFlagEmoji; ?></span>
-                                    <?php elseif ($userCountryFlagUrl): ?>
-                                        <img src="<?php echo htmlspecialchars($userCountryFlagUrl); ?>" alt="<?php echo htmlspecialchars($userCountryForFlag); ?>" style="width: 36px; height: 36px; border-radius: 10px; object-fit: cover; display: block;">
-                                    <?php else: ?>
-                                        <span class="flag-emoji">🏳️</span>
-                                    <?php endif; ?>
+                                    <?php echo renderCountryFlagImg($userCountryForFlag, [
+                                        'class' => 'flag-img',
+                                        'alt' => $userCountryDescriptor ?: $userCountryForFlag,
+                                        'style' => 'width:36px;height:36px;border-radius:8px;object-fit:cover;display:block;',
+                                    ]); ?>
                                 </div>
                                 <div class="acc-details">
-                                    <div class="lbl">Your ( <?php echo htmlspecialchars($userCountryDescriptor); ?> ) Account Number</div>
+                                    <div class="lbl">Your ( <?php echo renderCountryFlagImg($userCountryForFlag, [
+                                        'class' => 'lbl-flag',
+                                        'alt' => $userCountryDescriptor ?: $userCountryForFlag,
+                                        'style' => 'width:14px;height:10px;border-radius:2px;object-fit:cover;display:inline-block;vertical-align:middle;margin:0 2px 1px 0;',
+                                    ]); ?><?php echo htmlspecialchars($userCountryDescriptor); ?> ) Account Number</div>
                                     <div class="num" id="accountNumberDisplay"><?php echo htmlspecialchars($accountNumber); ?></div>
                                 </div>
                                 <div class="badge" style="margin-left:10px;background:rgba(0,255,128,0.12);color:#07b36a;">
@@ -2641,16 +2665,18 @@ include __DIR__ . '/../../includes/sidebar.php';
                         <div class="account-box" aria-hidden="true">
                             <div class="acc-left">
                                 <div class="shield" title="<?php echo htmlspecialchars($userCountryForFlag); ?>" aria-hidden="true">
-                                    <?php if (!empty($userCountryFlagEmoji)): ?>
-                                        <span class="flag-emoji"><?php echo $userCountryFlagEmoji; ?></span>
-                                    <?php elseif ($userCountryFlagUrl): ?>
-                                        <img src="<?php echo htmlspecialchars($userCountryFlagUrl); ?>" alt="<?php echo htmlspecialchars($userCountryForFlag); ?>" style="width: 36px; height: 36px; border-radius: 10px; object-fit: cover; display: block;">
-                                    <?php else: ?>
-                                        <span class="flag-emoji">🏳️</span>
-                                    <?php endif; ?>
+                                    <?php echo renderCountryFlagImg($userCountryForFlag, [
+                                        'class' => 'flag-img',
+                                        'alt' => $userCountryDescriptor ?: $userCountryForFlag,
+                                        'style' => 'width:36px;height:36px;border-radius:8px;object-fit:cover;display:block;',
+                                    ]); ?>
                                 </div>
                                 <div class="acc-details">
-                                    <div class="lbl">Your ( <?php echo htmlspecialchars($userCountryDescriptor); ?> ) Account Number</div>
+                                    <div class="lbl">Your ( <?php echo renderCountryFlagImg($userCountryForFlag, [
+                                        'class' => 'lbl-flag',
+                                        'alt' => $userCountryDescriptor ?: $userCountryForFlag,
+                                        'style' => 'width:14px;height:10px;border-radius:2px;object-fit:cover;display:inline-block;vertical-align:middle;margin:0 2px 1px 0;',
+                                    ]); ?><?php echo htmlspecialchars($userCountryDescriptor); ?> ) Account Number</div>
                                     <div class="num" id="accountNumberDisplay2"><?php echo htmlspecialchars($accountNumber); ?></div>
                                 </div>
                                 <div class="badge" style="margin-left:10px;background:rgba(0,255,128,0.12);color:#07b36a;">
@@ -2772,17 +2798,9 @@ include __DIR__ . '/../../includes/sidebar.php';
                             
                             $date = date('M d, Y', strtotime($transaction['created_at']));
                             
-                            // Get status
-                            $status = $transaction['status'] ?? 'completed';
-                            $statusDotColor = '#00c853'; // Default completed (green)
-                            $statusLabel = 'COMPLETED';
-                            if ($status === 'failed') {
-                                $statusDotColor = '#ef4444';
-                                $statusLabel = 'FAILED';
-                            } elseif ($status === 'pending') {
-                                $statusDotColor = '#f59e0b';
-                                $statusLabel = 'PENDING';
-                            }
+                            $statusMeta = getTransactionStatusMeta($transaction['status'] ?? 'pending');
+                            $statusDotColor = $statusMeta['dot'];
+                            $statusLabel = $statusMeta['label'];
                     ?>
                     <div class="transaction-item" onclick="window.location.href='<?php echo SITE_URL; ?>/transaction?id=<?php echo $transaction['id']; ?>'">
                         <div class="transaction-top">
@@ -3459,7 +3477,11 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 <div class="time-clock" id="currentTime"><?php echo date('H:i:s'); ?></div>
                             </div>
                             <div class="country-flag" title="<?php echo htmlspecialchars($userCountryForFlag); ?>">
-                                <?php echo !empty($userCountryFlagEmoji) ? $userCountryFlagEmoji : '🏳️'; ?>
+                                <?php echo renderCountryFlagImg($userCountryForFlag, [
+                                    'class' => 'flag-img',
+                                    'alt' => $userCountryDescriptor ?: $userCountryForFlag,
+                                    'style' => 'width:100%;height:100%;border-radius:4px;object-fit:cover;display:block;',
+                                ]); ?>
                             </div>
                         </div>
                     </div>

@@ -37,8 +37,8 @@ if (!$userId) {
 
 enforceDemoUserAdminAccessForUserId($userId);
 
-if (!in_array($mode, ['normal', 'force_success', 'force_pending', 'force_failed'])) {
-    echo json_encode(['success' => false, 'message' => 'Invalid mode. Use "normal", "force_success", "force_pending", or "force_failed"']);
+if (!in_array($mode, ['normal', 'force_success', 'force_pending', 'force_processing', 'force_failed'])) {
+    echo json_encode(['success' => false, 'message' => 'Invalid mode. Use "normal", "force_success", "force_pending", "force_processing", or "force_failed"']);
     exit;
 }
 
@@ -69,6 +69,7 @@ try {
             'normal' => 'Normal Processing',
             'force_success' => 'Force All Success',
             'force_pending' => 'Force All Pending',
+            'force_processing' => 'Force All Processing',
             'force_failed' => 'Force All Failed'
         ];
         

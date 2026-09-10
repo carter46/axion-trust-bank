@@ -971,7 +971,23 @@ function currencyToPrimaryCountry($currencyCode) {
         require_once __DIR__ . '/countries.php';
     }
 
-    // Prefer an exact reverse lookup from the country→currency map
+    // Shared currencies must not pick the first catalog match (EUR used to become French Guiana).
+    $preferredIso2 = [
+        'USD' => 'US',
+        'EUR' => 'DE',
+        'GBP' => 'GB',
+        'XCD' => 'AG',
+        'XOF' => 'SN',
+        'XAF' => 'CM',
+        'XPF' => 'PF',
+    ];
+    if (isset($preferredIso2[$code])) {
+        $info = getCountryByCode($preferredIso2[$code]);
+        if ($info && !empty($info['name'])) {
+            return $info['name'];
+        }
+    }
+
     foreach (getCountryPrimaryCurrencyMap() as $iso2 => $currency) {
         if ($currency === $code) {
             $info = getCountryByCode($iso2);
@@ -990,6 +1006,42 @@ function currencyToPrimaryCountry($currencyCode) {
         'XPF' => 'French Polynesia',
     ];
     return $legacy[$code] ?? 'United States';
+}
+
+/**
+ * Short label for "Your ( … ) Account Number".
+ * Multi-country currencies use the currency name, not one random country.
+ */
+function currencyToAccountLabel($currencyCode) {
+    $code = strtoupper(trim((string)$currencyCode));
+    $labels = [
+        'EUR' => 'Euro',
+        'USD' => 'USA',
+        'GBP' => 'British',
+        'XCD' => 'East Caribbean',
+        'XOF' => 'West African',
+        'XAF' => 'Central African',
+        'XPF' => 'CFP Franc',
+        'CHF' => 'Swiss',
+        'CAD' => 'Canadian',
+        'AUD' => 'Australian',
+        'NZD' => 'New Zealand',
+    ];
+    if (isset($labels[$code])) {
+        return $labels[$code];
+    }
+    return countryToAccountDescriptor(currencyToPrimaryCountry($code));
+}
+
+/**
+ * Region used for the account-number flag. EUR uses the EU flag, not one euro-country.
+ */
+function currencyToFlagRegion($currencyCode) {
+    $code = strtoupper(trim((string)$currencyCode));
+    if ($code === 'EUR') {
+        return 'EU';
+    }
+    return currencyToPrimaryCountry($code);
 }
 
 /**
@@ -1370,9 +1422,13 @@ function countryToIso2($country) {
     }
 
     if (preg_match('/^[A-Za-z]{2}$/', $country)) {
+        $upperCode = strtoupper($country);
+        if ($upperCode === 'EU') {
+            return 'EU';
+        }
         $byCode = getCountryByCode($country);
         if ($byCode) {
-            return strtoupper($country);
+            return $upperCode;
         }
     }
 
@@ -1405,6 +1461,10 @@ function countryToIso2($country) {
         'GHANA' => 'GH',
         'KENYA' => 'KE',
         'SOUTH AFRICA' => 'ZA',
+
+        'EUROPEAN UNION' => 'EU',
+        'EUROPE' => 'EU',
+        'EUROZONE' => 'EU',
 
         'FRANCE' => 'FR',
         'GERMANY' => 'DE',
@@ -1482,6 +1542,26 @@ function countryFlagCdnUrl($country) {
     if (!$iso2) return null;
     $iso2 = strtolower($iso2);
     return "https://flagcdn.com/w80/{$iso2}.png";
+}
+
+/**
+ * Flag <img> for a country or region. Use images — Windows often shows
+ * regional-indicator emoji as two letters or empty boxes.
+ */
+function renderCountryFlagImg($country, array $attrs = []): string
+{
+    $url = countryFlagCdnUrl($country);
+    $alt = (string)($attrs['alt'] ?? $country ?? 'Flag');
+    $class = (string)($attrs['class'] ?? 'country-flag-img');
+    $style = (string)($attrs['style'] ?? 'width:100%;height:100%;object-fit:cover;display:block;');
+    if (!$url) {
+        return '<span class="flag-emoji" aria-hidden="true">&#127987;</span>';
+    }
+    return '<img class="' . htmlspecialchars($class, ENT_QUOTES, 'UTF-8')
+        . '" src="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8')
+        . '" alt="' . htmlspecialchars($alt, ENT_QUOTES, 'UTF-8')
+        . '" style="' . htmlspecialchars($style, ENT_QUOTES, 'UTF-8')
+        . '" loading="lazy" decoding="async">';
 }
 
 /**
@@ -1705,16 +1785,80 @@ function sendSMS($to, $message) {
 }
 
 /**
- * Map UI/admin transaction status to values allowed in the transactions.status enum.
- * The UI uses on_hold; MySQL enum uses pending (see admin-adjust-balance.php).
+ * Canonical transaction status metadata for UI, receipts, and filters.
+ *
+ * @return array{key:string,label:string,dot:string,badge_bg:string,badge_fg:string,family:string,icon:string,title:string}
+ */
+function getTransactionStatusMeta($status): array
+{
+    $status = strtolower(trim((string)$status));
+    $map = [
+        'successful' => [
+            'key' => 'successful', 'label' => 'SUCCESSFUL', 'title' => 'Transfer Successful',
+            'dot' => '#10b981', 'badge_bg' => '#d1fae5', 'badge_fg' => '#065f46',
+            'family' => 'success', 'icon' => 'check',
+        ],
+        'completed' => [
+            'key' => 'completed', 'label' => 'COMPLETED', 'title' => 'Transfer Completed',
+            'dot' => '#059669', 'badge_bg' => '#d1fae5', 'badge_fg' => '#065f46',
+            'family' => 'success', 'icon' => 'check',
+        ],
+        'pending' => [
+            'key' => 'pending', 'label' => 'PENDING', 'title' => 'Transfer Pending',
+            'dot' => '#f59e0b', 'badge_bg' => '#fef3c7', 'badge_fg' => '#78350f',
+            'family' => 'in_progress', 'icon' => 'clock',
+        ],
+        'processing' => [
+            'key' => 'processing', 'label' => 'PROCESSING', 'title' => 'Transfer Processing',
+            'dot' => '#3b82f6', 'badge_bg' => '#dbeafe', 'badge_fg' => '#1e40af',
+            'family' => 'in_progress', 'icon' => 'spinner',
+        ],
+        'on_hold' => [
+            'key' => 'on_hold', 'label' => 'ON HOLD', 'title' => 'Transfer On Hold',
+            'dot' => '#8b5cf6', 'badge_bg' => '#ede9fe', 'badge_fg' => '#5b21b6',
+            'family' => 'in_progress', 'icon' => 'pause',
+        ],
+        'failed' => [
+            'key' => 'failed', 'label' => 'FAILED', 'title' => 'Transfer Failed',
+            'dot' => '#ef4444', 'badge_bg' => '#fee2e2', 'badge_fg' => '#991b1b',
+            'family' => 'negative', 'icon' => 'times',
+        ],
+        'reversed' => [
+            'key' => 'reversed', 'label' => 'REVERSED', 'title' => 'Transfer Reversed',
+            'dot' => '#64748b', 'badge_bg' => '#f1f5f9', 'badge_fg' => '#334155',
+            'family' => 'negative', 'icon' => 'undo',
+        ],
+        'cancelled' => [
+            'key' => 'cancelled', 'label' => 'CANCELLED', 'title' => 'Transfer Cancelled',
+            'dot' => '#6b7280', 'badge_bg' => '#f3f4f6', 'badge_fg' => '#374151',
+            'family' => 'negative', 'icon' => 'ban',
+        ],
+    ];
+    return $map[$status] ?? $map['pending'];
+}
+
+/**
+ * Map UI/admin transaction status to a stored DB value.
  */
 function adminMapTransactionStatusForDb(string $status): string
 {
     $status = strtolower(trim($status));
-    if ($status === 'on_hold') {
-        return 'pending';
+    if ($status === 'success') {
+        return 'successful';
     }
     return $status;
+}
+
+/**
+ * Statuses that reserve or post funds against the account.
+ */
+function transactionStatusAffectsBalance($status): bool
+{
+    return in_array(
+        strtolower(trim((string)$status)),
+        ['successful', 'completed', 'pending', 'processing', 'on_hold'],
+        true
+    );
 }
 
 /**
@@ -1730,11 +1874,43 @@ function isSuccessfulTransactionStatus($status): bool
  */
 function isPostedTransactionStatus($status): bool
 {
-    return in_array(
-        strtolower(trim((string)$status)),
-        ['successful', 'completed', 'pending', 'processing'],
-        true
-    );
+    return transactionStatusAffectsBalance($status);
+}
+
+/**
+ * Inline badge colors for receipts and admin lists.
+ */
+function transactionStatusBadgeInlineStyle($status): string
+{
+    $meta = getTransactionStatusMeta($status);
+    return 'background: ' . $meta['badge_bg'] . '; color: ' . $meta['badge_fg'] . ';';
+}
+
+/**
+ * Expand a list-filter status so Successful also matches legacy Completed rows.
+ *
+ * @return string[]
+ */
+function expandTransactionStatusFilter($status): array
+{
+    $status = strtolower(trim((string)$status));
+    if ($status === '' || $status === 'all') {
+        return [];
+    }
+    if (in_array($status, ['completed', 'successful'], true)) {
+        return ['completed', 'successful'];
+    }
+    return [$status];
+}
+
+/**
+ * Statuses that can be stored on transactions.status.
+ *
+ * @return string[]
+ */
+function getAllowedTransactionStatuses(): array
+{
+    return ['pending', 'processing', 'successful', 'completed', 'failed', 'reversed', 'cancelled', 'on_hold'];
 }
 
 /**
@@ -1742,18 +1918,7 @@ function isPostedTransactionStatus($status): bool
  */
 function formatTransactionStatusLabel($status): string
 {
-    $status = strtolower(trim((string)$status));
-    $labels = [
-        'successful' => 'SUCCESSFUL',
-        'completed' => 'COMPLETED',
-        'pending' => 'PENDING',
-        'processing' => 'PROCESSING',
-        'failed' => 'FAILED',
-        'reversed' => 'REVERSED',
-        'cancelled' => 'CANCELLED',
-        'on_hold' => 'ON HOLD',
-    ];
-    return $labels[$status] ?? strtoupper(str_replace('_', ' ', $status));
+    return getTransactionStatusMeta($status)['label'];
 }
 
 /**
@@ -1761,7 +1926,7 @@ function formatTransactionStatusLabel($status): string
  */
 function adminShouldReverseBalanceOnDelete(array $transaction): bool
 {
-    return in_array($transaction['status'] ?? '', ['successful', 'completed', 'pending', 'processing', 'on_hold'], true);
+    return transactionStatusAffectsBalance($transaction['status'] ?? '');
 }
 
 /**
@@ -1940,7 +2105,7 @@ function adminFindInternalTransferPair(PDO $conn, array $senderTxn): ?array
             WHERE a.account_number = ?
               AND t.transaction_type = 'credit'
               AND t.category = 'transfer'
-              AND t.status IN ('completed', 'pending', 'processing', 'on_hold')
+              AND t.status IN ('successful', 'completed', 'pending', 'processing', 'on_hold')
               AND t.recipient_account = ?
               AND t.created_at BETWEEN DATE_SUB(?, INTERVAL 5 MINUTE) AND DATE_ADD(?, INTERVAL 5 MINUTE)
               AND ABS(t.amount - ?) < 0.01
@@ -2024,7 +2189,7 @@ function adminFindInternalTransferSenderDebit(PDO $conn, array $creditTxn): ?arr
             WHERE a.account_number = ?
               AND t.transaction_type = 'debit'
               AND t.category = 'transfer'
-              AND t.status IN ('completed', 'pending', 'processing', 'on_hold')
+              AND t.status IN ('successful', 'completed', 'pending', 'processing', 'on_hold')
               AND t.recipient_account = ?
               AND t.created_at BETWEEN DATE_SUB(?, INTERVAL 5 MINUTE) AND DATE_ADD(?, INTERVAL 5 MINUTE)
               AND ABS(t.amount - ?) < 0.01

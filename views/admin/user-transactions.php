@@ -352,6 +352,26 @@ include __DIR__ . '/../../includes/admin-modals.php';
     color: #991b1b;
 }
 
+.status-processing {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.status-on_hold {
+    background: #ede9fe;
+    color: #5b21b6;
+}
+
+.status-reversed {
+    background: #f1f5f9;
+    color: #334155;
+}
+
+.status-cancelled {
+    background: #f3f4f6;
+    color: #374151;
+}
+
 .action-buttons {
     display: flex;
     gap: 8px;
@@ -983,8 +1003,8 @@ include __DIR__ . '/../../includes/admin-modals.php';
                                 </div>
                             </td>
                             <td>
-                                <span class="status-badge status-<?php echo $transaction['status']; ?>">
-                                    <?php echo ucfirst($transaction['status']); ?>
+                                <span class="status-badge status-<?php echo htmlspecialchars($transaction['status'] ?? 'pending'); ?>">
+                                    <?php echo htmlspecialchars(formatTransactionStatusLabel($transaction['status'] ?? 'pending')); ?>
                                 </span>
                             </td>
                             <td>
@@ -1049,8 +1069,8 @@ include __DIR__ . '/../../includes/admin-modals.php';
                             <div class="transaction-item-field">
                                 <div class="transaction-item-label">Status</div>
                                 <div class="transaction-item-value">
-                                    <span class="status-badge status-<?php echo $transaction['status']; ?>">
-                                        <?php echo ucfirst($transaction['status']); ?>
+                                    <span class="status-badge status-<?php echo htmlspecialchars($transaction['status'] ?? 'pending'); ?>">
+                                        <?php echo htmlspecialchars(formatTransactionStatusLabel($transaction['status'] ?? 'pending')); ?>
                                     </span>
                                 </div>
                             </div>
@@ -1443,6 +1463,8 @@ function showEditTransactionModal(transaction, dateValue, timeValue) {
                             <option value="failed" ${safeStatus === 'failed' ? 'selected' : ''}>❌ Failed</option>
                             <option value="on_hold" ${safeStatus === 'on_hold' ? 'selected' : ''}>🟣 On Hold</option>
                             <option value="processing" ${safeStatus === 'processing' ? 'selected' : ''}>🔄 Processing</option>
+                            <option value="reversed" ${safeStatus === 'reversed' ? 'selected' : ''}>↩️ Reversed</option>
+                            <option value="cancelled" ${safeStatus === 'cancelled' ? 'selected' : ''}>🚫 Cancelled</option>
                         </select>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">

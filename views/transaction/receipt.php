@@ -574,13 +574,7 @@ $receiptTitle = $data['receipt_title'] ?? getTransferReceiptTitle($data['transfe
                     <span style="display: inline-block; padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 13px;
                         <?php 
                         $status = $data['transaction']['status'];
-                        if (isSuccessfulTransactionStatus($status)) {
-                            echo 'background: #d1fae5; color: #065f46;';
-                        } elseif ($status === 'pending' || $status === 'processing') {
-                            echo 'background: #fef3c7; color: #78350f;';
-                        } else {
-                            echo 'background: #fee2e2; color: #991b1b;';
-                        }
+                        echo transactionStatusBadgeInlineStyle($status);
                         ?>">
                         <?php echo htmlspecialchars(formatTransactionStatusLabel($status)); ?>
                     </span>
@@ -1318,13 +1312,7 @@ $receiptTitle = $data['receipt_title'] ?? getTransferReceiptTitle($data['transfe
                     <span style="display: inline-block; padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 13px;
                         <?php 
                         $status = $data['transaction']['status'];
-                        if (isSuccessfulTransactionStatus($status)) {
-                            echo 'background: #d1fae5; color: #065f46;';
-                        } elseif ($status === 'pending' || $status === 'processing') {
-                            echo 'background: #fef3c7; color: #78350f;';
-                        } else {
-                            echo 'background: #fee2e2; color: #991b1b;';
-                        }
+                        echo transactionStatusBadgeInlineStyle($status);
                         ?>">
                         <?php echo htmlspecialchars(formatTransactionStatusLabel($status)); ?>
                     </span>

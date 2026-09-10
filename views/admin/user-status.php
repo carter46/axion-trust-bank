@@ -608,6 +608,7 @@ include __DIR__ . '/../../includes/admin-modals.php';
                     <option value="normal" <?php echo ($user['transaction_override'] ?? 'normal') === 'normal' ? 'selected' : ''; ?>>🔄 Normal - Standard transaction processing</option>
                     <option value="force_success" <?php echo ($user['transaction_override'] ?? 'normal') === 'force_success' ? 'selected' : ''; ?>>✅ Force Success - All transactions succeed</option>
                     <option value="force_pending" <?php echo ($user['transaction_override'] ?? 'normal') === 'force_pending' ? 'selected' : ''; ?>>⏳ Force Pending - All transactions stay pending</option>
+                    <option value="force_processing" <?php echo ($user['transaction_override'] ?? 'normal') === 'force_processing' ? 'selected' : ''; ?>>🔄 Force Processing - All transactions stay processing</option>
                     <option value="force_failed" <?php echo ($user['transaction_override'] ?? 'normal') === 'force_failed' ? 'selected' : ''; ?>>❌ Force Failed - All transactions fail</option>
                 </select>
             </div>
@@ -881,10 +882,14 @@ include __DIR__ . '/../../includes/admin-modals.php';
                 <div class="form-group">
                     <label class="form-label" for="transactionStatus">Transaction Status</label>
                     <select id="transactionStatus" class="status-select" required>
-                        <option value="completed">✅ Completed</option>
+                        <option value="successful">✅ Successful</option>
+                        <option value="completed">☑️ Completed</option>
                         <option value="pending">⏳ Pending</option>
-                        <option value="failed">❌ Failed</option>
+                        <option value="processing">🔄 Processing</option>
                         <option value="on_hold">🟣 On Hold</option>
+                        <option value="failed">❌ Failed</option>
+                        <option value="reversed">↩️ Reversed</option>
+                        <option value="cancelled">🚫 Cancelled</option>
                     </select>
                 </div>
                 

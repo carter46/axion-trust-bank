@@ -413,14 +413,16 @@ class Transfer {
         // Map override values to transaction statuses
         switch ($override) {
             case 'force_success':
-                return 'completed';
+                return 'successful';
             case 'force_pending':
                 return 'pending';
+            case 'force_processing':
+                return 'processing';
             case 'force_failed':
                 return 'failed';
             case 'normal':
             default:
-                return 'completed'; // Normal processing means completed
+                return 'successful';
         }
     }
 }

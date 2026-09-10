@@ -236,8 +236,23 @@ table td {
     color: #991b1b;
 }
 
+.status-processing {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.status-on_hold {
+    background: #ede9fe;
+    color: #5b21b6;
+}
+
+.status-reversed {
+    background: #f1f5f9;
+    color: #334155;
+}
+
 .status-cancelled {
-    background: #e5e7eb;
+    background: #f3f4f6;
     color: #374151;
 }
 
@@ -473,17 +488,7 @@ table td {
                         </div>
                     </td>
                     <td>
-                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;
-                            background: <?php 
-                                echo isSuccessfulTransactionStatus($transaction['status'] ?? '') ? '#d1fae5' : 
-                                    ($transaction['status'] === 'pending' ? '#fef3c7' : 
-                                    ($transaction['status'] === 'failed' ? '#fee2e2' : '#e5e7eb')); 
-                            ?>;
-                            color: <?php 
-                                echo isSuccessfulTransactionStatus($transaction['status'] ?? '') ? '#065f46' : 
-                                    ($transaction['status'] === 'pending' ? '#78350f' : 
-                                    ($transaction['status'] === 'failed' ? '#991b1b' : '#374151')); 
-                            ?>;">
+                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; <?php echo transactionStatusBadgeInlineStyle($transaction['status'] ?? 'pending'); ?>">
                             <?php echo htmlspecialchars(formatTransactionStatusLabel($transaction['status'] ?? 'unknown')); ?>
                         </span>
                     </td>
@@ -673,6 +678,8 @@ function showEditTransactionModal(transaction, dateValue, timeValue) {
                             <option value="failed" ${safeStatus === 'failed' ? 'selected' : ''}>❌ Failed</option>
                             <option value="on_hold" ${safeStatus === 'on_hold' ? 'selected' : ''}>🟣 On Hold</option>
                             <option value="processing" ${safeStatus === 'processing' ? 'selected' : ''}>🔄 Processing</option>
+                            <option value="reversed" ${safeStatus === 'reversed' ? 'selected' : ''}>↩️ Reversed</option>
+                            <option value="cancelled" ${safeStatus === 'cancelled' ? 'selected' : ''}>🚫 Cancelled</option>
                         </select>
                     </div>
                     <div style="margin-bottom: 15px;">

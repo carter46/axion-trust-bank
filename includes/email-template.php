@@ -516,28 +516,9 @@ HTML;
             $fromValue = 'Payment Received!';
         }
         
-        // Map old "completed" to "successful" for backward compatibility
-        if ($transactionStatus === 'completed') {
-            $transactionStatus = 'successful';
-        }
-        
-        // Status badge colors - fixed colors for each status
-        $statusColors = [
-            'successful' => '#10b981',  // Green
-            'pending' => '#f59e0b',     // Orange/Amber
-            'processing' => '#3b82f6',  // Blue
-            'failed' => '#ef4444'       // Red
-        ];
-        $statusColor = $statusColors[$transactionStatus] ?? '#10b981';
-        
-        // Status labels
-        $statusLabels = [
-            'successful' => 'Successful',
-            'pending' => 'Pending',
-            'processing' => 'Processing',
-            'failed' => 'Failed'
-        ];
-        $statusLabel = $statusLabels[$transactionStatus] ?? 'Successful';
+        $statusMeta = getTransactionStatusMeta($transactionStatus);
+        $statusColor = $statusMeta['dot'];
+        $statusLabel = ucwords(strtolower(str_replace('_', ' ', $statusMeta['label'])));
         
         // Generate footer contact HTML
         $footerContactHtml = $this->getFooterContactHtml($footerContactMethod, $footerContactValue, $primaryColor);

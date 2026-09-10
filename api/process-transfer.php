@@ -575,6 +575,11 @@ try {
         $completedAt = 'NULL';
         $shouldDeductBalance = true; // Still deduct but mark as pending
         error_log("Transaction status set to pending due to transaction_override: force_pending");
+    } elseif ($transactionOverride === 'force_processing') {
+        $transactionStatus = 'processing';
+        $completedAt = 'NULL';
+        $shouldDeductBalance = true;
+        error_log("Transaction status set to processing due to transaction_override: force_processing");
     } elseif ($transactionOverride === 'force_success') {
         $transactionStatus = 'successful';
         $completedAt = 'NOW()';

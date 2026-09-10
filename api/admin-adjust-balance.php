@@ -412,16 +412,14 @@ if ($amount <= 0) {
     exit;
 }
 
-// Database enum: 'pending','processing','completed','failed','reversed'
-// Note: 'on_hold' is not in database enum, so we'll map it to 'pending'
-if (!in_array($status, ['completed', 'pending', 'failed', 'on_hold', 'processing'])) {
-    echo json_encode(['success' => false, 'message' => 'Invalid status. Use "completed", "pending", "failed", "processing", or "on_hold"']);
+$status = adminMapTransactionStatusForDb($status);
+$allowedStatuses = getAllowedTransactionStatuses();
+if (!in_array($status, $allowedStatuses, true)) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Invalid status. Use: ' . implode(', ', $allowedStatuses),
+    ]);
     exit;
-}
-
-// Map 'on_hold' to 'pending' since database doesn't support 'on_hold'
-if ($status === 'on_hold') {
-    $status = 'pending';
 }
 
 // Validate category
@@ -478,26 +476,20 @@ try {
         $balanceChange = -$ledgerAmount;
     }
     
-    // Check if debit would result in negative balance
-    if ($newBalance < 0) {
+    // Posted statuses reserve/move funds. Failed/reversed/cancelled do not.
+    $statusAffectsBalance = transactionStatusAffectsBalance($status);
+
+    // Only enforce funds when the status actually moves the balance.
+    if ($statusAffectsBalance && $newBalance < 0) {
         $db->rollback();
         echo json_encode(['success' => false, 'message' => 'Insufficient balance. Cannot debit more than available balance.']);
         exit;
     }
     
-    // Update account balance based on status
-    // For pending/on_hold: don't update balance yet
-    // For completed: update balance immediately
-    // For failed: don't update balance
-    if ($status === 'completed') {
+    if ($statusAffectsBalance) {
         $sql = "UPDATE accounts SET balance = ?, available_balance = ?, updated_at = NOW() WHERE id = ?";
         $db->query($sql, [$newBalance, $newBalance, $account['id']]);
-    } elseif ($status === 'pending' || $status === 'on_hold') {
-        // For pending/on_hold, we could optionally reserve the balance
-        // For now, we'll just record the transaction without updating balance
-        // Admin can manually complete it later through Transaction Processing Override
     }
-    // For failed status, no balance update
     
     // Create transaction record
     $transactionRef = 'ADM' . date('YmdHis') . rand(100, 999);
@@ -578,13 +570,14 @@ try {
                 status, fee, metadata, ip_address, created_at, completed_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     
-    $completedAt = ($status === 'completed') ? $fullDateTime : null;
+    $completedAt = isSuccessfulTransactionStatus($status) ? $fullDateTime : null;
+    $storedBalanceAfter = $statusAffectsBalance ? $newBalance : $balanceBefore;
     
     // Debug: Log the SQL query and parameters
     error_log("SQL Query: " . $sql);
     error_log("Parameters: " . json_encode([
         $transactionRef, $userId, $account['id'], $direction, $category, $expenseCategory,
-        $amount, $account['currency'], $balanceBefore, ($status === 'completed' ? $newBalance : $balanceBefore), $description,
+        $amount, $account['currency'], $balanceBefore, $storedBalanceAfter, $description,
         $methodFields['recipient_account'] ?? null, $methodFields['recipient_name'] ?? null, $methodFields['recipient_bank'] ?? null,
         $status, 0, $metadata, $_SERVER['REMOTE_ADDR'], $fullDateTime, $completedAt
     ]));
@@ -595,7 +588,7 @@ try {
     
     $result = $db->query($sql, [
         $transactionRef, $userId, $accountIdForInsert, $direction, $category, $expenseCategory, // expense_category from form
-        $ledgerAmount, $account['currency'], $balanceBefore, ($status === 'completed' ? $newBalance : $balanceBefore), $description,
+        $ledgerAmount, $account['currency'], $balanceBefore, $storedBalanceAfter, $description,
         $methodFields['recipient_account'] ?? null, $methodFields['recipient_name'] ?? null, $methodFields['recipient_bank'] ?? null,
         $status, 0, $metadata, $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0', $fullDateTime, $completedAt
     ]);
@@ -617,7 +610,7 @@ try {
         error_log("  SQL: " . $sql);
         error_log("  Parameters: " . json_encode([
             $transactionRef, $userId, $accountIdForInsert, $direction, $category, $expenseCategory,
-            $amount, $account['currency'], $balanceBefore, ($status === 'completed' ? $newBalance : $balanceBefore), $description,
+            $amount, $account['currency'], $balanceBefore, $storedBalanceAfter, $description,
             $methodFields['recipient_account'] ?? null, $methodFields['recipient_name'] ?? null, $methodFields['recipient_bank'] ?? null,
             $status, 0, $metadata, $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0', $fullDateTime, $completedAt
         ]));

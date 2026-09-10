@@ -146,8 +146,17 @@ class Transaction {
         }
         
         if (isset($filters['status'])) {
-            $sql .= " AND t.status = ?";
-            $params[] = $filters['status'];
+            $statuses = is_array($filters['status'])
+                ? $filters['status']
+                : expandTransactionStatusFilter($filters['status']);
+            if (count($statuses) === 1) {
+                $sql .= " AND t.status = ?";
+                $params[] = $statuses[0];
+            } elseif (count($statuses) > 1) {
+                $placeholders = implode(',', array_fill(0, count($statuses), '?'));
+                $sql .= " AND t.status IN ($placeholders)";
+                $params = array_merge($params, $statuses);
+            }
         }
         
         if (isset($filters['date_from'])) {

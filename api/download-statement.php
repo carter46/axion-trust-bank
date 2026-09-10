@@ -152,14 +152,25 @@ try {
                 color: #dc2626;
                 font-weight: 600;
             }
-            .status-completed {
+            .status-completed,
+            .status-successful {
                 color: #059669;
             }
             .status-pending {
                 color: #f59e0b;
             }
+            .status-processing {
+                color: #2563eb;
+            }
+            .status-on_hold {
+                color: #7c3aed;
+            }
             .status-failed {
                 color: #dc2626;
+            }
+            .status-reversed,
+            .status-cancelled {
+                color: #64748b;
             }
             .footer {
                 margin-top: 50px;
@@ -232,7 +243,7 @@ try {
             <td>' . htmlspecialchars($transaction['description']) . '</td>
             <td style="font-family: monospace; font-size: 11px;">' . htmlspecialchars($transaction['transaction_ref']) . '</td>
             <td class="' . $amountClass . '">' . $amountSign . '$' . number_format(abs($transaction['amount']), 2) . '</td>
-            <td class="' . $statusClass . '">' . ucfirst($transaction['status']) . '</td>
+            <td class="' . $statusClass . '">' . htmlspecialchars(formatTransactionStatusLabel($transaction['status'] ?? 'pending')) . '</td>
         </tr>';
     }
     

@@ -907,6 +907,13 @@ include __DIR__ . '/../../includes/admin-modals.php';
             </span>
           </label>
                 <label class="mode-option" style="display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s;">
+            <input type="radio" name="transaction_mode" value="force_processing" <?php echo ($user['transaction_override'] ?? 'normal') === 'force_processing' ? 'checked' : ''; ?>>
+            <span class="mode-info">
+                        <strong style="display: block; color: #2d3748; margin-bottom: 2px;">Force All Processing</strong>
+                        <small style="color: #6c757d;">All transactions show as processing</small>
+            </span>
+          </label>
+                <label class="mode-option" style="display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s;">
             <input type="radio" name="transaction_mode" value="force_failed" <?php echo ($user['transaction_override'] ?? 'normal') === 'force_failed' ? 'checked' : ''; ?>>
             <span class="mode-info">
                         <strong style="display: block; color: #2d3748; margin-bottom: 2px;">Force All Failed</strong>
@@ -1108,16 +1115,17 @@ include __DIR__ . '/../../includes/admin-modals.php';
                 <label for="transactionTime">Transaction Time</label>
                 <input type="time" id="transactionTime" class="form-input" value="${new Date().toTimeString().slice(0,5)}" required>
             </div>
-                <div class="form-group" id="statusFieldGroup" style="display: none;">
+                <div class="form-group" id="statusFieldGroup">
                 <label for="transactionStatus">Transaction Status</label>
                     <select id="transactionStatus" class="form-input">
                   <option value="successful">Successful</option>
                   <option value="completed">Completed</option>
                   <option value="pending">Pending</option>
-                  <option value="failed">Failed</option>
-                  <option value="pending">Pending</option>
+                  <option value="processing">Processing</option>
                   <option value="on_hold">On Hold</option>
-                        <option value="failed">Failed</option>
+                  <option value="failed">Failed</option>
+                  <option value="reversed">Reversed</option>
+                  <option value="cancelled">Cancelled</option>
                 </select>
     </div>
               <div class="form-group">
@@ -1392,15 +1400,13 @@ function updateToAccountOptions() {
     function toggleStatusField() {
       const adjustType = document.getElementById('adjustType').value;
       const statusFieldGroup = document.getElementById('statusFieldGroup');
+      if (statusFieldGroup) {
+        statusFieldGroup.style.display = 'block';
+      }
       
       if (adjustType === 'credit') {
-        statusFieldGroup.style.display = 'none';
         updateFieldLabels('sender');
-      } else if (adjustType === 'debit') {
-        statusFieldGroup.style.display = 'block';
-        updateFieldLabels('recipient');
       } else {
-        statusFieldGroup.style.display = 'none';
         updateFieldLabels('recipient');
       }
     }
@@ -1613,8 +1619,8 @@ function handleExternalAdjustment() {
         return;
       }
       
-      if (adjustType === 'debit' && !transactionStatus) {
-        showBalanceModalAlert('Please select transaction status for debit transactions', 'error');
+      if (!transactionStatus) {
+        showBalanceModalAlert('Please select a transaction status', 'error');
         return;
       }
       
@@ -1656,7 +1662,7 @@ function handleExternalAdjustment() {
         category: 'other',
         expense_category: expenseCategory,
         transaction_method: transactionType,
-        status: adjustType === 'credit' ? 'completed' : (transactionStatus || 'pending'),
+        status: transactionStatus,
         transaction_date: transactionDate,
         transaction_time: transactionTime,
         recipient_account: recipientAccount,

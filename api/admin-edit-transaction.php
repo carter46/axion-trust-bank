@@ -67,7 +67,7 @@ if ($newDescription === '') {
     exit;
 }
 
-$validStatusesUi = ['successful', 'completed', 'pending', 'failed', 'on_hold', 'processing'];
+$validStatusesUi = getAllowedTransactionStatuses();
 if ($newStatusUi !== '' && !in_array($newStatusUi, $validStatusesUi, true)) {
     echo json_encode([
         'success' => false,
