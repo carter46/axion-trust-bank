@@ -77,7 +77,8 @@ try {
     $diag = seventhTradeHubShutdownDiagnostic();
     $status = trim((string)($subscription['status'] ?? ''));
     $expiresAt = trim((string)($subscription['expires_at'] ?? ''));
-    $shutdownActive = !empty($diag['active']);
+    $incomingExpired = strtolower($status) === 'expired';
+    $shutdownActive = $incomingExpired || !empty($apply['shutdown_active']);
 
     $msg = 'Subscription sync received; status=' . ($status !== '' ? $status : 'unknown');
     if ($expiresAt !== '') {
@@ -88,15 +89,17 @@ try {
     } elseif (empty($apply['applied'])) {
         $msg .= '; apply_failed=' . ($apply['reason'] ?? 'failed');
     }
-            if ($shutdownActive) {
-                $msg = 'SHUTDOWN sync applied — site gate ACTIVE for non–super-admin (' . $msg . ')';
-            } elseif (strtolower($status) === 'expired') {
-                $msg .= ' — Hub sent expired but local shutdown gate is NOT active: ' . ($diag['reason'] ?? '');
-            }
+    if ($incomingExpired && $shutdownActive) {
+        $msg = 'SHUTDOWN sync applied — site gate ACTIVE for non–super-admin (' . $msg . ')';
+    } elseif ($incomingExpired && !$shutdownActive) {
+        $msg .= ' — Hub sent expired but local shutdown gate is NOT active: ' . ($diag['reason'] ?? '');
+    } elseif (!$incomingExpired && !empty($apply['applied'])) {
+        $msg = 'RESTORE sync applied — site gate OPEN (' . $msg . ')';
+    }
 
     seventhTradeHubConnectionLog([
         'direction' => 'inbound',
-        'event' => $shutdownActive ? 'shutdown_sync' : 'subscription_sync',
+        'event' => $incomingExpired ? 'shutdown_sync' : 'subscription_sync',
         'ok' => !empty($apply['applied']) || !empty($apply['skipped']),
         'http_status' => 200,
         'integration_id' => $integrationId,

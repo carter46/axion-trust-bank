@@ -1641,30 +1641,23 @@ function seventhTradeHubInboundLogSaysShutdown(?array $row): bool
 
 function seventhTradeHubIsOwnedSiteShutdown(): bool
 {
-    $log = seventhTradeHubLatestInboundSubscriptionLog();
-    if (seventhTradeHubInboundLogSaysShutdown($log)) {
-        seventhTradeHubSetOwnedShutdownLatch(true);
-        return true;
-    }
-
     $owned = seventhTradeHubGetByContext(SEVENTH_TRADEHUB_CONTEXT_OWNED);
-    if (!$owned) {
-        return seventhTradeHubOwnedShutdownLatchIsSet();
-    }
-    // Must be enabled — Demo-only sites never shut down from Hub Shutdown Site
-    if (empty($owned['enabled'])) {
-        return seventhTradeHubOwnedShutdownLatchIsSet();
+    if (!$owned || empty($owned['enabled'])) {
+        return false;
     }
     $integrationId = trim((string)($owned['integration_id'] ?? ''));
     if ($integrationId === '') {
-        return seventhTradeHubOwnedShutdownLatchIsSet();
+        return false;
     }
     $sub = seventhTradeHubGetSubscription($integrationId);
     if (seventhTradeHubSubscriptionIsExpired($sub)) {
         seventhTradeHubSetOwnedShutdownLatch(true);
         return true;
     }
-    // Never clear the latch here. Only a successful non-expire Hub apply may lift it.
+    if ($sub) {
+        seventhTradeHubSetOwnedShutdownLatch(false);
+        return false;
+    }
     return seventhTradeHubOwnedShutdownLatchIsSet();
 }
 
@@ -1676,13 +1669,6 @@ function seventhTradeHubIsOwnedSiteShutdown(): bool
 function seventhTradeHubShutdownDiagnostic(): array
 {
     $owned = seventhTradeHubGetByContext(SEVENTH_TRADEHUB_CONTEXT_OWNED);
-    $log = seventhTradeHubLatestInboundSubscriptionLog();
-    if (seventhTradeHubInboundLogSaysShutdown($log)) {
-        return [
-            'active' => true,
-            'reason' => 'Shutdown sticky from last Hub push (' . ($log['event'] ?? 'shutdown_sync') . ' at ' . ($log['created_at'] ?? '') . ')',
-        ];
-    }
     if (!$owned) {
         return ['active' => false, 'reason' => 'No Owned integration row'];
     }
@@ -1702,12 +1688,6 @@ function seventhTradeHubShutdownDiagnostic(): array
         return [
             'active' => true,
             'reason' => 'Shutdown active (status=' . ($sub['status'] ?? '') . ', expires_at=' . ($sub['expires_at'] ?? '') . ')',
-        ];
-    }
-    if (seventhTradeHubOwnedShutdownLatchIsSet()) {
-        return [
-            'active' => true,
-            'reason' => 'Shutdown latch is set (status=' . ($sub['status'] ?? 'unknown') . ', expires_at=' . ($sub['expires_at'] ?? 'none') . ')',
         ];
     }
     return [
@@ -2047,7 +2027,7 @@ function seventhTradeHubApplySubscription(string $integrationId, array $subscrip
     }
 
     seventhTradeHubSetOwnedShutdownLatch($incomingExpired);
-    $shutdown = seventhTradeHubIsOwnedSiteShutdown();
+    $shutdown = $incomingExpired;
     error_log(
         'seventhTradeHubApplySubscription: applied integration=' . $integrationId .
         ' status=' . $status .
@@ -2122,22 +2102,25 @@ function seventhTradeHubPollSubscription(array $integration): ?array
     $apply = seventhTradeHubApplySubscription($integrationId, $body);
     $diag = seventhTradeHubShutdownDiagnostic();
     $status = trim((string)($body['status'] ?? ''));
-    $shutdownActive = !empty($diag['active']);
+    $incomingExpired = strtolower($status) === 'expired';
+    $shutdownActive = $incomingExpired || !empty($apply['shutdown_active']);
     $msg = 'Subscription poll OK; status=' . ($status !== '' ? $status : 'unknown');
     if (!empty($apply['skipped'])) {
         $msg .= '; apply_skipped=' . ($apply['reason'] ?? 'skipped');
     } elseif (empty($apply['applied'])) {
         $msg .= '; apply_failed=' . ($apply['reason'] ?? 'failed');
     }
-    if ($shutdownActive) {
+    if ($incomingExpired && $shutdownActive) {
         $msg = 'SHUTDOWN via poll — site gate ACTIVE (' . $msg . ')';
-    } elseif (strtolower($status) === 'expired') {
+    } elseif ($incomingExpired && !$shutdownActive) {
         $msg .= ' — Hub says expired but local gate NOT active: ' . ($diag['reason'] ?? '');
+    } elseif (!$incomingExpired && !empty($apply['applied'])) {
+        $msg = 'RESTORE via poll — site gate OPEN (' . $msg . ')';
     }
 
     seventhTradeHubConnectionLog([
         'direction' => 'outbound',
-        'event' => $shutdownActive ? 'shutdown_poll' : 'subscription_poll',
+        'event' => $incomingExpired ? 'shutdown_poll' : 'subscription_poll',
         'ok' => true,
         'http_status' => 200,
         'integration_id' => $integrationId,
