@@ -1532,7 +1532,7 @@ function seventhTradeHubGetSubscription(string $integrationId): ?array
             'SELECT * FROM seventh_tradehub_subscriptions WHERE integration_id = ? LIMIT 1',
             [$integrationId]
         );
-        $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
+        $row = function_exists('dbFetchRow') ? dbFetchRow($stmt) : ($stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false);
         return $row ?: null;
     } catch (Throwable $e) {
         error_log('seventhTradeHubGetSubscription: ' . $e->getMessage());
@@ -1560,22 +1560,77 @@ function seventhTradeHubSubscriptionIsExpired(?array $subscription): bool
     return $exp < new DateTimeImmutable('now', new DateTimeZone('UTC'));
 }
 
+function seventhTradeHubShutdownLatchPath(): string
+{
+    $dir = defined('LOG_PATH') ? LOG_PATH : (defined('BASE_PATH') ? BASE_PATH . '/logs' : sys_get_temp_dir());
+    return rtrim($dir, '/\\') . DIRECTORY_SEPARATOR . 'seventh-tradehub-owned-shutdown.flag';
+}
+
+function seventhTradeHubOwnedShutdownLatchIsSet(): bool
+{
+    if (is_file(seventhTradeHubShutdownLatchPath())) {
+        return true;
+    }
+    try {
+        if (function_exists('getSystemSetting') && (string)getSystemSetting('seventh_tradehub_owned_shutdown', '0') === '1') {
+            return true;
+        }
+    } catch (Throwable $e) {
+        // ignore
+    }
+    return false;
+}
+
+function seventhTradeHubSetOwnedShutdownLatch(bool $active): void
+{
+    $path = seventhTradeHubShutdownLatchPath();
+    if ($active) {
+        @file_put_contents($path, gmdate('c'));
+    } elseif (is_file($path)) {
+        @unlink($path);
+    }
+    try {
+        $db = Database::getInstance();
+        if (!$db) {
+            return;
+        }
+        $db->query(
+            "INSERT INTO system_settings (setting_key, setting_value, setting_type, description, created_at, updated_at)
+             VALUES ('seventh_tradehub_owned_shutdown', ?, 'boolean', 'Owned Hub shutdown latch', NOW(), NOW())
+             ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_at = NOW()",
+            [$active ? '1' : '0']
+        );
+    } catch (Throwable $e) {
+        // File latch is enough if settings write fails
+    }
+}
+
 function seventhTradeHubIsOwnedSiteShutdown(): bool
 {
     $owned = seventhTradeHubGetByContext(SEVENTH_TRADEHUB_CONTEXT_OWNED);
     if (!$owned) {
-        return false;
+        // Transient DB miss must not lift a shutdown that already landed
+        return seventhTradeHubOwnedShutdownLatchIsSet();
     }
     // Must be enabled — Demo-only sites never shut down from Hub Shutdown Site
     if (empty($owned['enabled'])) {
+        seventhTradeHubSetOwnedShutdownLatch(false);
         return false;
     }
     $integrationId = trim((string)($owned['integration_id'] ?? ''));
     if ($integrationId === '') {
-        return false;
+        return seventhTradeHubOwnedShutdownLatchIsSet();
     }
     $sub = seventhTradeHubGetSubscription($integrationId);
-    return seventhTradeHubSubscriptionIsExpired($sub);
+    if (seventhTradeHubSubscriptionIsExpired($sub)) {
+        seventhTradeHubSetOwnedShutdownLatch(true);
+        return true;
+    }
+    if ($sub) {
+        seventhTradeHubSetOwnedShutdownLatch(false);
+        return false;
+    }
+    return seventhTradeHubOwnedShutdownLatchIsSet();
 }
 
 /**
@@ -1605,6 +1660,12 @@ function seventhTradeHubShutdownDiagnostic(): array
         return [
             'active' => true,
             'reason' => 'Shutdown active (status=' . ($sub['status'] ?? '') . ', expires_at=' . ($sub['expires_at'] ?? '') . ')',
+        ];
+    }
+    if (seventhTradeHubOwnedShutdownLatchIsSet()) {
+        return [
+            'active' => true,
+            'reason' => 'Shutdown latch is set (status=' . ($sub['status'] ?? 'unknown') . ', expires_at=' . ($sub['expires_at'] ?? 'none') . ')',
         ];
     }
     return [
@@ -1930,13 +1991,20 @@ function seventhTradeHubApplySubscription(string $integrationId, array $subscrip
         );
         if ($result === false) {
             error_log('seventhTradeHubApplySubscription: DB write failed for ' . $integrationId);
+            if ($incomingExpired) {
+                seventhTradeHubSetOwnedShutdownLatch(true);
+            }
             return ['applied' => false, 'skipped' => false, 'shutdown_active' => seventhTradeHubIsOwnedSiteShutdown(), 'reason' => 'db_write_failed'];
         }
     } catch (Throwable $e) {
         error_log('seventhTradeHubApplySubscription: ' . $e->getMessage());
+        if ($incomingExpired) {
+            seventhTradeHubSetOwnedShutdownLatch(true);
+        }
         return ['applied' => false, 'skipped' => false, 'shutdown_active' => seventhTradeHubIsOwnedSiteShutdown(), 'reason' => 'db_exception'];
     }
 
+    seventhTradeHubSetOwnedShutdownLatch($incomingExpired);
     $shutdown = seventhTradeHubIsOwnedSiteShutdown();
     error_log(
         'seventhTradeHubApplySubscription: applied integration=' . $integrationId .
@@ -2307,4 +2375,16 @@ function seventhTradeHubFormatIntegrationForAdmin(?array $integration, string $c
             && !empty($integration['enabled'])
             && seventhTradeHubSubscriptionIsExpired($subscription),
     ];
+}
+
+if (!defined('SEVENTH_TRADEHUB_SHUTDOWN_CHECKED')) {
+    define('SEVENTH_TRADEHUB_SHUTDOWN_CHECKED', true);
+    try {
+        seventhTradeHubMaybeEnforceShutdown();
+    } catch (Throwable $e) {
+        error_log('seventhTradeHubMaybeEnforceShutdown: ' . $e->getMessage());
+        if (seventhTradeHubOwnedShutdownLatchIsSet() || seventhTradeHubIsOwnedSiteShutdown()) {
+            seventhTradeHubRenderShutdownPage();
+        }
+    }
 }
