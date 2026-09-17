@@ -41,13 +41,13 @@ class Account {
     public function findById($id) {
         $sql = "SELECT * FROM accounts WHERE id = ?";
         $stmt = $this->db->query($sql, [$id]);
-        return $stmt->fetch();
+        return function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
     }
     
     public function findByAccountNumber($accountNumber) {
         $sql = "SELECT * FROM accounts WHERE account_number = ?";
         $stmt = $this->db->query($sql, [$accountNumber]);
-        return $stmt->fetch();
+        return function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
     }
     
     public function getUserAccounts($userId) {
@@ -60,7 +60,7 @@ class Account {
         // Fallback to original query
         $sql = "SELECT * FROM accounts WHERE user_id = ? AND status != 'closed' ORDER BY created_at ASC";
         $stmt = $this->db->query($sql, [$userId]);
-        return $stmt->fetchAll();
+        return function_exists('dbFetchAllRows') ? dbFetchAllRows($stmt) : (is_object($stmt) && method_exists($stmt, 'fetchAll') ? $stmt->fetchAll() : []);
     }
     
     public function getBalance($accountId) {

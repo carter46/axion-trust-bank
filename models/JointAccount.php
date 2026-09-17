@@ -5,6 +5,22 @@ class JointAccount {
     public function __construct() {
         $this->db = Database::getInstance();
     }
+
+    private function row($sql, $params = []) {
+        if (method_exists($this->db, 'fetchRow')) {
+            return $this->db->fetchRow($sql, $params);
+        }
+        $stmt = $this->db->query($sql, $params);
+        return function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? (($r = $stmt->fetch()) && is_array($r) ? $r : null) : null);
+    }
+
+    private function rows($sql, $params = []) {
+        if (method_exists($this->db, 'fetchAllRows')) {
+            return $this->db->fetchAllRows($sql, $params);
+        }
+        $stmt = $this->db->query($sql, $params);
+        return function_exists('dbFetchAllRows') ? dbFetchAllRows($stmt) : (is_object($stmt) && method_exists($stmt, 'fetchAll') ? (($r = $stmt->fetchAll()) && is_array($r) ? $r : []) : []);
+    }
     
     /**
      * Search account by account number and return primary owner info
@@ -14,8 +30,7 @@ class JointAccount {
                 FROM accounts a
                 INNER JOIN users u ON a.user_id = u.id
                 WHERE a.account_number = ? AND a.status = 'active'";
-        $stmt = $this->db->query($sql, [$accountNumber]);
-        $account = $stmt->fetch();
+        $account = $this->row($sql, [$accountNumber]);
         
         if (!$account) {
             return false;
@@ -44,7 +59,7 @@ class JointAccount {
      */
     public function createJoinRequest($requestingUserId, $accountId) {
         // Get account and primary owner
-        $account = $this->db->query("SELECT * FROM accounts WHERE id = ?", [$accountId])->fetch();
+        $account = $this->row("SELECT * FROM accounts WHERE id = ?", [$accountId]);
         if (!$account) {
             return false;
         }
@@ -52,21 +67,21 @@ class JointAccount {
         $primaryOwnerId = $account['user_id'];
         
         // Check if user is already an owner
-        $existingOwner = $this->db->query(
+        $existingOwner = $this->row(
             "SELECT * FROM account_owners WHERE account_id = ? AND user_id = ?",
             [$accountId, $requestingUserId]
-        )->fetch();
+        );
         
         if ($existingOwner) {
             return false; // Already an owner
         }
         
         // Check if there's already a pending request
-        $existingRequest = $this->db->query(
+        $existingRequest = $this->row(
             "SELECT * FROM joint_account_requests 
              WHERE account_id = ? AND requesting_user_id = ? AND status = 'pending'",
             [$accountId, $requestingUserId]
-        )->fetch();
+        );
         
         if ($existingRequest) {
             return false; // Request already exists
@@ -122,8 +137,7 @@ class JointAccount {
                 INNER JOIN users u ON jr.requesting_user_id = u.id
                 WHERE jr.primary_owner_id = ? AND jr.status = 'pending' AND jr.expires_at > NOW()
                 ORDER BY COALESCE(jr.requested_at, jr.created_at, NOW()) DESC";
-        $stmt = $this->db->query($sql, [$primaryOwnerId]);
-        return $stmt->fetchAll();
+        return $this->rows($sql, [$primaryOwnerId]);
     }
     
     /**
@@ -133,11 +147,7 @@ class JointAccount {
         $sql = "SELECT COUNT(*) as count 
                 FROM joint_account_requests 
                 WHERE requesting_user_id = ? AND status = 'pending' AND expires_at > NOW()";
-        $stmt = $this->db->query($sql, [$userId]);
-        if (!$stmt) {
-            return false;
-        }
-        $result = $stmt->fetch();
+        $result = $this->row($sql, [$userId]);
         return ($result && $result['count'] > 0);
     }
     
@@ -154,9 +164,8 @@ class JointAccount {
                 AND ao.status = 'active'
                 AND ao.is_primary = 0
                 AND a.user_id != ?";
-        $stmt = $this->db->query($sql, [$userId, $userId]);
-        $result = $stmt->fetch();
-        return ($result && $result['count'] > 0);
+        $result = $this->row($sql, [$userId, $userId]);
+        return ($result && (int)($result['count'] ?? 0) > 0);
     }
     
     /**
@@ -166,8 +175,7 @@ class JointAccount {
         $sql = "SELECT * FROM accounts 
                 WHERE user_id = ? AND status != 'closed'
                 ORDER BY created_at ASC";
-        $stmt = $this->db->query($sql, [$userId]);
-        return $stmt->fetchAll();
+        return $this->rows($sql, [$userId]);
     }
     
     /**
@@ -176,10 +184,10 @@ class JointAccount {
      */
     public function syncJointAccountAccess($requestingUserId, $primaryOwnerId) {
         // Get all active accounts of primary owner
-        $allAccounts = $this->db->query(
+        $allAccounts = $this->rows(
             "SELECT id FROM accounts WHERE user_id = ? AND status = 'active'",
             [$primaryOwnerId]
-        )->fetchAll();
+        );
         
         // Add user as owner to all accounts (if not already added)
         foreach ($allAccounts as $account) {
@@ -194,10 +202,10 @@ class JointAccount {
      */
     public function approveRequest($requestId, $primaryOwnerId) {
         // Verify request belongs to primary owner
-        $request = $this->db->query(
+        $request = $this->row(
             "SELECT * FROM joint_account_requests WHERE id = ? AND primary_owner_id = ? AND status = 'pending'",
             [$requestId, $primaryOwnerId]
-        )->fetch();
+        );
         
         if (!$request) {
             return false;
@@ -218,10 +226,10 @@ class JointAccount {
             
             // Grant access to ALL accounts owned by the primary owner (not just the one in the request)
             // This ensures the new user has access to all accounts (checking, savings, business, etc.)
-            $allAccounts = $this->db->query(
+            $allAccounts = $this->rows(
                 "SELECT id FROM accounts WHERE user_id = ? AND status = 'active'",
                 [$primaryOwnerId]
-            )->fetchAll();
+            );
             
             // Add user as owner to all primary owner's accounts
             foreach ($allAccounts as $account) {
@@ -252,10 +260,10 @@ class JointAccount {
      * Reject joint account request
      */
     public function rejectRequest($requestId, $primaryOwnerId) {
-        $request = $this->db->query(
+        $request = $this->row(
             "SELECT * FROM joint_account_requests WHERE id = ? AND primary_owner_id = ? AND status = 'pending'",
             [$requestId, $primaryOwnerId]
-        )->fetch();
+        );
         
         if (!$request) {
             return false;
@@ -279,10 +287,10 @@ class JointAccount {
      */
     public function addAccountOwner($accountId, $userId, $isPrimary = false) {
         // Check if already exists
-        $existing = $this->db->query(
+        $existing = $this->row(
             "SELECT * FROM account_owners WHERE account_id = ? AND user_id = ?",
             [$accountId, $userId]
-        )->fetch();
+        );
         
         if ($existing) {
             // Update status to active
@@ -312,8 +320,7 @@ class JointAccount {
                 INNER JOIN users u ON ao.user_id = u.id
                 WHERE ao.account_id = ? AND ao.status = 'active'
                 ORDER BY ao.is_primary DESC, ao.joined_at ASC";
-        $stmt = $this->db->query($sql, [$accountId]);
-        return $stmt->fetchAll();
+        return $this->rows($sql, [$accountId]);
     }
     
     /**
@@ -326,8 +333,7 @@ class JointAccount {
                 WHERE account_id = ? 
                 AND requesting_user_id = ? 
                 AND status = 'approved'";
-        $stmt = $this->db->query($sql, [$accountId, $userId]);
-        $result = $stmt->fetch();
+        $result = $this->row($sql, [$accountId, $userId]);
         return $result['approval_date'] ?? null;
     }
     
@@ -360,16 +366,15 @@ class JointAccount {
                     AND ao.is_primary = 0
                     AND a.user_id != ?
                     GROUP BY a.user_id, pu.full_name, pu.email, pu.phone, pu.last_login, pu.profile_picture";
-            $stmt = $this->db->query($sql, [$userId, $userId, $userId]);
-            $primaryOwner = $stmt->fetch();
+            $primaryOwner = $this->row($sql, [$userId, $userId, $userId]);
             
             if ($primaryOwner) {
                 // Get secondary owner (current user) info
-                $secondaryOwner = $this->db->query(
+                $secondaryOwner = $this->row(
                     "SELECT id, full_name, email, phone, last_login, profile_picture 
                      FROM users WHERE id = ?",
                     [$userId]
-                )->fetch();
+                );
                 
                 return [
                     'primary_owner' => $primaryOwner,
@@ -399,16 +404,15 @@ class JointAccount {
                     AND ao.user_id != ?
                     GROUP BY ao.user_id, su.full_name, su.email, su.phone, su.last_login, su.profile_picture
                     ORDER BY joint_account_created_at ASC";
-            $stmt = $this->db->query($sql, [$userId, $userId, $userId]);
-            $secondaryOwners = $stmt->fetchAll();
+            $secondaryOwners = $this->rows($sql, [$userId, $userId, $userId]);
             
             if (!empty($secondaryOwners)) {
                 // Get primary owner (current user) info
-                $primaryOwner = $this->db->query(
+                $primaryOwner = $this->row(
                     "SELECT id, full_name, email, phone, last_login, profile_picture 
                      FROM users WHERE id = ?",
                     [$userId]
-                )->fetch();
+                );
                 
                 // Use the earliest joint account creation date
                 $jointAccountCreatedAt = null;
@@ -434,32 +438,52 @@ class JointAccount {
      * Get accounts user has access to (own + joint)
      */
     public function getUserAccessibleAccounts($userId) {
-        // Get accounts where user is primary owner OR has access via account_owners
-        // Use GROUP BY to ensure each account appears only once (even if user matches both conditions)
-        $sql = "SELECT a.*
-                FROM accounts a
-                LEFT JOIN account_owners ao ON a.id = ao.account_id AND ao.status = 'active'
-                WHERE (a.user_id = ? OR ao.user_id = ?)
-                AND a.status != 'closed'
-                GROUP BY a.id
-                ORDER BY a.created_at ASC";
-        $stmt = $this->db->query($sql, [$userId, $userId]);
-        $accounts = $stmt->fetchAll();
-        
-        // Fix legacy 'joint' account_type by inferring from account_name
+        $userId = (int)$userId;
+        $own = $this->rows(
+            "SELECT * FROM accounts WHERE user_id = ? AND status != 'closed' ORDER BY created_at ASC",
+            [$userId]
+        );
+        $byId = [];
+        foreach ($own as $account) {
+            $id = (int)($account['id'] ?? 0);
+            if ($id > 0) {
+                $byId[$id] = $account;
+            }
+        }
+
+        $joint = $this->rows(
+            "SELECT a.*
+             FROM accounts a
+             INNER JOIN account_owners ao ON ao.account_id = a.id
+             WHERE ao.user_id = ?
+               AND ao.status = 'active'
+               AND a.status != 'closed'
+               AND a.user_id != ?
+             ORDER BY a.created_at ASC",
+            [$userId, $userId]
+        );
+        foreach ($joint as $account) {
+            $id = (int)($account['id'] ?? 0);
+            if ($id > 0 && !isset($byId[$id])) {
+                $byId[$id] = $account;
+            }
+        }
+
+        $accounts = array_values($byId);
         foreach ($accounts as &$account) {
-            if ($account['account_type'] === 'joint') {
+            if (($account['account_type'] ?? '') === 'joint') {
                 $accountName = strtolower($account['account_name'] ?? '');
                 if (stripos($accountName, 'savings') !== false) {
                     $account['account_type'] = 'savings';
                 } elseif (stripos($accountName, 'business') !== false) {
                     $account['account_type'] = 'business';
                 } else {
-                    $account['account_type'] = 'checking'; // Default fallback
+                    $account['account_type'] = 'checking';
                 }
             }
         }
-        
+        unset($account);
+
         return $accounts;
     }
     
@@ -471,18 +495,17 @@ class JointAccount {
                 FROM accounts a
                 LEFT JOIN account_owners ao ON a.id = ao.account_id
                 WHERE a.id = ? AND (a.user_id = ? OR (ao.user_id = ? AND ao.status = 'active'))";
-        $stmt = $this->db->query($sql, [$accountId, $userId, $userId]);
-        $result = $stmt->fetch();
-        return $result['count'] > 0;
+        $result = $this->row($sql, [$accountId, $userId, $userId]);
+        return $result && ((int)($result['count'] ?? 0) > 0);
     }
     
     /**
      * Send joint request email to primary owner
      */
     private function sendJointRequestEmail($requestId, $accountId, $primaryOwnerId, $requestingUserId) {
-        $account = $this->db->query("SELECT * FROM accounts WHERE id = ?", [$accountId])->fetch();
-        $requestingUser = $this->db->query("SELECT * FROM users WHERE id = ?", [$requestingUserId])->fetch();
-        $primaryOwner = $this->db->query("SELECT * FROM users WHERE id = ?", [$primaryOwnerId])->fetch();
+        $account = $this->row("SELECT * FROM accounts WHERE id = ?", [$accountId]);
+        $requestingUser = $this->row("SELECT * FROM users WHERE id = ?", [$requestingUserId]);
+        $primaryOwner = $this->row("SELECT * FROM users WHERE id = ?", [$primaryOwnerId]);
         
         if (!$account || !$requestingUser || !$primaryOwner) {
             return false;
@@ -532,8 +555,8 @@ HTML;
      * Send approval email to requesting user
      */
     private function sendJointApprovalEmail($accountId, $userId) {
-        $account = $this->db->query("SELECT * FROM accounts WHERE id = ?", [$accountId])->fetch();
-        $user = $this->db->query("SELECT * FROM users WHERE id = ?", [$userId])->fetch();
+        $account = $this->row("SELECT * FROM accounts WHERE id = ?", [$accountId]);
+        $user = $this->row("SELECT * FROM users WHERE id = ?", [$userId]);
         
         if (!$account || !$user) {
             return false;
@@ -584,9 +607,9 @@ HTML;
      * Send confirmation email to requesting user after registration
      */
     public function sendJointRequestConfirmationEmail($accountId, $userId) {
-        $account = $this->db->query("SELECT * FROM accounts WHERE id = ?", [$accountId])->fetch();
-        $user = $this->db->query("SELECT * FROM users WHERE id = ?", [$userId])->fetch();
-        $primaryOwner = $this->db->query("SELECT * FROM users WHERE id = ?", [$account['user_id']])->fetch();
+        $account = $this->row("SELECT * FROM accounts WHERE id = ?", [$accountId]);
+        $user = $this->row("SELECT * FROM users WHERE id = ?", [$userId]);
+        $primaryOwner = $this->row("SELECT * FROM users WHERE id = ?", [$account['user_id'] ?? 0]);
         
         if (!$account || !$user || !$primaryOwner) {
             return false;
@@ -629,8 +652,8 @@ HTML;
      * Create notification for primary owner about joint account request
      */
     private function createJointRequestNotification($primaryOwnerId, $requestId, $accountId, $requestingUserId) {
-        $account = $this->db->query("SELECT * FROM accounts WHERE id = ?", [$accountId])->fetch();
-        $requestingUser = $this->db->query("SELECT * FROM users WHERE id = ?", [$requestingUserId])->fetch();
+        $account = $this->row("SELECT * FROM accounts WHERE id = ?", [$accountId]);
+        $requestingUser = $this->row("SELECT * FROM users WHERE id = ?", [$requestingUserId]);
         
         if (!$account || !$requestingUser) {
             return false;
@@ -659,8 +682,8 @@ HTML;
      * Send rejection email to requesting user
      */
     private function sendJointRejectionEmail($accountId, $userId) {
-        $account = $this->db->query("SELECT * FROM accounts WHERE id = ?", [$accountId])->fetch();
-        $user = $this->db->query("SELECT * FROM users WHERE id = ?", [$userId])->fetch();
+        $account = $this->row("SELECT * FROM accounts WHERE id = ?", [$accountId]);
+        $user = $this->row("SELECT * FROM users WHERE id = ?", [$userId]);
         
         if (!$account || !$user) {
             return false;

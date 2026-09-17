@@ -1,4 +1,32 @@
 <?php
+/**
+ * Stand-in when a SELECT/SHOW query fails. Callers can always call fetch()/fetchAll()
+ * without crashing on Database::query() returning false.
+ */
+class DbEmptyResult {
+    public function fetch($mode = null) {
+        return false;
+    }
+    public function fetchAll($mode = null, $args = null) {
+        return [];
+    }
+    public function fetchColumn($column = 0) {
+        return false;
+    }
+    public function rowCount() {
+        return 0;
+    }
+    public function columnCount() {
+        return 0;
+    }
+    public function execute($params = null) {
+        return false;
+    }
+    public function errorInfo() {
+        return ['HY000', 0, 'Query failed'];
+    }
+}
+
 class Database {
     private static $instance = null;
     private $conn;
@@ -65,7 +93,54 @@ class Database {
             error_log("Params: " . json_encode($params));
             error_log("PDO Error Code: " . $e->getCode());
             error_log("Error Info: " . print_r($this->conn->errorInfo(), true));
+            if (self::isReadQuery($sql)) {
+                return new DbEmptyResult();
+            }
             return false;
+        } catch (Throwable $e) {
+            error_log("Database query error: " . $e->getMessage());
+            if (self::isReadQuery($sql)) {
+                return new DbEmptyResult();
+            }
+            return false;
+        }
+    }
+
+    public static function isReadQuery($sql): bool
+    {
+        return (bool)preg_match('/^\s*(SELECT|SHOW|DESCRIBE|DESC|EXPLAIN|WITH)\b/i', (string)$sql);
+    }
+
+    public static function isUsableStatement($stmt): bool
+    {
+        return is_object($stmt) && method_exists($stmt, 'fetch');
+    }
+
+    public function fetchRow($sql, $params = [])
+    {
+        $stmt = $this->query($sql, $params);
+        if (!self::isUsableStatement($stmt)) {
+            return null;
+        }
+        try {
+            $row = $stmt->fetch();
+            return is_array($row) ? $row : null;
+        } catch (Throwable $e) {
+            return null;
+        }
+    }
+
+    public function fetchAllRows($sql, $params = [])
+    {
+        $stmt = $this->query($sql, $params);
+        if (!self::isUsableStatement($stmt)) {
+            return [];
+        }
+        try {
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (Throwable $e) {
+            return [];
         }
     }
     

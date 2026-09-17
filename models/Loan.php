@@ -96,7 +96,7 @@ class Loan {
     public function findById($id) {
         $sql = "SELECT * FROM loans WHERE id = ?";
         $stmt = $this->db->query($sql, [$id]);
-        return $stmt->fetch();
+        return function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
     }
     
     public function getUserLoans($userId, $status = null) {
@@ -115,7 +115,7 @@ class Loan {
         $sql .= " ORDER BY l.application_date DESC";
         
         $stmt = $this->db->query($sql, $params);
-        return $stmt->fetchAll();
+        return function_exists('dbFetchAllRows') ? dbFetchAllRows($stmt) : (is_object($stmt) && method_exists($stmt, 'fetchAll') ? ($stmt->fetchAll() ?: []) : []);
     }
     
     public function approve($loanId, $approvedAmount = null) {
@@ -343,7 +343,7 @@ class Loan {
         // Get next scheduled payment
         $sql = "SELECT * FROM loan_payments WHERE loan_id = ? AND status = 'scheduled' ORDER BY due_date ASC LIMIT 1";
         $stmt = $this->db->query($sql, [$loanId]);
-        $payment = $stmt->fetch();
+        $payment = function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
         
         if ($payment) {
             // Update payment status
@@ -400,6 +400,6 @@ class Loan {
     public function getPaymentSchedule($loanId) {
         $sql = "SELECT * FROM loan_payments WHERE loan_id = ? ORDER BY due_date ASC";
         $stmt = $this->db->query($sql, [$loanId]);
-        return $stmt->fetchAll();
+        return function_exists('dbFetchAllRows') ? dbFetchAllRows($stmt) : (is_object($stmt) && method_exists($stmt, 'fetchAll') ? ($stmt->fetchAll() ?: []) : []);
     }
 }

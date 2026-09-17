@@ -95,13 +95,13 @@ class Transaction {
     public function findById($id) {
         $sql = "SELECT * FROM transactions WHERE id = ?";
         $stmt = $this->db->query($sql, [$id]);
-        return $stmt->fetch();
+        return function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
     }
     
     public function findByReference($ref) {
         $sql = "SELECT * FROM transactions WHERE transaction_ref = ?";
         $stmt = $this->db->query($sql, [$ref]);
-        return $stmt->fetch();
+        return function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
     }
     
     public function getUserTransactions($userId, $filters = []) {

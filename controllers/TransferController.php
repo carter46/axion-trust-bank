@@ -93,7 +93,7 @@ class TransferController {
         $db = Database::getInstance();
         $sql = "SELECT * FROM beneficiaries WHERE user_id = ? AND beneficiary_type = 'domestic' ORDER BY beneficiary_name";
         $stmt = $db->query($sql, [$_SESSION['user_id']]);
-        $beneficiaries = $stmt->fetchAll();
+        $beneficiaries = function_exists('dbFetchAllRows') ? dbFetchAllRows($stmt) : (is_object($stmt) && method_exists($stmt, 'fetchAll') ? ($stmt->fetchAll() ?: []) : []);
         
         $data = [
             'accounts' => $accounts,
@@ -137,7 +137,7 @@ class TransferController {
         $db = Database::getInstance();
         $sql = "SELECT * FROM beneficiaries WHERE user_id = ? AND beneficiary_type = 'international' ORDER BY beneficiary_name";
         $stmt = $db->query($sql, [$_SESSION['user_id']]);
-        $beneficiaries = $stmt->fetchAll();
+        $beneficiaries = function_exists('dbFetchAllRows') ? dbFetchAllRows($stmt) : (is_object($stmt) && method_exists($stmt, 'fetchAll') ? ($stmt->fetchAll() ?: []) : []);
         
         $data = [
             'accounts' => $accounts,
@@ -180,7 +180,7 @@ class TransferController {
         $db = Database::getInstance();
         $sql = "SELECT * FROM beneficiaries WHERE user_id = ? AND beneficiary_type IN ('international', 'external') ORDER BY beneficiary_name";
         $stmt = $db->query($sql, [$_SESSION['user_id']]);
-        $beneficiaries = $stmt->fetchAll();
+        $beneficiaries = function_exists('dbFetchAllRows') ? dbFetchAllRows($stmt) : (is_object($stmt) && method_exists($stmt, 'fetchAll') ? ($stmt->fetchAll() ?: []) : []);
         
         $data = [
             'accounts' => $accounts,
@@ -226,7 +226,7 @@ class TransferController {
         $db = Database::getInstance();
         $sql = "SELECT * FROM beneficiaries WHERE user_id = ? ORDER BY created_at DESC";
         $stmt = $db->query($sql, [$_SESSION['user_id']]);
-        $beneficiaries = $stmt->fetchAll();
+        $beneficiaries = function_exists('dbFetchAllRows') ? dbFetchAllRows($stmt) : (is_object($stmt) && method_exists($stmt, 'fetchAll') ? ($stmt->fetchAll() ?: []) : []);
         
         include __DIR__ . '/../views/transfer/beneficiary.php';
     }

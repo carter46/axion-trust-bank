@@ -390,7 +390,7 @@ class User {
         }
         
         $stmt = $this->db->query($sql, $params);
-        return $stmt->fetchAll();
+        return function_exists('dbFetchAllRows') ? dbFetchAllRows($stmt) : (is_object($stmt) && method_exists($stmt, 'fetchAll') ? ($stmt->fetchAll() ?: []) : []);
     }
     
     public function uploadKYCDocument($userId, $documentPath) {
@@ -413,7 +413,7 @@ class User {
         }
         
         $stmt = $this->db->query($sql, $params);
-        $result = $stmt->fetch();
-        return $result['total'];
+        $result = function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
+        return (int)($result['total'] ?? 0);
     }
 }

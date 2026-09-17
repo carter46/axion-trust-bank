@@ -21,7 +21,7 @@ class AdminController {
         $db = Database::getInstance();
         $sql = "SELECT * FROM system_alerts WHERE is_resolved = 0 ORDER BY severity DESC, created_at DESC LIMIT 10";
         $stmt = $db->query($sql);
-        $alerts = $stmt->fetchAll();
+        $alerts = function_exists('dbFetchAllRows') ? dbFetchAllRows($stmt) : (is_object($stmt) && method_exists($stmt, 'fetchAll') ? ($stmt->fetchAll() ?: []) : []);
         
         // Variables are passed directly to the view
         // $stats, $transactionChart, $suspiciousTransactions, $audit_logs, $alerts
@@ -32,11 +32,22 @@ class AdminController {
     public function users() {
         requireAdmin();
         
-        // Show all users (excluding admins and demo users)
         $db = Database::getInstance();
-        $sql = "SELECT * FROM users WHERE role = 'user' AND COALESCE(is_demo_user, 0) = 0 ORDER BY created_at DESC";
+        $perPage = 100;
+        $currentPage = max(1, intval($_GET['page'] ?? 1));
+
+        $countStmt = $db->query("SELECT COUNT(*) AS cnt FROM users WHERE role = 'user' AND COALESCE(is_demo_user, 0) = 0");
+        $countRow = function_exists('dbFetchRow') ? dbFetchRow($countStmt) : ($countStmt ? $countStmt->fetch() : null);
+        $totalUsers = (int)(($countRow ?? [])['cnt'] ?? 0);
+        $totalPages = $totalUsers > 0 ? (int)ceil($totalUsers / $perPage) : 1;
+        $currentPage = min($currentPage, $totalPages);
+        $offset = ($currentPage - 1) * $perPage;
+
+        $sql = "SELECT * FROM users WHERE role = 'user' AND COALESCE(is_demo_user, 0) = 0
+                ORDER BY created_at DESC
+                LIMIT " . (int)$perPage . " OFFSET " . (int)$offset;
         $stmt = $db->query($sql);
-        $users = $stmt->fetchAll();
+        $users = function_exists('dbFetchAllRows') ? dbFetchAllRows($stmt) : ($stmt ? $stmt->fetchAll() : []);
         
         include __DIR__ . '/../views/admin/users.php';
     }
@@ -218,7 +229,7 @@ class AdminController {
         $db = Database::getInstance();
         $sql = "SELECT * FROM activity_logs WHERE user_id = ? ORDER BY created_at DESC LIMIT 50";
         $stmt = $db->query($sql, [$id]);
-        $activityLogs = $stmt->fetchAll();
+        $activityLogs = function_exists('dbFetchAllRows') ? dbFetchAllRows($stmt) : (is_object($stmt) && method_exists($stmt, 'fetchAll') ? ($stmt->fetchAll() ?: []) : []);
         
         include __DIR__ . '/../views/admin/user-view.php';
     }
@@ -326,7 +337,7 @@ class AdminController {
         $sql .= " ORDER BY l.application_date DESC";
         
         $stmt = $db->query($sql, $params);
-        $loans = $stmt->fetchAll();
+        $loans = function_exists('dbFetchAllRows') ? dbFetchAllRows($stmt) : (is_object($stmt) && method_exists($stmt, 'fetchAll') ? ($stmt->fetchAll() ?: []) : []);
         
         include __DIR__ . '/../views/admin/loans.php';
     }
@@ -1516,7 +1527,7 @@ class AdminController {
         $db = Database::getInstance();
         $sql = "SELECT * FROM activity_logs WHERE user_id = ? ORDER BY created_at DESC LIMIT 100";
         $stmt = $db->query($sql, [$id]);
-        $activityLogs = $stmt->fetchAll();
+        $activityLogs = function_exists('dbFetchAllRows') ? dbFetchAllRows($stmt) : (is_object($stmt) && method_exists($stmt, 'fetchAll') ? ($stmt->fetchAll() ?: []) : []);
         
         include __DIR__ . '/../views/admin/user-profile.php';
     }

@@ -9,6 +9,15 @@ include __DIR__ . '/../../includes/head.php';
 // Include admin sidebar
 include __DIR__ . '/../../includes/admin-sidebar.php';
 include __DIR__ . '/../../includes/admin-modals.php';
+
+$users = $users ?? [];
+$currentPage = (int)($currentPage ?? 1);
+$totalPages = (int)($totalPages ?? 1);
+$totalUsers = (int)($totalUsers ?? count($users));
+$perPage = (int)($perPage ?? 100);
+$pageFrom = $totalUsers > 0 ? (($currentPage - 1) * $perPage) + 1 : 0;
+$pageTo = min($totalUsers, $currentPage * $perPage);
+$paginationBase = SITE_URL . '/admin/users';
 ?>
 
 <!-- ===== ADMIN USERS PAGE CONTENT ===== -->
@@ -86,6 +95,126 @@ table td {
 /* Mobile User Cards */
 .mobile-user-cards {
     display: none;
+}
+
+.bulk-actions-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    background: #f8f9fa;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+}
+
+.bulk-actions-bar label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: #374151;
+    cursor: pointer;
+    margin: 0;
+}
+
+.bulk-actions-bar input[type="checkbox"],
+.user-select-cell input[type="checkbox"],
+.user-card-select input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+#selectedCount {
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.bulk-delete-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    background: #ef4444;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.bulk-delete-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.bulk-delete-btn:not(:disabled):hover {
+    background: #dc2626;
+}
+
+.user-select-cell {
+    width: 40px;
+    text-align: center;
+}
+
+.user-card-select {
+    margin-right: 12px;
+    display: flex;
+    align-items: center;
+}
+
+.pagination-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.pagination-info {
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.pagination-links {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pagination-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    background: white;
+    color: #374151;
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.pagination-btn:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.pagination-btn.disabled {
+    opacity: 0.45;
+    pointer-events: none;
+}
+
+.pagination-current {
+    padding: 8px 12px;
+    font-size: 14px;
+    color: #374151;
+    font-weight: 600;
 }
 
 .user-card-mobile {
@@ -244,7 +373,7 @@ table td {
 <div class="page-header">
     <div>
         <h1>Manage Users</h1>
-        <p style="color: #666; margin: 0;">View and manage all registered users</p>
+        <p style="color: #666; margin: 0;">View and manage registered users — <?php echo (int)$totalUsers; ?> total, 100 per page</p>
     </div>
     <a href="<?php echo SITE_URL; ?>/admin/user-create" class="add-user-btn">
         <i class="fas fa-user-plus"></i>
@@ -254,10 +383,25 @@ table td {
 
 <div class="card">
     <h3 style="color: #032B44; margin-bottom: 20px;">All Users</h3>
+    <?php if (!empty($users)): ?>
+    <div class="bulk-actions-bar">
+        <label>
+            <input type="checkbox" id="selectAllUsers" aria-label="Select all on this page">
+            Select all on this page
+        </label>
+        <span id="selectedCount">0 selected</span>
+        <button type="button" id="bulkDeleteBtn" class="bulk-delete-btn" disabled>
+            <i class="fas fa-trash"></i> Delete selected
+        </button>
+    </div>
+    <?php endif; ?>
     <div class="table-responsive">
         <table>
             <thead>
                 <tr>
+                    <th class="user-select-cell">
+                        <input type="checkbox" id="selectAllUsersHeader" aria-label="Select all" title="Select all">
+                    </th>
                     <th>ID</th>
                     <th>Name</th>
                     <th>Email</th>
@@ -270,6 +414,9 @@ table td {
                 <?php if (!empty($users)): ?>
                     <?php foreach ($users as $user): ?>
                         <tr>
+                            <td class="user-select-cell">
+                                <input type="checkbox" class="user-select" value="<?php echo (int)$user['id']; ?>" aria-label="Select user <?php echo htmlspecialchars($user['full_name']); ?>">
+                            </td>
                             <td><?php echo htmlspecialchars($user['id']); ?></td>
                             <td><?php echo htmlspecialchars($user['full_name']); ?></td>
                             <td><?php echo htmlspecialchars($user['email']); ?></td>
@@ -304,7 +451,7 @@ table td {
                     <?php endforeach; ?>
                 <?php else: ?>
                     <tr>
-                        <td colspan="6" style="text-align: center; color: #666; padding: 40px;">No users found</td>
+                        <td colspan="7" style="text-align: center; color: #666; padding: 40px;">No users found</td>
                     </tr>
                 <?php endif; ?>
             </tbody>
@@ -317,6 +464,9 @@ table td {
             <?php foreach ($users as $user): ?>
                 <div class="user-card-mobile">
                     <div class="user-card-header">
+                        <label class="user-card-select">
+                            <input type="checkbox" class="user-select" value="<?php echo (int)$user['id']; ?>" aria-label="Select user <?php echo htmlspecialchars($user['full_name']); ?>">
+                        </label>
                         <div class="user-info-mobile">
                             <div class="user-name-mobile"><?php echo htmlspecialchars($user['full_name']); ?></div>
                             <div class="user-email-mobile"><?php echo htmlspecialchars($user['email']); ?></div>
@@ -366,62 +516,171 @@ table td {
             <div style="text-align: center; color: #666; padding: 40px;">No users found</div>
         <?php endif; ?>
     </div>
+
+    <?php if ($totalPages > 1 || $totalUsers > 0): ?>
+    <div class="pagination-bar">
+        <div class="pagination-info">
+            Showing <?php echo (int)$pageFrom; ?>–<?php echo (int)$pageTo; ?> of <?php echo (int)$totalUsers; ?> users
+            (<?php echo (int)$perPage; ?> per page)
+        </div>
+        <div class="pagination-links">
+            <?php if ($currentPage > 1): ?>
+                <a class="pagination-btn" href="<?php echo $paginationBase . '?page=' . ($currentPage - 1); ?>">
+                    <i class="fas fa-chevron-left"></i> Previous
+                </a>
+            <?php else: ?>
+                <span class="pagination-btn disabled"><i class="fas fa-chevron-left"></i> Previous</span>
+            <?php endif; ?>
+
+            <span class="pagination-current"><?php echo (int)$currentPage; ?> / <?php echo (int)$totalPages; ?></span>
+
+            <?php if ($currentPage < $totalPages): ?>
+                <a class="pagination-btn" href="<?php echo $paginationBase . '?page=' . ($currentPage + 1); ?>">
+                    Next <i class="fas fa-chevron-right"></i>
+                </a>
+            <?php else: ?>
+                <span class="pagination-btn disabled">Next <i class="fas fa-chevron-right"></i></span>
+            <?php endif; ?>
+        </div>
+    </div>
+    <?php endif; ?>
 </div>
 
 <script>
+function getSelectedUserIds() {
+    const ids = Array.from(document.querySelectorAll('.user-select:checked'))
+        .map(cb => parseInt(cb.value, 10))
+        .filter(id => id > 0);
+    return [...new Set(ids)];
+}
+
+function getAllUserIdsOnPage() {
+    const ids = Array.from(document.querySelectorAll('.user-select'))
+        .map(cb => parseInt(cb.value, 10))
+        .filter(id => id > 0);
+    return [...new Set(ids)];
+}
+
+function setAllUserCheckboxes(checked) {
+    document.querySelectorAll('.user-select').forEach(cb => {
+        cb.checked = checked;
+    });
+    updateBulkSelectionUi();
+}
+
+function updateBulkSelectionUi() {
+    const checkedIds = getSelectedUserIds();
+    const allIds = getAllUserIdsOnPage();
+    const count = checkedIds.length;
+    const total = allIds.length;
+
+    const countEl = document.getElementById('selectedCount');
+    const bulkBtn = document.getElementById('bulkDeleteBtn');
+    const selectAll = document.getElementById('selectAllUsers');
+    const selectAllHeader = document.getElementById('selectAllUsersHeader');
+
+    if (countEl) countEl.textContent = count + ' selected';
+    if (bulkBtn) bulkBtn.disabled = count === 0;
+
+    const allChecked = total > 0 && count === total;
+    const someChecked = count > 0 && count < total;
+
+    if (selectAll) {
+        selectAll.checked = allChecked;
+        selectAll.indeterminate = someChecked;
+    }
+    if (selectAllHeader) {
+        selectAllHeader.checked = allChecked;
+        selectAllHeader.indeterminate = someChecked;
+    }
+}
+
+function bulkDeleteUsers() {
+    const ids = getSelectedUserIds();
+    if (!ids.length) {
+        showToast('Select at least one user on this page', 'error');
+        return;
+    }
+    if (ids.length > 100) {
+        showToast('Maximum 100 users per bulk delete', 'error');
+        return;
+    }
+
+    showModal(
+        'Delete Selected Users',
+        'Delete ' + ids.length + ' selected user' + (ids.length === 1 ? '' : 's') + ' on this page?\n\nThis cannot be undone. Accounts, transactions, cards, and related data will be removed.',
+        'danger',
+        function() {
+            fetch('/api/admin-bulk-delete-users.php', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_ids: ids })
+            })
+            .then(response => response.text().then(text => {
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (e) {
+                    throw new Error(text || 'Invalid response');
+                }
+                if (!response.ok && !data.message) {
+                    throw new Error('HTTP error ' + response.status);
+                }
+                return data;
+            }))
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message || 'Users deleted', 'success');
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    showToast('Error: ' + (data.message || 'Failed to delete users'), 'error');
+                }
+            })
+            .catch(error => {
+                showToast('An error occurred while deleting users: ' + error.message, 'error');
+            });
+        }
+    );
+}
+
 function deleteUser(userId, userName) {
     showModal(
         'Delete User Account',
         `Are you sure you want to delete user "${userName}"?\n\nThis action cannot be undone and will:\n- Delete the user account\n- Remove all associated data\n- Cannot be reversed`,
         'danger',
         function() {
-            console.log('Deleting user:', userId);
-            
-            fetch('<?php echo SITE_URL; ?>/api/admin-delete-user.php', {
+            fetch('/api/admin-delete-user.php', {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: userId })
             })
             .then(response => {
-                console.log('Response status:', response.status);
-                
                 if (!response.ok) {
                     return response.text().then(text => {
-                        console.error('HTTP Error Response:', text);
                         throw new Error('HTTP error! status: ' + response.status + ', body: ' + text);
                     });
                 }
-                
                 return response.text().then(text => {
-                    console.log('Raw API Response:', text);
                     try {
                         return JSON.parse(text);
                     } catch (e) {
-                        console.error('Failed to parse JSON:', text);
                         throw new Error('Invalid JSON response: ' + text);
                     }
                 });
             })
             .then(data => {
-                console.log('Parsed API Response:', data);
                 if (data.success) {
-                    console.log('User deletion successful!');
                     showToast('User deleted successfully', 'success');
                     setTimeout(() => {
                         location.reload();
                     }, 500);
                 } else {
-                    const errorMsg = data.message || 'Failed to delete user';
-                    console.error('API Error Response:', JSON.stringify(data, null, 2));
-                    if (data.error_details) {
-                        console.error('Error Details:', JSON.stringify(data.error_details, null, 2));
-                    }
-                    showToast('Error: ' + errorMsg, 'error');
+                    showToast('Error: ' + (data.message || 'Failed to delete user'), 'error');
                 }
             })
             .catch(error => {
-                console.error('Network/Fetch Error:', error);
-                console.error('Error stack:', error.stack);
                 showToast('An error occurred while deleting the user: ' + error.message, 'error');
             });
         }
@@ -441,4 +700,38 @@ function toggleUserDetails(button) {
         button.classList.add('active');
     }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAll = document.getElementById('selectAllUsers');
+    const selectAllHeader = document.getElementById('selectAllUsersHeader');
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            setAllUserCheckboxes(selectAll.checked);
+        });
+    }
+    if (selectAllHeader) {
+        selectAllHeader.addEventListener('change', function() {
+            setAllUserCheckboxes(selectAllHeader.checked);
+        });
+    }
+
+    document.querySelectorAll('.user-select').forEach(cb => {
+        cb.addEventListener('change', function() {
+            const id = this.value;
+            document.querySelectorAll('.user-select').forEach(other => {
+                if (other !== this && other.value === id) {
+                    other.checked = this.checked;
+                }
+            });
+            updateBulkSelectionUi();
+        });
+    });
+
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    if (bulkDeleteBtn) {
+        bulkDeleteBtn.addEventListener('click', bulkDeleteUsers);
+    }
+
+    updateBulkSelectionUi();
+});
 </script>

@@ -491,7 +491,7 @@ class Admin {
                 SUM(CASE WHEN status = 'suspended' THEN 1 ELSE 0 END) as suspended
                 FROM users WHERE role = 'user' AND COALESCE(is_demo_user, 0) = 0";
         $stmt = $this->db->query($sql);
-        $stats['users'] = $stmt->fetch();
+        $stats['users'] = (function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null)) ?: ['total' => 0, 'active' => 0, 'suspended' => 0];
         
         // Count actual pending KYC submissions (not users with pending kyc_status)
         // Only count KYC submissions that are actually pending review
@@ -499,7 +499,7 @@ class Admin {
                    FROM kyc_verifications 
                    WHERE status IN ('pending', 'under_review', 'requires_action')";
         $kycStmt = $this->db->query($kycSql);
-        $kycResult = $kycStmt->fetch();
+        $kycResult = function_exists('dbFetchRow') ? dbFetchRow($kycStmt) : (is_object($kycStmt) && method_exists($kycStmt, 'fetch') ? $kycStmt->fetch() : null);
         $stats['users']['pending_kyc'] = $kycResult['pending_kyc'] ?? 0;
         
         // Account stats (ALL user accounts)
@@ -508,7 +508,7 @@ class Admin {
                 SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active
                 FROM accounts WHERE user_id IN (SELECT id FROM users WHERE role = 'user' AND COALESCE(is_demo_user, 0) = 0)";
         $stmt = $this->db->query($sql);
-        $stats['accounts'] = $stmt->fetch();
+        $stats['accounts'] = (function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null)) ?: ['total' => 0, 'total_balance' => 0, 'active' => 0];
         
         // Transaction stats (ALL users, today)
         $sql = "SELECT COUNT(*) as count, SUM(amount) as total
@@ -516,7 +516,7 @@ class Admin {
                 WHERE user_id IN (SELECT id FROM users WHERE role = 'user' AND COALESCE(is_demo_user, 0) = 0) 
                 AND DATE(created_at) = CURDATE()";
         $stmt = $this->db->query($sql);
-        $stats['transactions_today'] = $stmt->fetch();
+        $stats['transactions_today'] = (function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null)) ?: ['count' => 0, 'total' => 0];
         
         // Loan stats (ALL users)
         $sql = "SELECT 
@@ -525,7 +525,7 @@ class Admin {
                 SUM(outstanding_balance) as total_outstanding
                 FROM loans WHERE user_id IN (SELECT id FROM users WHERE role = 'user' AND COALESCE(is_demo_user, 0) = 0)";
         $stmt = $this->db->query($sql);
-        $stats['loans'] = $stmt->fetch();
+        $stats['loans'] = (function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null)) ?: ['pending' => 0, 'active' => 0, 'total_outstanding' => 0];
         
         // Card stats (ALL users)
         $sql = "SELECT COUNT(*) as total,
@@ -533,7 +533,7 @@ class Admin {
                 SUM(CASE WHEN status = 'frozen' THEN 1 ELSE 0 END) as frozen
                 FROM cards WHERE user_id IN (SELECT id FROM users WHERE role = 'user' AND COALESCE(is_demo_user, 0) = 0)";
         $stmt = $this->db->query($sql);
-        $stats['cards'] = $stmt->fetch();
+        $stats['cards'] = (function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null)) ?: ['total' => 0, 'active' => 0, 'frozen' => 0];
         
         return $stats;
     }
@@ -550,7 +550,7 @@ class Admin {
                 ORDER BY date ASC";
         
         $stmt = $this->db->query($sql, [$days]);
-        return $stmt->fetchAll();
+        return function_exists('dbFetchAllRows') ? dbFetchAllRows($stmt) : (is_object($stmt) && method_exists($stmt, 'fetchAll') ? ($stmt->fetchAll() ?: []) : []);
     }
     
     public function getSuspiciousTransactions($limit = 50) {
@@ -563,7 +563,7 @@ class Admin {
                 LIMIT ?";
         
         $stmt = $this->db->query($sql, [$limit]);
-        return $stmt->fetchAll();
+        return function_exists('dbFetchAllRows') ? dbFetchAllRows($stmt) : (is_object($stmt) && method_exists($stmt, 'fetchAll') ? ($stmt->fetchAll() ?: []) : []);
     }
     
     // ============ AUDIT LOGGING ============
@@ -613,14 +613,14 @@ class Admin {
         $params[] = $limit;
         
         $stmt = $this->db->query($sql, $params);
-        $logs = $stmt->fetchAll();
+        $logs = function_exists('dbFetchAllRows') ? dbFetchAllRows($stmt) : (is_object($stmt) && method_exists($stmt, 'fetchAll') ? ($stmt->fetchAll() ?: []) : []);
         
         // If we're fetching for dashboard (limit = 10), automatically maintain only 10 most recent logs
         if ($limit == 10 && empty($filters)) {
             // Get the total count
             $countSql = "SELECT COUNT(*) as total FROM admin_logs";
             $countStmt = $this->db->query($countSql);
-            $countResult = $countStmt->fetch();
+            $countResult = function_exists('dbFetchRow') ? dbFetchRow($countStmt) : (is_object($countStmt) && method_exists($countStmt, 'fetch') ? $countStmt->fetch() : null);
             $totalLogs = $countResult['total'] ?? 0;
             
             // If there are more than 10 logs, delete the older ones

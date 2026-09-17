@@ -274,7 +274,7 @@ class AuthController {
                         $db = Database::getInstance();
                         $sql = "SELECT token FROM email_verification_tokens WHERE user_id = ? AND used = 0 ORDER BY id DESC LIMIT 1";
                         $stmt = $db->query($sql, [$userId]);
-                        $tokenData = $stmt->fetch();
+                        $tokenData = function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
 
                         if ($tokenData) {
                             $verificationLink = SITE_URL . "/auth/verify-email/" . $tokenData['token'];
@@ -448,7 +448,7 @@ class AuthController {
                 JOIN users u ON u.id = evt.user_id
                 WHERE evt.token = ?";
         $stmt = $db->query($sql, [$token]);
-        $tokenRow = $stmt->fetch();
+        $tokenRow = function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
 
         if (!$tokenRow) {
             $_SESSION['error'] = 'Invalid verification link.';
@@ -477,14 +477,14 @@ class AuthController {
         $sql = "SELECT COUNT(*) as count FROM joint_account_requests
                 WHERE requesting_user_id = ? AND status = 'pending' AND expires_at > NOW()";
         $stmt = $db->query($sql, [$userId]);
-        $result = $stmt->fetch();
+        $result = function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
 
         if ($result && $result['count'] > 0) {
             $sql = "SELECT account_id FROM joint_account_requests
                     WHERE requesting_user_id = ? AND status = 'pending' AND expires_at > NOW()
                     LIMIT 1";
             $stmt = $db->query($sql, [$userId]);
-            $requestData = $stmt->fetch();
+            $requestData = function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
 
             if ($requestData) {
                 $jointAccount->sendJointRequestConfirmationEmail($requestData['account_id'], $userId);

@@ -198,7 +198,7 @@ class TransactionController {
                     LEFT JOIN users u ON t.user_id = u.id
                     WHERE $whereClause";
             $stmt = $db->query($sql, [$transactionId]);
-            $transaction = $stmt->fetch();
+            $transaction = function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
             
             // Check access: user owns the transaction OR has access to the account via joint ownership
             if ($transaction) {

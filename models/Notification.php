@@ -48,8 +48,8 @@ class Notification {
     public function getUnreadCount($userId) {
         $sql = "SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0";
         $stmt = $this->db->query($sql, [$userId]);
-        $result = $stmt->fetch();
-        return $result['count'];
+        $result = function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
+        return (int)($result['count'] ?? 0);
     }
     
     public function delete($notificationId) {

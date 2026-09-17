@@ -126,10 +126,37 @@ function listRuntimeErrors(int $limit = 30): array
 function getActingAdminId(): int
 {
     if (!empty($_SESSION['admin_impersonating'])) {
-        return (int)($_SESSION['admin_original_id'] ?? 0);
+        $originalId = (int)($_SESSION['admin_original_id'] ?? 0);
+        if ($originalId > 0) {
+            return $originalId;
+        }
     }
-    if (isLoggedIn() && ($_SESSION['user_role'] ?? '') === 'admin') {
-        return (int)($_SESSION['user_id'] ?? 0);
+    $sessionId = (int)($_SESSION['user_id'] ?? 0);
+    if ($sessionId > 0 && ($_SESSION['user_role'] ?? '') === 'admin') {
+        return $sessionId;
+    }
+    return 0;
+}
+
+/**
+ * Admin id for JSON APIs. Does not depend on getActingAdminId existing on older deploys.
+ */
+function resolveActingAdminId(): int
+{
+    if (function_exists('getActingAdminId')) {
+        $id = getActingAdminId();
+        if ($id > 0) {
+            return $id;
+        }
+    }
+    if (!empty($_SESSION['admin_impersonating'])) {
+        $originalId = (int)($_SESSION['admin_original_id'] ?? 0);
+        if ($originalId > 0) {
+            return $originalId;
+        }
+    }
+    if (!empty($_SESSION['user_id']) && ($_SESSION['user_role'] ?? '') === 'admin') {
+        return (int)$_SESSION['user_id'];
     }
     return 0;
 }
@@ -2487,7 +2514,7 @@ function uploadFile($file, $folder = 'documents') {
 
 function dbFetchRow($stmt): ?array
 {
-    if (!$stmt) {
+    if (!is_object($stmt) || !method_exists($stmt, 'fetch')) {
         return null;
     }
     try {
@@ -2500,7 +2527,7 @@ function dbFetchRow($stmt): ?array
 
 function dbFetchAllRows($stmt): array
 {
-    if (!$stmt) {
+    if (!is_object($stmt) || !method_exists($stmt, 'fetchAll')) {
         return [];
     }
     try {

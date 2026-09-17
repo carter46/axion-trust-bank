@@ -39,8 +39,8 @@ class Transfer {
                 AND status IN ('pending', 'processing', 'successful', 'completed')
                 AND DATE(created_at) = CURDATE()";
         $stmt = $this->db->query($sql, [$fromAccountId]);
-        $result = $stmt->fetch();
-        $totalToday = floatval($result['total_today']);
+        $result = function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
+        $totalToday = floatval($result['total_today'] ?? 0);
         
         if (($totalToday + $amount) > $dailyLimit) {
             $remaining = max(0, $dailyLimit - $totalToday);
@@ -56,8 +56,8 @@ class Transfer {
                 AND status IN ('pending', 'processing', 'successful', 'completed')
                 AND DATE_FORMAT(created_at, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')";
         $stmt = $this->db->query($sql, [$fromAccountId]);
-        $result = $stmt->fetch();
-        $totalMonth = floatval($result['total_month']);
+        $result = function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
+        $totalMonth = floatval($result['total_month'] ?? 0);
         
         if (($totalMonth + $amount) > $monthlyLimit) {
             $remaining = max(0, $monthlyLimit - $totalMonth);
@@ -157,7 +157,7 @@ class Transfer {
         // Get beneficiary details
         $sql = "SELECT * FROM beneficiaries WHERE id = ? AND user_id = ?";
         $stmt = $this->db->query($sql, [$beneficiaryId, $fromAccount['user_id']]);
-        $beneficiary = $stmt->fetch();
+        $beneficiary = function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
         
         if (!$beneficiary) {
             return ['success' => false, 'message' => 'Invalid beneficiary'];
@@ -166,7 +166,7 @@ class Transfer {
         // Get transfer fee from settings
         $feeSql = "SELECT setting_value FROM system_settings WHERE setting_key = 'transfer_fee_domestic'";
         $feeStmt = $this->db->query($feeSql);
-        $feeResult = $feeStmt->fetch();
+        $feeResult = function_exists('dbFetchRow') ? dbFetchRow($feeStmt) : (is_object($feeStmt) && method_exists($feeStmt, 'fetch') ? $feeStmt->fetch() : null);
         $fee = $feeResult ? floatval($feeResult['setting_value']) : 0;
         
         $totalAmount = $amount + $fee;
@@ -190,8 +190,8 @@ class Transfer {
                 AND status IN ('pending', 'processing', 'successful', 'completed')
                 AND DATE(created_at) = CURDATE()";
         $stmt = $this->db->query($sql, [$fromAccountId]);
-        $result = $stmt->fetch();
-        $totalToday = floatval($result['total_today']);
+        $result = function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
+        $totalToday = floatval($result['total_today'] ?? 0);
         
         if (($totalToday + $amount) > $dailyLimit) {
             $remaining = max(0, $dailyLimit - $totalToday);
@@ -207,8 +207,8 @@ class Transfer {
                 AND status IN ('pending', 'processing', 'successful', 'completed')
                 AND DATE_FORMAT(created_at, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')";
         $stmt = $this->db->query($sql, [$fromAccountId]);
-        $result = $stmt->fetch();
-        $totalMonth = floatval($result['total_month']);
+        $result = function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
+        $totalMonth = floatval($result['total_month'] ?? 0);
         
         if (($totalMonth + $amount) > $monthlyLimit) {
             $remaining = max(0, $monthlyLimit - $totalMonth);
@@ -276,7 +276,7 @@ class Transfer {
         // Get beneficiary details
         $sql = "SELECT * FROM beneficiaries WHERE id = ? AND user_id = ? AND beneficiary_type = 'international'";
         $stmt = $this->db->query($sql, [$beneficiaryId, $fromAccount['user_id']]);
-        $beneficiary = $stmt->fetch();
+        $beneficiary = function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
         
         if (!$beneficiary) {
             return ['success' => false, 'message' => 'Invalid international beneficiary'];
@@ -289,7 +289,7 @@ class Transfer {
         // Get transfer fee
         $feeSql = "SELECT setting_value FROM system_settings WHERE setting_key = 'transfer_fee_international'";
         $feeStmt = $this->db->query($feeSql);
-        $feeResult = $feeStmt->fetch();
+        $feeResult = function_exists('dbFetchRow') ? dbFetchRow($feeStmt) : (is_object($feeStmt) && method_exists($feeStmt, 'fetch') ? $feeStmt->fetch() : null);
         $fee = $feeResult ? floatval($feeResult['setting_value']) : 25;
         
         $totalAmount = $amount + $fee;
@@ -313,8 +313,8 @@ class Transfer {
                 AND status IN ('pending', 'processing', 'successful', 'completed')
                 AND DATE(created_at) = CURDATE()";
         $stmt = $this->db->query($sql, [$fromAccountId]);
-        $result = $stmt->fetch();
-        $totalToday = floatval($result['total_today']);
+        $result = function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
+        $totalToday = floatval($result['total_today'] ?? 0);
         
         if (($totalToday + $amount) > $dailyLimit) {
             $remaining = max(0, $dailyLimit - $totalToday);
@@ -330,8 +330,8 @@ class Transfer {
                 AND status IN ('pending', 'processing', 'successful', 'completed')
                 AND DATE_FORMAT(created_at, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')";
         $stmt = $this->db->query($sql, [$fromAccountId]);
-        $result = $stmt->fetch();
-        $totalMonth = floatval($result['total_month']);
+        $result = function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
+        $totalMonth = floatval($result['total_month'] ?? 0);
         
         if (($totalMonth + $amount) > $monthlyLimit) {
             $remaining = max(0, $monthlyLimit - $totalMonth);
@@ -402,7 +402,7 @@ class Transfer {
     private function getUserTransactionStatus($userId) {
         $sql = "SELECT transaction_override FROM users WHERE id = ?";
         $stmt = $this->db->query($sql, [$userId]);
-        $user = $stmt->fetch();
+        $user = function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
         
         if (!$user) {
             return 'pending'; // Default to pending if user not found

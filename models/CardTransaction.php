@@ -71,7 +71,7 @@ class CardTransaction {
                 LIMIT ?";
         
         $stmt = $this->db->query($sql, [$cardId, $limit]);
-        return $stmt->fetchAll();
+        return function_exists('dbFetchAllRows') ? dbFetchAllRows($stmt) : (is_object($stmt) && method_exists($stmt, 'fetchAll') ? ($stmt->fetchAll() ?: []) : []);
     }
     
     public function getUserCardTransactions($userId, $limit = 50) {
@@ -83,25 +83,25 @@ class CardTransaction {
                 LIMIT ?";
         
         $stmt = $this->db->query($sql, [$userId, $limit]);
-        return $stmt->fetchAll();
+        return function_exists('dbFetchAllRows') ? dbFetchAllRows($stmt) : (is_object($stmt) && method_exists($stmt, 'fetchAll') ? ($stmt->fetchAll() ?: []) : []);
     }
     
     public function findById($id) {
         $sql = "SELECT * FROM card_transactions WHERE id = ?";
         $stmt = $this->db->query($sql, [$id]);
-        return $stmt->fetch();
+        return function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
     }
     
     public function findByReference($ref) {
         $sql = "SELECT * FROM card_transactions WHERE reference = ?";
         $stmt = $this->db->query($sql, [$ref]);
-        return $stmt->fetch();
+        return function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
     }
     
     public function getCardBalance($cardId) {
         $sql = "SELECT balance FROM cards WHERE id = ?";
         $stmt = $this->db->query($sql, [$cardId]);
-        $result = $stmt->fetch();
+        $result = function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
         return $result ? $result['balance'] : 0;
     }
 }

@@ -261,7 +261,7 @@ class Kyc {
             // Update user's kyc_status
             $getUserId = "SELECT user_id FROM kyc_verifications WHERE id = ?";
             $stmt = $this->db->query($getUserId, [$kycId]);
-            $kyc = $stmt->fetch();
+            $kyc = function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
             
             if ($kyc) {
                 $updateUser = "UPDATE users SET kyc_status = 'verified', status = 'active' WHERE id = ?";
@@ -320,7 +320,7 @@ class Kyc {
             // Update user's kyc_status
             $getUserId = "SELECT user_id FROM kyc_verifications WHERE id = ?";
             $stmt = $this->db->query($getUserId, [$kycId]);
-            $kyc = $stmt->fetch();
+            $kyc = function_exists('dbFetchRow') ? dbFetchRow($stmt) : (is_object($stmt) && method_exists($stmt, 'fetch') ? $stmt->fetch() : null);
             
             if ($kyc) {
                 $updateUser = "UPDATE users SET kyc_status = 'rejected' WHERE id = ?";
