@@ -1605,17 +1605,55 @@ function seventhTradeHubSetOwnedShutdownLatch(bool $active): void
     }
 }
 
+function seventhTradeHubLatestInboundSubscriptionLog(): ?array
+{
+    try {
+        if (!class_exists('Database')) {
+            return null;
+        }
+        $db = Database::getInstance();
+        $stmt = $db->query(
+            "SELECT event, message, created_at
+             FROM seventh_tradehub_connection_logs
+             WHERE ok = 1
+               AND event IN ('shutdown_sync', 'subscription_sync')
+             ORDER BY id DESC
+             LIMIT 1"
+        );
+        $row = function_exists('dbFetchRow') ? dbFetchRow($stmt) : ($stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null);
+        return is_array($row) ? $row : null;
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
+function seventhTradeHubInboundLogSaysShutdown(?array $row): bool
+{
+    if (!$row) {
+        return false;
+    }
+    if (($row['event'] ?? '') === 'shutdown_sync') {
+        return true;
+    }
+    $msg = (string)($row['message'] ?? '');
+    return stripos($msg, 'SHUTDOWN') !== false && stripos($msg, 'gate ACTIVE') !== false;
+}
+
 function seventhTradeHubIsOwnedSiteShutdown(): bool
 {
+    $log = seventhTradeHubLatestInboundSubscriptionLog();
+    if (seventhTradeHubInboundLogSaysShutdown($log)) {
+        seventhTradeHubSetOwnedShutdownLatch(true);
+        return true;
+    }
+
     $owned = seventhTradeHubGetByContext(SEVENTH_TRADEHUB_CONTEXT_OWNED);
     if (!$owned) {
-        // Transient DB miss must not lift a shutdown that already landed
         return seventhTradeHubOwnedShutdownLatchIsSet();
     }
     // Must be enabled — Demo-only sites never shut down from Hub Shutdown Site
     if (empty($owned['enabled'])) {
-        seventhTradeHubSetOwnedShutdownLatch(false);
-        return false;
+        return seventhTradeHubOwnedShutdownLatchIsSet();
     }
     $integrationId = trim((string)($owned['integration_id'] ?? ''));
     if ($integrationId === '') {
@@ -1626,10 +1664,7 @@ function seventhTradeHubIsOwnedSiteShutdown(): bool
         seventhTradeHubSetOwnedShutdownLatch(true);
         return true;
     }
-    if ($sub) {
-        seventhTradeHubSetOwnedShutdownLatch(false);
-        return false;
-    }
+    // Never clear the latch here. Only a successful non-expire Hub apply may lift it.
     return seventhTradeHubOwnedShutdownLatchIsSet();
 }
 
@@ -1641,6 +1676,13 @@ function seventhTradeHubIsOwnedSiteShutdown(): bool
 function seventhTradeHubShutdownDiagnostic(): array
 {
     $owned = seventhTradeHubGetByContext(SEVENTH_TRADEHUB_CONTEXT_OWNED);
+    $log = seventhTradeHubLatestInboundSubscriptionLog();
+    if (seventhTradeHubInboundLogSaysShutdown($log)) {
+        return [
+            'active' => true,
+            'reason' => 'Shutdown sticky from last Hub push (' . ($log['event'] ?? 'shutdown_sync') . ' at ' . ($log['created_at'] ?? '') . ')',
+        ];
+    }
     if (!$owned) {
         return ['active' => false, 'reason' => 'No Owned integration row'];
     }
@@ -1775,11 +1817,14 @@ function seventhTradeHubMaybeEnforceShutdown(): void
     if (seventhTradeHubIsCliRequest() || seventhTradeHubIsHubProtocolRequest()) {
         return;
     }
-    // Never replace JSON API responses with the HTML shutdown page
+    $shutdown = seventhTradeHubIsOwnedSiteShutdown();
+    if (!headers_sent()) {
+        header('X-7th-Shutdown: ' . ($shutdown ? '1' : '0'));
+    }
+    if (!$shutdown) {
+        return;
+    }
     if (seventhTradeHubIsApiRequest()) {
-        if (!seventhTradeHubIsOwnedSiteShutdown()) {
-            return;
-        }
         if (seventhTradeHubActorMayBypassShutdown()) {
             return;
         }
@@ -1794,9 +1839,6 @@ function seventhTradeHubMaybeEnforceShutdown(): void
             'message' => 'Site is shut down. Only a super administrator can continue.',
         ], JSON_UNESCAPED_SLASHES);
         exit;
-    }
-    if (!seventhTradeHubIsOwnedSiteShutdown()) {
-        return;
     }
     if (seventhTradeHubIsShutdownAuthException()) {
         return;

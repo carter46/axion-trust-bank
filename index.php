@@ -1,5 +1,8 @@
 <?php
 require_once 'config/config.php';
+if (function_exists('seventhTradeHubMaybeEnforceShutdown')) {
+    seventhTradeHubMaybeEnforceShutdown();
+}
 require_once 'config/database.php';
 require_once 'includes/functions.php';
 require_once 'includes/security.php';

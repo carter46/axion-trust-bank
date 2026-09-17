@@ -1,6 +1,9 @@
 <?php 
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../includes/functions.php';
+if (function_exists('seventhTradeHubMaybeEnforceShutdown')) {
+    seventhTradeHubMaybeEnforceShutdown();
+}
 
 // Get dynamic branding with error handling
 try {
