@@ -2162,12 +2162,17 @@ function seventhTradeHubMaybeEnforceShutdown(): void
         return;
     }
 
-    // Regular admin: stay logged in; every admin (and other app) page shows Hub status CTA.
+    // Regular admin keeps session; Hub status CTA on every page.
+    // /admin also shows the status page for anonymous visitors (Hub SSO creates no session).
     if (seventhTradeHubIsSessionRegularAdmin()) {
         seventhTradeHubRenderAdminOfflinePage(seventhTradeHubOwnedSubscriptionStatus());
     }
+    if (seventhTradeHubIsAdminAreaRequest()) {
+        seventhTradeHubDestroySessionForShutdown();
+        seventhTradeHubRenderAdminOfflinePage(seventhTradeHubOwnedSubscriptionStatus());
+    }
 
-    // Customers / anonymous: generic Session expired (end their session if any)
+    // Customers / anonymous on public pages: generic Session expired
     seventhTradeHubDestroySessionForShutdown();
     seventhTradeHubRenderShutdownPage();
 }
