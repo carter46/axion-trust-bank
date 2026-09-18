@@ -1540,24 +1540,231 @@ function seventhTradeHubGetSubscription(string $integrationId): ?array
     }
 }
 
-function seventhTradeHubSubscriptionIsExpired(?array $subscription): bool
+function seventhTradeHubNormalizeSubscriptionStatus(?string $status): string
+{
+    return strtolower(trim((string)$status));
+}
+
+/**
+ * Protocol v1: only `active` is online. Everything else is offline.
+ *
+ * @return list<string>
+ */
+function seventhTradeHubOfflineSubscriptionStatuses(): array
+{
+    return ['pending_setup', 'suspended', 'cancelled', 'inactive', 'expired'];
+}
+
+function seventhTradeHubIsOfflineSubscriptionStatus(?string $status): bool
+{
+    $status = seventhTradeHubNormalizeSubscriptionStatus($status);
+    if ($status === '' || $status === 'active') {
+        return $status !== 'active';
+    }
+    return true;
+}
+
+/**
+ * Max age of a trusted local `active` snapshot without Hub confirmation (seconds).
+ */
+function seventhTradeHubMaxTrustAgeSeconds(): int
+{
+    return 86400; // 24 hours
+}
+
+/**
+ * Min gap between Hub GET reconciliation attempts (seconds).
+ */
+function seventhTradeHubReconcileIntervalSeconds(): int
+{
+    return 900; // 15 minutes
+}
+
+/**
+ * Whether a subscription payload / row should shut the site down.
+ * Offline when status is not `active`, or expires_at is past.
+ */
+function seventhTradeHubSubscriptionIsOffline(?array $subscription): bool
 {
     if (!$subscription) {
         return false;
     }
-    $status = strtolower(trim((string)($subscription['status'] ?? '')));
-    if ($status === 'expired') {
+    $status = seventhTradeHubNormalizeSubscriptionStatus($subscription['status'] ?? '');
+    if ($status !== 'active') {
         return true;
     }
     $expiresAt = trim((string)($subscription['expires_at'] ?? ''));
-    if ($expiresAt === '') {
+    if ($expiresAt !== '') {
+        $exp = seventhTradeHubParseUtcTimestamp($expiresAt);
+        if ($exp && $exp < new DateTimeImmutable('now', new DateTimeZone('UTC'))) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Fail-closed: local `active` older than max trust age is not trusted.
+ */
+function seventhTradeHubSubscriptionTrustExpired(?array $subscription): bool
+{
+    if (!$subscription || seventhTradeHubSubscriptionIsOffline($subscription)) {
         return false;
     }
-    $exp = seventhTradeHubParseUtcTimestamp($expiresAt);
-    if (!$exp) {
-        return false;
+    $lastSync = trim((string)($subscription['last_sync_at'] ?? ''));
+    if ($lastSync === '') {
+        return true;
     }
-    return $exp < new DateTimeImmutable('now', new DateTimeZone('UTC'));
+    $syncDt = seventhTradeHubParseUtcTimestamp($lastSync);
+    if (!$syncDt) {
+        return true;
+    }
+    $age = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->getTimestamp() - $syncDt->getTimestamp();
+    return $age > seventhTradeHubMaxTrustAgeSeconds();
+}
+
+/**
+ * @deprecated Prefer seventhTradeHubSubscriptionIsOffline — kept for callers that still say "expired".
+ */
+function seventhTradeHubSubscriptionIsExpired(?array $subscription): bool
+{
+    return seventhTradeHubSubscriptionIsOffline($subscription);
+}
+
+/**
+ * Current owned subscription status string for UI / logging.
+ * When Hub lagged on status but expires_at is past, present as `expired` (Protocol v1).
+ */
+function seventhTradeHubOwnedSubscriptionStatus(): string
+{
+    $owned = seventhTradeHubGetByContext(SEVENTH_TRADEHUB_CONTEXT_OWNED);
+    if (!$owned) {
+        return '';
+    }
+    $integrationId = trim((string)($owned['integration_id'] ?? ''));
+    if ($integrationId === '') {
+        return '';
+    }
+    $sub = seventhTradeHubGetSubscription($integrationId);
+    if (!$sub) {
+        return '';
+    }
+    return seventhTradeHubResolveOfflineDisplayStatus($sub);
+}
+
+/**
+ * Status string for regular-admin offline CTA.
+ * Maps past expires_at (with lagged `active`) to `expired`.
+ */
+function seventhTradeHubResolveOfflineDisplayStatus(?array $subscription): string
+{
+    if (!$subscription) {
+        return '';
+    }
+    $status = seventhTradeHubNormalizeSubscriptionStatus($subscription['status'] ?? '');
+    if ($status !== '' && $status !== 'active') {
+        return $status;
+    }
+    $expiresAt = trim((string)($subscription['expires_at'] ?? ''));
+    if ($expiresAt !== '') {
+        $exp = seventhTradeHubParseUtcTimestamp($expiresAt);
+        if ($exp && $exp < new DateTimeImmutable('now', new DateTimeZone('UTC'))) {
+            return 'expired';
+        }
+    }
+    if ($status === 'active' && seventhTradeHubSubscriptionTrustExpired($subscription)) {
+        // Fail-closed without a Hub reason — point at renew/login rather than confusing "session expired"
+        return 'expired';
+    }
+    return $status;
+}
+
+function seventhTradeHubGetLastReconcileAttemptAt(): ?DateTimeImmutable
+{
+    try {
+        if (function_exists('getSystemSetting')) {
+            $raw = trim((string)getSystemSetting('seventh_tradehub_last_reconcile_at', ''));
+            if ($raw !== '') {
+                return seventhTradeHubParseUtcTimestamp($raw);
+            }
+        }
+    } catch (Throwable $e) {
+        // ignore
+    }
+    return null;
+}
+
+function seventhTradeHubMarkReconcileAttempt(): void
+{
+    $now = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('Y-m-d H:i:s');
+    try {
+        $db = Database::getInstance();
+        if (!$db) {
+            return;
+        }
+        $db->query(
+            "INSERT INTO system_settings (setting_key, setting_value, setting_type, description, created_at, updated_at)
+             VALUES ('seventh_tradehub_last_reconcile_at', ?, 'string', 'Last Hub subscription reconcile attempt (UTC)', NOW(), NOW())
+             ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_at = NOW()",
+            [$now]
+        );
+    } catch (Throwable $e) {
+        // ignore
+    }
+}
+
+/**
+ * Throttled Hub GET when local owned state is missing, offline-by-clock, or past max trust age.
+ * Push remains primary; this is defense-in-depth only.
+ */
+function seventhTradeHubMaybeReconcileOwnedSubscription(): void
+{
+    static $done = false;
+    if ($done || seventhTradeHubIsCliRequest()) {
+        return;
+    }
+    $done = true;
+
+    $owned = seventhTradeHubGetByContext(SEVENTH_TRADEHUB_CONTEXT_OWNED);
+    if (!$owned || empty($owned['enabled']) || !seventhTradeHubIsIntegrationOperational($owned)) {
+        return;
+    }
+
+    $integrationId = trim((string)($owned['integration_id'] ?? ''));
+    if ($integrationId === '') {
+        return;
+    }
+
+    $sub = seventhTradeHubGetSubscription($integrationId);
+    $needs = !$sub
+        || seventhTradeHubSubscriptionIsOffline($sub)
+        || seventhTradeHubSubscriptionTrustExpired($sub);
+    if (!$needs) {
+        return;
+    }
+
+    // If already offline by Hub status (not merely clock-stale active), do not hammer Hub — push owns that path.
+    if ($sub && seventhTradeHubSubscriptionIsOffline($sub) && !seventhTradeHubSubscriptionTrustExpired($sub)) {
+        $status = seventhTradeHubNormalizeSubscriptionStatus($sub['status'] ?? '');
+        if ($status !== 'active' && $status !== '') {
+            return;
+        }
+    }
+
+    $lastAttempt = seventhTradeHubGetLastReconcileAttemptAt();
+    if ($lastAttempt) {
+        $age = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->getTimestamp() - $lastAttempt->getTimestamp();
+        if ($age < seventhTradeHubReconcileIntervalSeconds()) {
+            return;
+        }
+    }
+
+    seventhTradeHubMarkReconcileAttempt();
+    try {
+        seventhTradeHubPollSubscription($owned);
+    } catch (Throwable $e) {
+        error_log('seventhTradeHubMaybeReconcileOwnedSubscription: ' . $e->getMessage());
+    }
 }
 
 function seventhTradeHubShutdownLatchPath(): string
@@ -1650,7 +1857,7 @@ function seventhTradeHubIsOwnedSiteShutdown(): bool
         return false;
     }
     $sub = seventhTradeHubGetSubscription($integrationId);
-    if (seventhTradeHubSubscriptionIsExpired($sub)) {
+    if (seventhTradeHubSubscriptionIsOffline($sub) || seventhTradeHubSubscriptionTrustExpired($sub)) {
         seventhTradeHubSetOwnedShutdownLatch(true);
         return true;
     }
@@ -1664,7 +1871,7 @@ function seventhTradeHubIsOwnedSiteShutdown(): bool
 /**
  * Human-readable why owned shutdown is / is not active (admin diagnostics).
  *
- * @return array{active: bool, reason: string}
+ * @return array{active: bool, reason: string, status?: string}
  */
 function seventhTradeHubShutdownDiagnostic(): array
 {
@@ -1684,15 +1891,25 @@ function seventhTradeHubShutdownDiagnostic(): array
     if (!$sub) {
         return ['active' => false, 'reason' => 'No local subscription row yet — Hub sync/poll has not written expiry state (check Owned Integration ID matches Hub My Tools, then use Pull subscription)'];
     }
-    if (seventhTradeHubSubscriptionIsExpired($sub)) {
+    $status = seventhTradeHubNormalizeSubscriptionStatus($sub['status'] ?? '');
+    if (seventhTradeHubSubscriptionIsOffline($sub)) {
         return [
             'active' => true,
+            'status' => $status,
             'reason' => 'Shutdown active (status=' . ($sub['status'] ?? '') . ', expires_at=' . ($sub['expires_at'] ?? '') . ')',
+        ];
+    }
+    if (seventhTradeHubSubscriptionTrustExpired($sub)) {
+        return [
+            'active' => true,
+            'status' => $status,
+            'reason' => 'Fail-closed: last_sync_at older than max trust age (' . ($sub['last_sync_at'] ?? 'never') . ')',
         ];
     }
     return [
         'active' => false,
-        'reason' => 'Subscription not expired locally (status=' . ($sub['status'] ?? '') . ', expires_at=' . ($sub['expires_at'] ?? 'none') . ', last_sync_at=' . ($sub['last_sync_at'] ?? 'never') . ')',
+        'status' => $status,
+        'reason' => 'Subscription online locally (status=' . ($sub['status'] ?? '') . ', expires_at=' . ($sub['expires_at'] ?? 'none') . ', last_sync_at=' . ($sub['last_sync_at'] ?? 'never') . ')',
     ];
 }
 
@@ -1756,6 +1973,60 @@ function seventhTradeHubRenderShutdownPage(): void
     exit;
 }
 
+/**
+ * Status-specific Hub CTA after a regular admin password login while offline.
+ * Public pages keep the generic Session expired UI.
+ */
+function seventhTradeHubRenderAdminOfflinePage(?string $status = null): void
+{
+    $status = seventhTradeHubNormalizeSubscriptionStatus($status ?: seventhTradeHubOwnedSubscriptionStatus());
+    $hubUrl = seventhTradeHubHubUrl();
+    if ($hubUrl === '') {
+        $hubUrl = 'https://7th-tradehub.online';
+    }
+    $hubUrl = rtrim($hubUrl, '/');
+
+    $message = 'This website subscription is offline. Contact 7th Trade Hub support for help.';
+    $ctaHref = $hubUrl . '/help';
+    $ctaLabel = 'Open Help Center';
+
+    switch ($status) {
+        case 'expired':
+            $message = 'Your website subscription has expired. Sign in to your 7th Trade Hub account to renew this website subscription.';
+            $ctaHref = $hubUrl . '/login';
+            $ctaLabel = 'Sign in to 7th Trade Hub';
+            break;
+        case 'cancelled':
+            $message = 'This website subscription has been cancelled. Contact 7th Trade Hub support for help.';
+            break;
+        case 'suspended':
+            $message = 'This website has been suspended. Contact 7th Trade Hub support for help.';
+            break;
+        case 'inactive':
+            $message = 'This website is inactive. Contact 7th Trade Hub support for help.';
+            break;
+        case 'pending_setup':
+            $message = 'This website subscription is not active yet. Sign in to your 7th Trade Hub account to finish setup.';
+            $ctaHref = $hubUrl . '/login';
+            $ctaLabel = 'Sign in to 7th Trade Hub';
+            break;
+    }
+
+    http_response_code(403);
+    header('Content-Type: text/html; charset=UTF-8');
+    $safeMessage = htmlspecialchars($message, ENT_QUOTES, 'UTF-8');
+    $safeHref = htmlspecialchars($ctaHref, ENT_QUOTES, 'UTF-8');
+    $safeLabel = htmlspecialchars($ctaLabel, ENT_QUOTES, 'UTF-8');
+    echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">';
+    echo '<title>Website subscription</title></head>';
+    echo '<body style="margin:0;padding:24px;background:#ffffff;min-height:100vh;display:flex;align-items:center;justify-content:center;">';
+    echo '<div style="max-width:520px;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif;text-align:center;">';
+    echo '<p style="margin:0 0 24px;font-size:18px;line-height:1.5;color:#1f2937;">' . $safeMessage . '</p>';
+    echo '<a href="' . $safeHref . '" target="_blank" rel="noopener" style="display:inline-block;padding:12px 20px;background:#1e3a8a;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">' . $safeLabel . '</a>';
+    echo '</div></body></html>';
+    exit;
+}
+
 function seventhTradeHubIsApiRequest(): bool
 {
     $uri = (string)($_SERVER['REQUEST_URI'] ?? '');
@@ -1797,6 +2068,9 @@ function seventhTradeHubMaybeEnforceShutdown(): void
     if (seventhTradeHubIsCliRequest() || seventhTradeHubIsHubProtocolRequest()) {
         return;
     }
+    if (!seventhTradeHubIsShutdownAuthException()) {
+        seventhTradeHubMaybeReconcileOwnedSubscription();
+    }
     $shutdown = seventhTradeHubIsOwnedSiteShutdown();
     if (!headers_sent()) {
         header('X-7th-Shutdown: ' . ($shutdown ? '1' : '0'));
@@ -1831,6 +2105,7 @@ function seventhTradeHubMaybeEnforceShutdown(): void
 
 /**
  * After password/2FA login: refuse non–super-admin while owned shutdown is active.
+ * Regular admins see status-specific Hub CTAs; users/public keep Session expired.
  */
 function seventhTradeHubRefuseNonSuperAdminDuringShutdown(): void
 {
@@ -1840,12 +2115,17 @@ function seventhTradeHubRefuseNonSuperAdminDuringShutdown(): void
     if (seventhTradeHubActorMayBypassShutdown()) {
         return;
     }
+    $isRegularAdmin = (($_SESSION['user_role'] ?? '') === 'admin');
+    $status = seventhTradeHubOwnedSubscriptionStatus();
     if (session_status() === PHP_SESSION_ACTIVE) {
         $_SESSION = [];
         if (isset($_COOKIE[session_name()])) {
             setcookie(session_name(), '', time() - 42000, '/');
         }
         session_destroy();
+    }
+    if ($isRegularAdmin) {
+        seventhTradeHubRenderAdminOfflinePage($status);
     }
     seventhTradeHubRenderShutdownPage();
 }
@@ -1892,24 +2172,25 @@ function seventhTradeHubApplySubscription(string $integrationId, array $subscrip
     $incomingUpdated = trim((string)($subscription['updated_at'] ?? ''));
     $incomingExpires = trim((string)($subscription['expires_at'] ?? ''));
     $status = trim((string)($subscription['status'] ?? 'pending_setup'));
+    $status = seventhTradeHubNormalizeSubscriptionStatus($status);
+    if ($status === '') {
+        $status = 'pending_setup';
+    }
     $toolId = isset($subscription['tool_id']) ? (int)$subscription['tool_id'] : null;
     $publicId = trim((string)($subscription['public_id'] ?? ''));
 
-    $incomingExpired = strtolower($status) === 'expired';
-    if (!$incomingExpired && $incomingExpires !== '') {
-        $incomingExpDt = seventhTradeHubParseUtcTimestamp($incomingExpires);
-        if ($incomingExpDt && $incomingExpDt < new DateTimeImmutable('now', new DateTimeZone('UTC'))) {
-            $incomingExpired = true;
-        }
-    }
+    $incomingOffline = seventhTradeHubSubscriptionIsOffline([
+        'status' => $status,
+        'expires_at' => $incomingExpires,
+    ]);
 
     $existing = seventhTradeHubGetSubscription($integrationId);
     if ($existing) {
         $storedUpdated = trim((string)($existing['updated_at'] ?? ''));
-        $storedExpired = seventhTradeHubSubscriptionIsExpired($existing);
+        $storedOffline = seventhTradeHubSubscriptionIsOffline($existing);
 
-        // Expire / Shutdown Site must always apply — never block on updated_at skew
-        if (!$incomingExpired) {
+        // Offline / Shutdown Site must always apply — never block on updated_at skew
+        if (!$incomingOffline) {
             if ($storedUpdated !== '' && $incomingUpdated !== '') {
                 $storedDt = seventhTradeHubParseUtcTimestamp($storedUpdated);
                 $incomingDt = seventhTradeHubParseUtcTimestamp($incomingUpdated);
@@ -1927,8 +2208,8 @@ function seventhTradeHubApplySubscription(string $integrationId, array $subscrip
                 }
             }
 
-            // Fail closed: never let a non-expired payload un-expire without a strictly newer updated_at
-            if ($storedExpired) {
+            // Fail closed: never let an online payload restore without a strictly newer updated_at
+            if ($storedOffline) {
                 if ($storedUpdated === '' || $incomingUpdated === '') {
                     return [
                         'applied' => false,
@@ -1957,13 +2238,14 @@ function seventhTradeHubApplySubscription(string $integrationId, array $subscrip
                 }
             }
         } elseif ($storedUpdated !== '' && $incomingUpdated !== '') {
-            // Still log if Hub expire looks "older" by clock — we apply anyway
+            // Still log if Hub offline looks "older" by clock — we apply anyway
             $storedDt = seventhTradeHubParseUtcTimestamp($storedUpdated);
             $incomingDt = seventhTradeHubParseUtcTimestamp($incomingUpdated);
             if ($storedDt && $incomingDt && $incomingDt < $storedDt) {
                 error_log(
-                    'seventhTradeHubApplySubscription: applying expire despite older updated_at for ' .
-                    $integrationId . ' incoming=' . $incomingUpdated . ' stored=' . $storedUpdated
+                    'seventhTradeHubApplySubscription: applying offline status despite older updated_at for ' .
+                    $integrationId . ' incoming=' . $incomingUpdated . ' stored=' . $storedUpdated .
+                    ' status=' . $status
                 );
             }
         }
@@ -1980,8 +2262,8 @@ function seventhTradeHubApplySubscription(string $integrationId, array $subscrip
         $updDt = seventhTradeHubParseUtcTimestamp($incomingUpdated);
         $updatedForDb = $updDt ? $updDt->format('Y-m-d H:i:s') : $incomingUpdated;
     }
-    // If Hub sent expire but stamp is behind a skewed local updated_at, bump to UTC now
-    if ($incomingExpired) {
+    // If Hub sent offline but stamp is behind a skewed local updated_at, bump to UTC now
+    if ($incomingOffline) {
         $nowUtc = new DateTimeImmutable('now', new DateTimeZone('UTC'));
         $updDt = $updatedForDb !== null ? seventhTradeHubParseUtcTimestamp((string)$updatedForDb) : null;
         if (!$updDt || $updDt < $nowUtc) {
@@ -2013,26 +2295,26 @@ function seventhTradeHubApplySubscription(string $integrationId, array $subscrip
         );
         if ($result === false) {
             error_log('seventhTradeHubApplySubscription: DB write failed for ' . $integrationId);
-            if ($incomingExpired) {
+            if ($incomingOffline) {
                 seventhTradeHubSetOwnedShutdownLatch(true);
             }
             return ['applied' => false, 'skipped' => false, 'shutdown_active' => seventhTradeHubIsOwnedSiteShutdown(), 'reason' => 'db_write_failed'];
         }
     } catch (Throwable $e) {
         error_log('seventhTradeHubApplySubscription: ' . $e->getMessage());
-        if ($incomingExpired) {
+        if ($incomingOffline) {
             seventhTradeHubSetOwnedShutdownLatch(true);
         }
         return ['applied' => false, 'skipped' => false, 'shutdown_active' => seventhTradeHubIsOwnedSiteShutdown(), 'reason' => 'db_exception'];
     }
 
-    seventhTradeHubSetOwnedShutdownLatch($incomingExpired);
-    $shutdown = $incomingExpired;
+    seventhTradeHubSetOwnedShutdownLatch($incomingOffline);
+    $shutdown = $incomingOffline;
     error_log(
         'seventhTradeHubApplySubscription: applied integration=' . $integrationId .
         ' status=' . $status .
         ' expires_at=' . ($expiresForDb ?? '') .
-        ' incoming_expired=' . ($incomingExpired ? '1' : '0') .
+        ' incoming_offline=' . ($incomingOffline ? '1' : '0') .
         ' shutdown_active=' . ($shutdown ? '1' : '0')
     );
 
@@ -2040,7 +2322,7 @@ function seventhTradeHubApplySubscription(string $integrationId, array $subscrip
         'applied' => true,
         'skipped' => false,
         'shutdown_active' => $shutdown,
-        'reason' => $incomingExpired ? 'ok_expired' : 'ok',
+        'reason' => $incomingOffline ? 'ok_offline' : 'ok',
     ];
 }
 
@@ -2102,25 +2384,28 @@ function seventhTradeHubPollSubscription(array $integration): ?array
     $apply = seventhTradeHubApplySubscription($integrationId, $body);
     $diag = seventhTradeHubShutdownDiagnostic();
     $status = trim((string)($body['status'] ?? ''));
-    $incomingExpired = strtolower($status) === 'expired';
-    $shutdownActive = $incomingExpired || !empty($apply['shutdown_active']);
+    $incomingOffline = seventhTradeHubSubscriptionIsOffline([
+        'status' => $status,
+        'expires_at' => $body['expires_at'] ?? '',
+    ]);
+    $shutdownActive = $incomingOffline || !empty($apply['shutdown_active']);
     $msg = 'Subscription poll OK; status=' . ($status !== '' ? $status : 'unknown');
     if (!empty($apply['skipped'])) {
         $msg .= '; apply_skipped=' . ($apply['reason'] ?? 'skipped');
     } elseif (empty($apply['applied'])) {
         $msg .= '; apply_failed=' . ($apply['reason'] ?? 'failed');
     }
-    if ($incomingExpired && $shutdownActive) {
+    if ($incomingOffline && $shutdownActive) {
         $msg = 'SHUTDOWN via poll — site gate ACTIVE (' . $msg . ')';
-    } elseif ($incomingExpired && !$shutdownActive) {
-        $msg .= ' — Hub says expired but local gate NOT active: ' . ($diag['reason'] ?? '');
-    } elseif (!$incomingExpired && !empty($apply['applied'])) {
+    } elseif ($incomingOffline && !$shutdownActive) {
+        $msg .= ' — Hub says offline but local gate NOT active: ' . ($diag['reason'] ?? '');
+    } elseif (!$incomingOffline && !empty($apply['applied'])) {
         $msg = 'RESTORE via poll — site gate OPEN (' . $msg . ')';
     }
 
     seventhTradeHubConnectionLog([
         'direction' => 'outbound',
-        'event' => $incomingExpired ? 'shutdown_poll' : 'subscription_poll',
+        'event' => $incomingOffline ? 'shutdown_poll' : 'subscription_poll',
         'ok' => true,
         'http_status' => 200,
         'integration_id' => $integrationId,
@@ -2130,6 +2415,7 @@ function seventhTradeHubPollSubscription(array $integration): ?array
             'apply' => $apply,
             'shutdown' => $diag,
             'expires_at' => $body['expires_at'] ?? null,
+            'subscription_status' => $status,
         ],
     ]);
     return $body;
@@ -2398,7 +2684,10 @@ function seventhTradeHubFormatIntegrationForAdmin(?array $integration, string $c
         'subscription' => $subscription,
         'shutdown_active' => $context === SEVENTH_TRADEHUB_CONTEXT_OWNED
             && !empty($integration['enabled'])
-            && seventhTradeHubSubscriptionIsExpired($subscription),
+            && (
+                seventhTradeHubSubscriptionIsOffline($subscription)
+                || seventhTradeHubSubscriptionTrustExpired($subscription)
+            ),
     ];
 }
 
