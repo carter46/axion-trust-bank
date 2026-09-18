@@ -1974,8 +1974,8 @@ function seventhTradeHubRenderShutdownPage(): void
 }
 
 /**
- * Status-specific Hub CTA after a regular admin password login while offline.
- * Public pages keep the generic Session expired UI.
+ * Status-specific Hub CTA for a logged-in regular admin while subscription is offline.
+ * Session stays active; this replaces admin dashboard content until Hub restores `active`.
  */
 function seventhTradeHubRenderAdminOfflinePage(?string $status = null): void
 {
@@ -2012,16 +2012,18 @@ function seventhTradeHubRenderAdminOfflinePage(?string $status = null): void
             break;
     }
 
-    http_response_code(403);
+    http_response_code(200);
     header('Content-Type: text/html; charset=UTF-8');
     $safeMessage = htmlspecialchars($message, ENT_QUOTES, 'UTF-8');
     $safeHref = htmlspecialchars($ctaHref, ENT_QUOTES, 'UTF-8');
     $safeLabel = htmlspecialchars($ctaLabel, ENT_QUOTES, 'UTF-8');
+    $safeStatus = htmlspecialchars($status !== '' ? $status : 'offline', ENT_QUOTES, 'UTF-8');
     echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">';
     echo '<title>Website subscription</title></head>';
-    echo '<body style="margin:0;padding:24px;background:#ffffff;min-height:100vh;display:flex;align-items:center;justify-content:center;">';
-    echo '<div style="max-width:520px;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif;text-align:center;">';
-    echo '<p style="margin:0 0 24px;font-size:18px;line-height:1.5;color:#1f2937;">' . $safeMessage . '</p>';
+    echo '<body style="margin:0;padding:24px;background:#f8fafc;min-height:100vh;display:flex;align-items:center;justify-content:center;">';
+    echo '<div style="max-width:560px;width:100%;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:32px;box-shadow:0 10px 30px rgba(15,23,42,0.06);font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif;text-align:center;">';
+    echo '<p style="margin:0 0 8px;font-size:13px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:#64748b;">Admin · subscription ' . $safeStatus . '</p>';
+    echo '<p style="margin:0 0 24px;font-size:18px;line-height:1.55;color:#0f172a;">' . $safeMessage . '</p>';
     echo '<a href="' . $safeHref . '" target="_blank" rel="noopener" style="display:inline-block;padding:12px 20px;background:#1e3a8a;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">' . $safeLabel . '</a>';
     echo '</div></body></html>';
     exit;
@@ -2063,6 +2065,45 @@ function seventhTradeHubActorMayBypassShutdown(): bool
     return false;
 }
 
+/**
+ * Clear the current browser session during owned shutdown (no redirect).
+ */
+function seventhTradeHubDestroySessionForShutdown(): void
+{
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        $_SESSION = [];
+        if (isset($_COOKIE[session_name()])) {
+            setcookie(session_name(), '', time() - 42000, '/');
+        }
+        session_destroy();
+    }
+}
+
+function seventhTradeHubIsSessionRegularAdmin(): bool
+{
+    if (!function_exists('isLoggedIn') || !isLoggedIn()) {
+        return false;
+    }
+    if (seventhTradeHubActorMayBypassShutdown()) {
+        return false; // super admin is not "regular"
+    }
+    return strtolower(trim((string)($_SESSION['user_role'] ?? ''))) === 'admin';
+}
+
+/**
+ * True when the request is for the merchant admin area.
+ */
+function seventhTradeHubIsAdminAreaRequest(): bool
+{
+    $uri = (string)($_SERVER['REQUEST_URI'] ?? '');
+    $path = (string)(parse_url($uri, PHP_URL_PATH) ?: $uri);
+    if (stripos($path, '/admin') !== false) {
+        return true;
+    }
+    $route = (string)($_GET['route'] ?? '');
+    return $route !== '' && stripos($route, 'admin') === 0;
+}
+
 function seventhTradeHubMaybeEnforceShutdown(): void
 {
     if (seventhTradeHubIsCliRequest() || seventhTradeHubIsHubProtocolRequest()) {
@@ -2079,6 +2120,7 @@ function seventhTradeHubMaybeEnforceShutdown(): void
         return;
     }
     if (seventhTradeHubIsApiRequest()) {
+        // Regular admin may stay logged in, but admin APIs stay locked (except Hub protocol).
         if (seventhTradeHubActorMayBypassShutdown()) {
             return;
         }
@@ -2090,7 +2132,9 @@ function seventhTradeHubMaybeEnforceShutdown(): void
             'success' => false,
             'ok' => false,
             'error' => 'site_shutdown',
-            'message' => 'Site is shut down. Only a super administrator can continue.',
+            'message' => seventhTradeHubIsSessionRegularAdmin()
+                ? 'Website subscription is offline. Use the Hub link on the admin screen.'
+                : 'Site is shut down. Only a super administrator can continue.',
         ], JSON_UNESCAPED_SLASHES);
         exit;
     }
@@ -2100,33 +2144,41 @@ function seventhTradeHubMaybeEnforceShutdown(): void
     if (seventhTradeHubActorMayBypassShutdown()) {
         return;
     }
+
+    // Regular admin: stay logged in; every admin (and other app) page shows Hub status CTA.
+    if (seventhTradeHubIsSessionRegularAdmin()) {
+        seventhTradeHubRenderAdminOfflinePage(seventhTradeHubOwnedSubscriptionStatus());
+    }
+
+    // Customers / anonymous: generic Session expired (end their session if any)
+    seventhTradeHubDestroySessionForShutdown();
     seventhTradeHubRenderShutdownPage();
 }
 
 /**
- * After password/2FA login: refuse non–super-admin while owned shutdown is active.
- * Regular admins see status-specific Hub CTAs; users/public keep Session expired.
+ * After password/2FA login during owned shutdown:
+ * - Super admin → continue into the site
+ * - Regular admin → keep session; redirect path will show Hub status CTA on /admin
+ * - Users → Session expired
  */
 function seventhTradeHubRefuseNonSuperAdminDuringShutdown(): void
 {
+    // Login skips page-load reconcile; refresh so status CTA is accurate after redirect.
+    seventhTradeHubMaybeReconcileOwnedSubscription();
+
     if (!seventhTradeHubIsOwnedSiteShutdown()) {
         return;
     }
     if (seventhTradeHubActorMayBypassShutdown()) {
         return;
     }
-    $isRegularAdmin = (($_SESSION['user_role'] ?? '') === 'admin');
-    $status = seventhTradeHubOwnedSubscriptionStatus();
-    if (session_status() === PHP_SESSION_ACTIVE) {
-        $_SESSION = [];
-        if (isset($_COOKIE[session_name()])) {
-            setcookie(session_name(), '', time() - 42000, '/');
-        }
-        session_destroy();
+
+    // Regular admin may complete login; admin pages render the Hub message.
+    if (seventhTradeHubIsSessionRegularAdmin()) {
+        return;
     }
-    if ($isRegularAdmin) {
-        seventhTradeHubRenderAdminOfflinePage($status);
-    }
+
+    seventhTradeHubDestroySessionForShutdown();
     seventhTradeHubRenderShutdownPage();
 }
 
