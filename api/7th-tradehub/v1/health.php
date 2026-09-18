@@ -4,6 +4,9 @@
  *
  * Always require the Hub module here (do not rely only on config.php).
  */
+if (!defined('SEVENTH_TRADEHUB_SKIP_SHUTDOWN_GATE')) {
+    define('SEVENTH_TRADEHUB_SKIP_SHUTDOWN_GATE', true);
+}
 error_reporting(E_ALL);
 ini_set('display_errors', '0');
 ob_start();

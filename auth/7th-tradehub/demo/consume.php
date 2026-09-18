@@ -3,7 +3,13 @@
  * GET /auth/7th-tradehub/demo/consume — Hub SSO browser entry (demo + owned).
  *
  * Always require the Hub module here (do not rely only on config.php).
+ * Skip the global shutdown gate in config.php — this script refuses owned SSO itself
+ * with the Hub status page (not the public "Session expired" string).
  */
+if (!defined('SEVENTH_TRADEHUB_SKIP_SHUTDOWN_GATE')) {
+    define('SEVENTH_TRADEHUB_SKIP_SHUTDOWN_GATE', true);
+}
+
 ob_start();
 
 require_once __DIR__ . '/../../../config/config.php';
@@ -42,7 +48,9 @@ if ($context === SEVENTH_TRADEHUB_CONTEXT_OWNED && seventhTradeHubIsOwnedSiteShu
         'context' => $context,
         'message' => 'SSO refused — owned shutdown is ACTIVE',
     ]);
-    seventhTradeHubRenderShutdownPage();
+    // Do not create a session (Protocol: Auto Login must not bypass shutdown).
+    // Show Hub status CTA — not the public "Session expired" string.
+    seventhTradeHubRenderAdminOfflinePage(seventhTradeHubOwnedSubscriptionStatus());
 }
 
 $result = seventhTradeHubValidateToken($token, $integration);

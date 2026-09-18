@@ -1915,14 +1915,29 @@ function seventhTradeHubShutdownDiagnostic(): array
 
 function seventhTradeHubIsHubProtocolRequest(): bool
 {
-    $uri = (string)($_SERVER['REQUEST_URI'] ?? '');
+    if (defined('SEVENTH_TRADEHUB_SKIP_SHUTDOWN_GATE') && SEVENTH_TRADEHUB_SKIP_SHUTDOWN_GATE) {
+        return true;
+    }
+
+    $candidates = [
+        (string)($_SERVER['REQUEST_URI'] ?? ''),
+        (string)($_SERVER['SCRIPT_NAME'] ?? ''),
+        (string)($_SERVER['PHP_SELF'] ?? ''),
+        (string)($_SERVER['REDIRECT_URL'] ?? ''),
+        (string)($_SERVER['PATH_INFO'] ?? ''),
+        (string)($_GET['route'] ?? ''),
+    ];
+    $haystack = strtolower(implode("\n", $candidates));
     $patterns = [
         '/api/7th-tradehub/v1/health',
+        'api/7th-tradehub/v1/health.php',
         '/api/7th-tradehub/v1/subscription/sync',
+        'api/7th-tradehub/v1/subscription/sync.php',
         '/auth/7th-tradehub/demo/consume',
+        'auth/7th-tradehub/demo/consume.php',
     ];
     foreach ($patterns as $pattern) {
-        if (stripos($uri, $pattern) !== false) {
+        if (strpos($haystack, strtolower($pattern)) !== false) {
             return true;
         }
     }
@@ -2025,6 +2040,8 @@ function seventhTradeHubRenderAdminOfflinePage(?string $status = null): void
     echo '<p style="margin:0 0 8px;font-size:13px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:#64748b;">Admin · subscription ' . $safeStatus . '</p>';
     echo '<p style="margin:0 0 24px;font-size:18px;line-height:1.55;color:#0f172a;">' . $safeMessage . '</p>';
     echo '<a href="' . $safeHref . '" target="_blank" rel="noopener" style="display:inline-block;padding:12px 20px;background:#1e3a8a;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">' . $safeLabel . '</a>';
+    $loginUrl = htmlspecialchars((defined('SITE_URL') ? SITE_URL : '') . '/auth/login', ENT_QUOTES, 'UTF-8');
+    echo '<p style="margin:20px 0 0;font-size:13px;color:#64748b;">Hub Auto Login is blocked while offline. Super administrators can use <a href="' . $loginUrl . '" style="color:#1e3a8a;">password login</a> on this site.</p>';
     echo '</div></body></html>';
     exit;
 }
