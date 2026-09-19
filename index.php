@@ -1,9 +1,7 @@
 <?php
 require_once 'config/config.php';
-// Do not rely on domain config.php to load Hub (that file is gitignored and often incomplete).
-if (!function_exists('seventhTradeHubMaybeEnforceShutdown')) {
-    require_once __DIR__ . '/includes/seventh-tradehub.php';
-}
+// Second gate pass after full config (Security::initialize). Hub is loaded via
+// includes/hub-gate.php from functions.php so gitignored config cannot omit it.
 if (function_exists('seventhTradeHubMaybeEnforceShutdown')) {
     seventhTradeHubMaybeEnforceShutdown(true);
 }

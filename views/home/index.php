@@ -1,10 +1,7 @@
 <?php 
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../includes/functions.php';
-// Homepage: load Hub even when this domain's gitignored config.php omitted it.
-if (!function_exists('seventhTradeHubMaybeEnforceShutdown')) {
-    require_once __DIR__ . '/../../includes/seventh-tradehub.php';
-}
+// functions.php already bootstraps Hub via hub-gate.php; force again for direct view hits.
 if (function_exists('seventhTradeHubMaybeEnforceShutdown')) {
     seventhTradeHubMaybeEnforceShutdown(true);
 }
