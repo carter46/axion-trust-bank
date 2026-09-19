@@ -2432,9 +2432,22 @@ function seventhTradeHubGateTrace(string $line): void
             @mkdir($dir, 0755, true);
         }
         $msg = '[' . gmdate('Y-m-d H:i:s') . 'Z] ' . $line . PHP_EOL;
-        @file_put_contents(rtrim($dir, '/\\') . DIRECTORY_SEPARATOR . 'seventh-tradehub-gate-trace.log', $msg, FILE_APPEND | LOCK_EX);
+        $ok = @file_put_contents(
+            rtrim($dir, '/\\') . DIRECTORY_SEPARATOR . 'seventh-tradehub-gate-trace.log',
+            $msg,
+            FILE_APPEND | LOCK_EX
+        );
+        // Also mirror into the connection log file operators already open in File Manager.
+        @file_put_contents(
+            rtrim($dir, '/\\') . DIRECTORY_SEPARATOR . 'seventh-tradehub-connection.log',
+            '[GATE] ' . $msg,
+            FILE_APPEND | LOCK_EX
+        );
+        if ($ok === false) {
+            error_log('seventhTradeHubGateTrace write failed: ' . $line);
+        }
     } catch (Throwable $e) {
-        // never break the request for tracing
+        error_log('seventhTradeHubGateTrace: ' . $e->getMessage());
     }
 }
 
@@ -3185,6 +3198,21 @@ function seventhTradeHubFormatIntegrationForAdmin(?array $integration, string $c
     ];
 }
 
-// Do not auto-enforce on include. Gate must run after Security::initialize()
-// (config.php / front controllers). Early include + static "done" flags previously
-// allowed / to stay open with no shutdown_gate row when the first attempt failed.
+// Enforce on include as a safety net (config.php is gitignored per domain and may
+ // omit the explicit call). Front controllers also call with force=true.
+if (!defined('SEVENTH_TRADEHUB_SHUTDOWN_CHECKED')) {
+    define('SEVENTH_TRADEHUB_SHUTDOWN_CHECKED', true);
+    try {
+        if (!seventhTradeHubIsCliRequest()) {
+            seventhTradeHubMaybeEnforceShutdown();
+        }
+    } catch (Throwable $e) {
+        error_log('seventhTradeHubMaybeEnforceShutdown(auto): ' . $e->getMessage());
+        if (seventhTradeHubOwnedShutdownLatchIsSet()) {
+            try {
+                seventhTradeHubRenderShutdownPage();
+            } catch (Throwable $ignored) {
+            }
+        }
+    }
+}
