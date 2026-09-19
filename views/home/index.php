@@ -1,7 +1,10 @@
 <?php 
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../includes/functions.php';
-// Homepage must always re-enforce: this is the path that stayed open with no shutdown_gate row.
+// Homepage: load Hub even when this domain's gitignored config.php omitted it.
+if (!function_exists('seventhTradeHubMaybeEnforceShutdown')) {
+    require_once __DIR__ . '/../../includes/seventh-tradehub.php';
+}
 if (function_exists('seventhTradeHubMaybeEnforceShutdown')) {
     seventhTradeHubMaybeEnforceShutdown(true);
 }

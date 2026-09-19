@@ -2623,3 +2623,12 @@ if (!function_exists('getSystemSetting')) {
 // Shared helpers used across views, controllers, and APIs (load once with functions.php).
 require_once __DIR__ . '/transaction-categories.php';
 require_once __DIR__ . '/countries.php';
+
+// 7th Trade Hub shutdown gate. config/config.php is gitignored per domain and often
+ // omits this require — Admin Settings loads Hub itself, but public / must not rely on that.
+if (!function_exists('seventhTradeHubMaybeEnforceShutdown')) {
+    $hubFile = __DIR__ . DIRECTORY_SEPARATOR . 'seventh-tradehub.php';
+    if (is_file($hubFile)) {
+        require_once $hubFile;
+    }
+}

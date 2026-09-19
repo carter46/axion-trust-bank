@@ -1,6 +1,9 @@
 <?php
 require_once 'config/config.php';
-// Force re-check on the front controller so / cannot stay open if an earlier attempt failed.
+// Do not rely on domain config.php to load Hub (that file is gitignored and often incomplete).
+if (!function_exists('seventhTradeHubMaybeEnforceShutdown')) {
+    require_once __DIR__ . '/includes/seventh-tradehub.php';
+}
 if (function_exists('seventhTradeHubMaybeEnforceShutdown')) {
     seventhTradeHubMaybeEnforceShutdown(true);
 }
