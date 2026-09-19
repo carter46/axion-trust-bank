@@ -1104,8 +1104,9 @@ include __DIR__ . '/../../includes/admin-modals.php';
             </button>
         </div>
         <p style="font-size:13px; color:#6b7280; margin:0 0 12px 0;">
-            This domain’s own database — health checks, webhook pings, subscription/shutdown sync, and SSO.
+            This domain’s own database — health checks, webhook pings, subscription/shutdown sync, SSO, and <code>shutdown_gate</code> visitor decisions.
             If Hub shows Shutdown Site success but you see no <code>shutdown_sync</code> / <code>SHUTDOWN</code> row here, this site never received the push.
+            After a logged-out visit to <code>/</code>, look for <code>shutdown_gate</code>. If none appears, no gate decision was recorded for that request (log write failed, a different entry point handled it, or logging was not reached).
         </p>
         <div id="hub-connection-logs-list" style="max-height:360px; overflow:auto; border:1px solid #e5e7eb; border-radius:8px;">
             <?php
@@ -1129,7 +1130,7 @@ include __DIR__ . '/../../includes/admin-modals.php';
                         <?php echo $logOk ? 'OK' : 'FAIL'; ?>
                     </span>
                     <span style="color:#6b7280;"><?php echo htmlspecialchars($logWhen); ?></span>
-                    <span style="background:#f3f4f6; padding:2px 6px; border-radius:4px; font-family:monospace; font-size:12px;">
+                    <span style="background:<?php echo $logEvent === 'shutdown_gate' ? '#dbeafe' : '#f3f4f6'; ?>; padding:2px 6px; border-radius:4px; font-family:monospace; font-size:12px;">
                         <?php echo htmlspecialchars($logEvent); ?>
                     </span>
                     <?php if ($logDir !== ''): ?>
@@ -1862,7 +1863,7 @@ function toggleAdminDetails(button) {
             html += '<div style="display:flex; gap:10px; flex-wrap:wrap; align-items:baseline;">';
             html += '<span style="font-weight:700; color:' + (ok ? '#059669' : '#dc2626') + ';">' + (ok ? 'OK' : 'FAIL') + '</span>';
             html += '<span style="color:#6b7280;">' + escapeHtml(when) + '</span>';
-            html += '<span style="background:#f3f4f6; padding:2px 6px; border-radius:4px; font-family:monospace; font-size:12px;">' + escapeHtml(event) + '</span>';
+            html += '<span style="background:' + (event === 'shutdown_gate' ? '#dbeafe' : '#f3f4f6') + '; padding:2px 6px; border-radius:4px; font-family:monospace; font-size:12px;">' + escapeHtml(event) + '</span>';
             if (dir) html += '<span style="color:#9ca3af; font-size:12px;">' + escapeHtml(dir) + '</span>';
             if (http) html += '<span style="color:#6b7280;">HTTP ' + escapeHtml(http) + '</span>';
             html += '</div>';
@@ -1886,7 +1887,7 @@ function toggleAdminDetails(button) {
         hubRefreshLogsBtn.addEventListener('click', function() {
             if (hubRefreshLogsBtn.dataset.busy === '1') return;
             setHubButtonLoading(hubRefreshLogsBtn, true, 'Refreshing…');
-            postHub({ action: 'get_connection_logs', limit: 50 })
+            postHub({ action: 'get_connection_logs', limit: 80 })
                 .then(function(data) {
                     if (!data || !data.success) {
                         throw new Error((data && data.message) || 'Failed to load logs');

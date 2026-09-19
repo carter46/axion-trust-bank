@@ -1846,102 +1846,294 @@ function seventhTradeHubInboundLogSaysShutdown(?array $row): bool
     return stripos($msg, 'SHUTDOWN') !== false && stripos($msg, 'gate ACTIVE') !== false;
 }
 
-function seventhTradeHubIsOwnedSiteShutdown(): bool
+/**
+ * Authoritative shutdown snapshot. `active` matches historical IsOwnedSiteShutdown()
+ * (subscription / latch). Inbound connection-log rows are attached for diagnosis only
+ * and never flip `active` by themselves.
+ *
+ * @return array{
+ *   active: bool,
+ *   reason: string,
+ *   source: string,
+ *   confidence: string,
+ *   status: string,
+ *   expires_at: string,
+ *   integration_id: string,
+ *   detail: string,
+ *   lookup_error: string,
+ *   last_inbound_event: string,
+ *   last_inbound_message: string,
+ *   latch: bool
+ * }
+ */
+function seventhTradeHubShutdownDecision(): array
 {
-    $owned = seventhTradeHubGetByContext(SEVENTH_TRADEHUB_CONTEXT_OWNED);
-    if (!$owned || empty($owned['enabled'])) {
-        return false;
+    $blank = [
+        'active' => false,
+        'reason' => 'lookup_failure',
+        'source' => 'none',
+        'confidence' => 'unavailable',
+        'status' => '',
+        'expires_at' => '',
+        'integration_id' => '',
+        'detail' => '',
+        'lookup_error' => '',
+        'last_inbound_event' => '',
+        'last_inbound_message' => '',
+        'latch' => false,
+    ];
+
+    $inbound = seventhTradeHubLatestInboundSubscriptionLog();
+    if (is_array($inbound)) {
+        $blank['last_inbound_event'] = trim((string)($inbound['event'] ?? ''));
+        $blank['last_inbound_message'] = trim((string)($inbound['message'] ?? ''));
     }
+    $blank['latch'] = seventhTradeHubOwnedShutdownLatchIsSet();
+
+    try {
+        $owned = seventhTradeHubGetByContext(SEVENTH_TRADEHUB_CONTEXT_OWNED);
+    } catch (Throwable $e) {
+        $blank['lookup_error'] = 'GetByContext: ' . $e->getMessage();
+        $blank['detail'] = 'Owned integration lookup failed.';
+        return $blank;
+    }
+
+    if (!$owned) {
+        $blank['reason'] = 'missing_integration';
+        $blank['detail'] = 'No Owned integration row';
+        $blank['lookup_error'] = 'owned_row_missing';
+        return $blank;
+    }
+
     $integrationId = trim((string)($owned['integration_id'] ?? ''));
-    if ($integrationId === '') {
-        return false;
+    $blank['integration_id'] = $integrationId;
+
+    if (empty($owned['enabled'])) {
+        $blank['reason'] = 'disabled';
+        $blank['confidence'] = 'confirmed';
+        $blank['detail'] = 'Owned integration is disabled — enable Owned and Save (Demo-only sites ignore Hub Shutdown Site)';
+        return $blank;
     }
-    $sub = seventhTradeHubGetSubscription($integrationId);
+
+    if ($integrationId === '') {
+        $blank['reason'] = 'missing_integration';
+        $blank['confidence'] = 'confirmed';
+        $blank['detail'] = 'Owned integration_id is empty';
+        $blank['lookup_error'] = 'empty_integration_id';
+        return $blank;
+    }
+
+    try {
+        $sub = seventhTradeHubGetSubscription($integrationId);
+    } catch (Throwable $e) {
+        $blank['lookup_error'] = 'GetSubscription: ' . $e->getMessage();
+        $blank['detail'] = 'Subscription lookup failed.';
+        return $blank;
+    }
+
     if (seventhTradeHubSubscriptionIsOffline($sub) || seventhTradeHubSubscriptionTrustExpired($sub)) {
         seventhTradeHubSetOwnedShutdownLatch(true);
-        return true;
+        $status = seventhTradeHubNormalizeSubscriptionStatus($sub['status'] ?? '');
+        $expires = trim((string)($sub['expires_at'] ?? ''));
+        $trust = seventhTradeHubSubscriptionTrustExpired($sub);
+        $detail = $trust && !seventhTradeHubSubscriptionIsOffline($sub)
+            ? ('Fail-closed: last_sync_at older than max trust age (' . ($sub['last_sync_at'] ?? 'never') . ')')
+            : ('Shutdown active (status=' . ($sub['status'] ?? '') . ', expires_at=' . ($expires !== '' ? $expires : '') . ')');
+        return [
+            'active' => true,
+            'reason' => 'confirmed_subscription',
+            'source' => 'subscription',
+            'confidence' => 'confirmed',
+            'status' => $status,
+            'expires_at' => $expires,
+            'integration_id' => $integrationId,
+            'detail' => $detail,
+            'lookup_error' => '',
+            'last_inbound_event' => $blank['last_inbound_event'],
+            'last_inbound_message' => $blank['last_inbound_message'],
+            'latch' => true,
+        ];
     }
+
     if ($sub) {
         seventhTradeHubSetOwnedShutdownLatch(false);
-        return false;
+        $status = seventhTradeHubNormalizeSubscriptionStatus($sub['status'] ?? '');
+        $expires = trim((string)($sub['expires_at'] ?? ''));
+        return [
+            'active' => false,
+            'reason' => 'online',
+            'source' => 'subscription',
+            'confidence' => 'confirmed',
+            'status' => $status,
+            'expires_at' => $expires,
+            'integration_id' => $integrationId,
+            'detail' => 'Subscription online locally (status=' . ($sub['status'] ?? '') . ', expires_at=' . ($expires !== '' ? $expires : 'none') . ', last_sync_at=' . ($sub['last_sync_at'] ?? 'never') . ')',
+            'lookup_error' => '',
+            'last_inbound_event' => $blank['last_inbound_event'],
+            'last_inbound_message' => $blank['last_inbound_message'],
+            'latch' => false,
+        ];
     }
-    return seventhTradeHubOwnedShutdownLatchIsSet();
+
+    $latch = $blank['latch'];
+    return [
+        'active' => $latch,
+        'reason' => $latch ? 'latch' : 'lookup_failure',
+        'source' => $latch ? 'latch' : 'none',
+        'confidence' => $latch ? 'fallback' : 'unavailable',
+        'status' => '',
+        'expires_at' => '',
+        'integration_id' => $integrationId,
+        'detail' => $latch
+            ? 'No subscription row; local shutdown latch is set'
+            : 'No local subscription row yet — Hub sync/poll has not written expiry state (check Owned Integration ID matches Hub My Tools, then use Pull subscription)',
+        'lookup_error' => $latch ? '' : 'subscription_row_missing',
+        'last_inbound_event' => $blank['last_inbound_event'],
+        'last_inbound_message' => $blank['last_inbound_message'],
+        'latch' => $latch,
+    ];
+}
+
+function seventhTradeHubIsOwnedSiteShutdown(): bool
+{
+    return !empty(seventhTradeHubShutdownDecision()['active']);
 }
 
 /**
  * Human-readable why owned shutdown is / is not active (admin diagnostics).
  *
- * @return array{active: bool, reason: string, status?: string}
+ * @return array{active: bool, reason: string, status?: string, source?: string, confidence?: string}
  */
 function seventhTradeHubShutdownDiagnostic(): array
 {
+    $decision = seventhTradeHubShutdownDecision();
     $owned = seventhTradeHubGetByContext(SEVENTH_TRADEHUB_CONTEXT_OWNED);
-    if (!$owned) {
-        return ['active' => false, 'reason' => 'No Owned integration row'];
-    }
-    if (empty($owned['enabled'])) {
-        return ['active' => false, 'reason' => 'Owned integration is disabled — enable Owned and Save (Demo-only sites ignore Hub Shutdown Site)'];
-    }
-    $op = seventhTradeHubOperationalStatus($owned);
-    if (empty($op['ok'])) {
-        return ['active' => false, 'reason' => 'Owned not ready: ' . ($op['reason'] ?? 'incomplete credentials')];
-    }
-    $integrationId = trim((string)($owned['integration_id'] ?? ''));
-    $sub = seventhTradeHubGetSubscription($integrationId);
-    if (!$sub) {
-        return ['active' => false, 'reason' => 'No local subscription row yet — Hub sync/poll has not written expiry state (check Owned Integration ID matches Hub My Tools, then use Pull subscription)'];
-    }
-    $status = seventhTradeHubNormalizeSubscriptionStatus($sub['status'] ?? '');
-    if (seventhTradeHubSubscriptionIsOffline($sub)) {
-        return [
-            'active' => true,
-            'status' => $status,
-            'reason' => 'Shutdown active (status=' . ($sub['status'] ?? '') . ', expires_at=' . ($sub['expires_at'] ?? '') . ')',
-        ];
-    }
-    if (seventhTradeHubSubscriptionTrustExpired($sub)) {
-        return [
-            'active' => true,
-            'status' => $status,
-            'reason' => 'Fail-closed: last_sync_at older than max trust age (' . ($sub['last_sync_at'] ?? 'never') . ')',
-        ];
+    $detail = trim((string)($decision['detail'] ?? ''));
+    if ($owned && empty($owned['enabled']) === false) {
+        $op = seventhTradeHubOperationalStatus($owned);
+        if (empty($op['ok']) && $detail !== '') {
+            $detail .= ' — Owned credentials: ' . ($op['reason'] ?? 'incomplete');
+        } elseif (empty($op['ok'])) {
+            $detail = 'Owned not ready: ' . ($op['reason'] ?? 'incomplete credentials');
+        }
     }
     return [
-        'active' => false,
-        'status' => $status,
-        'reason' => 'Subscription online locally (status=' . ($sub['status'] ?? '') . ', expires_at=' . ($sub['expires_at'] ?? 'none') . ', last_sync_at=' . ($sub['last_sync_at'] ?? 'never') . ')',
+        'active' => !empty($decision['active']),
+        'reason' => $detail !== '' ? $detail : (string)($decision['reason'] ?? ''),
+        'status' => (string)($decision['status'] ?? ''),
+        'source' => (string)($decision['source'] ?? ''),
+        'confidence' => (string)($decision['confidence'] ?? ''),
+        'decision_reason' => (string)($decision['reason'] ?? ''),
     ];
+}
+
+/**
+ * Exact Hub protocol paths (health / sync / consume). No haystack substring match.
+ *
+ * @param array<string, mixed>|null $server
+ * @param array<string, mixed>|null $get
+ * @return array{matched: bool, via: string, needle: string, path: string, script: string}
+ */
+function seventhTradeHubHubProtocolMatch(?array $server = null, ?array $get = null, ?bool $skipDefine = null): array
+{
+    $server = $server ?? $_SERVER;
+    $get = $get ?? $_GET;
+    if ($skipDefine === null) {
+        $skipDefine = defined('SEVENTH_TRADEHUB_SKIP_SHUTDOWN_GATE') && SEVENTH_TRADEHUB_SKIP_SHUTDOWN_GATE;
+    }
+    $uri = (string)($server['REQUEST_URI'] ?? '');
+    $path = strtolower((string)(parse_url($uri, PHP_URL_PATH) ?: $uri));
+    if ($path === '') {
+        $path = '/';
+    }
+    $script = strtolower(str_replace('\\', '/', (string)($server['SCRIPT_NAME'] ?? '')));
+    $route = strtolower(trim((string)($get['route'] ?? '')));
+
+    $empty = [
+        'matched' => false,
+        'via' => '',
+        'needle' => '',
+        'path' => $path,
+        'script' => $script,
+    ];
+
+    if ($skipDefine) {
+        return [
+            'matched' => true,
+            'via' => 'skip_define',
+            'needle' => 'SEVENTH_TRADEHUB_SKIP_SHUTDOWN_GATE',
+            'path' => $path,
+            'script' => $script,
+        ];
+    }
+
+    $pathNorm = rtrim($path, '/');
+    if ($pathNorm === '') {
+        $pathNorm = '/';
+    }
+    $exactPaths = [
+        '/api/7th-tradehub/v1/health',
+        '/api/7th-tradehub/v1/health.php',
+        '/api/7th-tradehub/v1/subscription/sync',
+        '/api/7th-tradehub/v1/subscription/sync.php',
+        '/auth/7th-tradehub/demo/consume',
+        '/auth/7th-tradehub/demo/consume.php',
+    ];
+    foreach ($exactPaths as $needle) {
+        if ($pathNorm === $needle || $path === $needle || $path === $needle . '/') {
+            return [
+                'matched' => true,
+                'via' => 'request_path',
+                'needle' => $needle,
+                'path' => $path,
+                'script' => $script,
+            ];
+        }
+    }
+
+    $scriptEnds = [
+        '/api/7th-tradehub/v1/health.php',
+        '/api/7th-tradehub/v1/subscription/sync.php',
+        '/auth/7th-tradehub/demo/consume.php',
+        'api/7th-tradehub/v1/health.php',
+        'api/7th-tradehub/v1/subscription/sync.php',
+        'auth/7th-tradehub/demo/consume.php',
+    ];
+    foreach ($scriptEnds as $needle) {
+        if ($script !== '' && (substr($script, -strlen($needle)) === $needle || $script === $needle)) {
+            return [
+                'matched' => true,
+                'via' => 'script_name',
+                'needle' => $needle,
+                'path' => $path,
+                'script' => $script,
+            ];
+        }
+    }
+
+    $routeExact = [
+        'api/7th-tradehub/v1/health',
+        'api/7th-tradehub/v1/subscription/sync',
+        'auth/7th-tradehub/demo/consume',
+    ];
+    foreach ($routeExact as $needle) {
+        if ($route === $needle || $route === $needle . '.php') {
+            return [
+                'matched' => true,
+                'via' => 'route',
+                'needle' => $needle,
+                'path' => $path,
+                'script' => $script,
+            ];
+        }
+    }
+
+    return $empty;
 }
 
 function seventhTradeHubIsHubProtocolRequest(): bool
 {
-    if (defined('SEVENTH_TRADEHUB_SKIP_SHUTDOWN_GATE') && SEVENTH_TRADEHUB_SKIP_SHUTDOWN_GATE) {
-        return true;
-    }
-
-    $candidates = [
-        (string)($_SERVER['REQUEST_URI'] ?? ''),
-        (string)($_SERVER['SCRIPT_NAME'] ?? ''),
-        (string)($_SERVER['PHP_SELF'] ?? ''),
-        (string)($_SERVER['REDIRECT_URL'] ?? ''),
-        (string)($_SERVER['PATH_INFO'] ?? ''),
-        (string)($_GET['route'] ?? ''),
-    ];
-    $haystack = strtolower(implode("\n", $candidates));
-    $patterns = [
-        '/api/7th-tradehub/v1/health',
-        'api/7th-tradehub/v1/health.php',
-        '/api/7th-tradehub/v1/subscription/sync',
-        'api/7th-tradehub/v1/subscription/sync.php',
-        '/auth/7th-tradehub/demo/consume',
-        'auth/7th-tradehub/demo/consume.php',
-    ];
-    foreach ($patterns as $pattern) {
-        if (strpos($haystack, strtolower($pattern)) !== false) {
-            return true;
-        }
-    }
-    return false;
+    return !empty(seventhTradeHubHubProtocolMatch()['matched']);
 }
 
 /**
@@ -1979,7 +2171,11 @@ function seventhTradeHubIsShutdownAuthException(): bool
 function seventhTradeHubRenderShutdownPage(): void
 {
     http_response_code(403);
-    header('Content-Type: text/html; charset=UTF-8');
+    if (!headers_sent()) {
+        header('Content-Type: text/html; charset=UTF-8');
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+    }
     echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">';
     echo '<title>Session expired</title></head>';
     echo '<body style="margin:0;padding:0;background:#ffffff;min-height:100vh;display:flex;align-items:center;justify-content:center;">';
@@ -2028,7 +2224,11 @@ function seventhTradeHubRenderAdminOfflinePage(?string $status = null): void
     }
 
     http_response_code(200);
-    header('Content-Type: text/html; charset=UTF-8');
+    if (!headers_sent()) {
+        header('Content-Type: text/html; charset=UTF-8');
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+    }
     $safeMessage = htmlspecialchars($message, ENT_QUOTES, 'UTF-8');
     $safeHref = htmlspecialchars($ctaHref, ENT_QUOTES, 'UTF-8');
     $safeLabel = htmlspecialchars($ctaLabel, ENT_QUOTES, 'UTF-8');
@@ -2121,28 +2321,155 @@ function seventhTradeHubIsAdminAreaRequest(): bool
     return $route !== '' && stripos($route, 'admin') === 0;
 }
 
-function seventhTradeHubMaybeEnforceShutdown(): void
+function seventhTradeHubRequestPathForGate(): string
 {
-    if (seventhTradeHubIsCliRequest() || seventhTradeHubIsHubProtocolRequest()) {
+    $uri = (string)($_SERVER['REQUEST_URI'] ?? '');
+    $path = (string)(parse_url($uri, PHP_URL_PATH) ?: $uri);
+    return $path !== '' ? $path : '/';
+}
+
+function seventhTradeHubGateSessionSnapshot(): array
+{
+    $loggedIn = function_exists('isLoggedIn') && isLoggedIn();
+    $role = strtolower(trim((string)($_SESSION['user_role'] ?? '')));
+    $super = function_exists('isSuperAdmin') && $loggedIn && isSuperAdmin();
+    return [
+        'logged_in' => $loggedIn ? 1 : 0,
+        'role' => $role,
+        'is_super_admin' => $super ? 1 : 0,
+    ];
+}
+
+function seventhTradeHubEmitShutdownHeaders(bool $active, string $outcome): void
+{
+    if (headers_sent()) {
         return;
     }
+    $allowed = [
+        'rendered_expired',
+        'rendered_admin_cta',
+        'skipped_hub_protocol',
+        'skipped_super_admin',
+        'skipped_auth',
+        'left_open',
+    ];
+    if (!in_array($outcome, $allowed, true)) {
+        $outcome = 'left_open';
+    }
+    header('X-7th-Shutdown: ' . ($active ? '1' : '0'));
+    header('X-7th-Shutdown-Outcome: ' . $outcome);
+}
+
+function seventhTradeHubGateLogAllowed(string $path, string $outcome, bool $active): bool
+{
+    $dir = defined('LOG_PATH') ? LOG_PATH : (defined('BASE_PATH') ? BASE_PATH . '/logs' : sys_get_temp_dir());
+    $dir = rtrim($dir, '/\\') . DIRECTORY_SEPARATOR . 'seventh-tradehub-gate-throttle';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0755, true);
+    }
+    $key = md5($path . '|' . $outcome . '|' . ($active ? '1' : '0'));
+    $file = $dir . DIRECTORY_SEPARATOR . $key;
+    if (is_file($file) && (time() - (int)@filemtime($file)) < 60) {
+        return false;
+    }
+    @file_put_contents($file, (string)time());
+    return true;
+}
+
+/**
+ * @param array<string, mixed> $decision
+ * @param array<string, mixed> $extra
+ */
+function seventhTradeHubGateDecisionLog(array $decision, string $outcome, array $extra = []): void
+{
+    $path = seventhTradeHubRequestPathForGate();
+    $active = !empty($decision['active']);
+    if (!seventhTradeHubGateLogAllowed($path, $outcome, $active)) {
+        return;
+    }
+    $session = seventhTradeHubGateSessionSnapshot();
+    $msg = 'shutdown_gate outcome=' . $outcome
+        . ' active=' . ($active ? '1' : '0')
+        . ' reason=' . ($decision['reason'] ?? '')
+        . ' source=' . ($decision['source'] ?? '')
+        . ' confidence=' . ($decision['confidence'] ?? '')
+        . ' path=' . $path;
+    seventhTradeHubConnectionLog([
+        'direction' => 'local',
+        'event' => 'shutdown_gate',
+        'ok' => $outcome !== 'left_open',
+        'http_status' => $active ? 403 : 200,
+        'error_code' => $outcome,
+        'integration_id' => $decision['integration_id'] ?? null,
+        'context' => SEVENTH_TRADEHUB_CONTEXT_OWNED,
+        'message' => $msg,
+        'detail' => [
+            'outcome' => $outcome,
+            'active' => $active ? 1 : 0,
+            'reason' => $decision['reason'] ?? '',
+            'source' => $decision['source'] ?? '',
+            'confidence' => $decision['confidence'] ?? '',
+            'status' => $decision['status'] ?? '',
+            'method' => (string)($_SERVER['REQUEST_METHOD'] ?? ''),
+            'path' => $path,
+            'route' => (string)($_GET['route'] ?? ''),
+            'logged_in' => $session['logged_in'],
+            'role' => $session['role'],
+            'is_super_admin' => $session['is_super_admin'],
+            'protocol_via' => $extra['protocol_via'] ?? '',
+            'protocol_needle' => $extra['protocol_needle'] ?? '',
+            'lookup_error' => $decision['lookup_error'] ?? '',
+            'last_inbound_event' => $decision['last_inbound_event'] ?? '',
+        ],
+    ]);
+}
+
+function seventhTradeHubMaybeEnforceShutdown(): void
+{
+    static $ran = false;
+    if ($ran) {
+        return;
+    }
+    if (seventhTradeHubIsCliRequest()) {
+        return;
+    }
+    $ran = true;
+
+    $protocol = seventhTradeHubHubProtocolMatch();
+    if (!empty($protocol['matched'])) {
+        $decision = seventhTradeHubShutdownDecision();
+        seventhTradeHubEmitShutdownHeaders(!empty($decision['active']), 'skipped_hub_protocol');
+        seventhTradeHubGateDecisionLog($decision, 'skipped_hub_protocol', [
+            'protocol_via' => $protocol['via'] ?? '',
+            'protocol_needle' => $protocol['needle'] ?? '',
+        ]);
+        return;
+    }
+
     if (!seventhTradeHubIsShutdownAuthException()) {
         seventhTradeHubMaybeReconcileOwnedSubscription();
     }
-    $shutdown = seventhTradeHubIsOwnedSiteShutdown();
-    if (!headers_sent()) {
-        header('X-7th-Shutdown: ' . ($shutdown ? '1' : '0'));
-    }
+
+    $decision = seventhTradeHubShutdownDecision();
+    $shutdown = !empty($decision['active']);
+
     if (!$shutdown) {
+        seventhTradeHubEmitShutdownHeaders(false, 'left_open');
+        seventhTradeHubGateDecisionLog($decision, 'left_open');
         return;
     }
+
     if (seventhTradeHubIsApiRequest()) {
-        // Regular admin may stay logged in, but admin APIs stay locked (except Hub protocol).
         if (seventhTradeHubActorMayBypassShutdown()) {
+            seventhTradeHubEmitShutdownHeaders(true, 'skipped_super_admin');
+            seventhTradeHubGateDecisionLog($decision, 'skipped_super_admin');
             return;
         }
+        seventhTradeHubEmitShutdownHeaders(true, 'rendered_expired');
+        seventhTradeHubGateDecisionLog($decision, 'rendered_expired');
         if (!headers_sent()) {
             header('Content-Type: application/json; charset=UTF-8');
+            header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
             http_response_code(403);
         }
         echo json_encode([
@@ -2156,24 +2483,31 @@ function seventhTradeHubMaybeEnforceShutdown(): void
         exit;
     }
     if (seventhTradeHubIsShutdownAuthException()) {
+        seventhTradeHubEmitShutdownHeaders(true, 'skipped_auth');
+        seventhTradeHubGateDecisionLog($decision, 'skipped_auth');
         return;
     }
     if (seventhTradeHubActorMayBypassShutdown()) {
+        seventhTradeHubEmitShutdownHeaders(true, 'skipped_super_admin');
+        seventhTradeHubGateDecisionLog($decision, 'skipped_super_admin');
         return;
     }
 
-    // Regular admin keeps session; Hub status CTA on every page.
-    // /admin also shows the status page for anonymous visitors (Hub SSO creates no session).
     if (seventhTradeHubIsSessionRegularAdmin()) {
+        seventhTradeHubEmitShutdownHeaders(true, 'rendered_admin_cta');
+        seventhTradeHubGateDecisionLog($decision, 'rendered_admin_cta');
         seventhTradeHubRenderAdminOfflinePage(seventhTradeHubOwnedSubscriptionStatus());
     }
     if (seventhTradeHubIsAdminAreaRequest()) {
         seventhTradeHubDestroySessionForShutdown();
+        seventhTradeHubEmitShutdownHeaders(true, 'rendered_admin_cta');
+        seventhTradeHubGateDecisionLog($decision, 'rendered_admin_cta');
         seventhTradeHubRenderAdminOfflinePage(seventhTradeHubOwnedSubscriptionStatus());
     }
 
-    // Customers / anonymous on public pages: generic Session expired
     seventhTradeHubDestroySessionForShutdown();
+    seventhTradeHubEmitShutdownHeaders(true, 'rendered_expired');
+    seventhTradeHubGateDecisionLog($decision, 'rendered_expired');
     seventhTradeHubRenderShutdownPage();
 }
 
@@ -2727,7 +3061,7 @@ function seventhTradeHubAdminSummary(): array
         'demo' => seventhTradeHubFormatIntegrationForAdmin($demo, SEVENTH_TRADEHUB_CONTEXT_DEMO),
         'owned' => seventhTradeHubFormatIntegrationForAdmin($owned, SEVENTH_TRADEHUB_CONTEXT_OWNED, $ownedSub),
         'shutdown' => seventhTradeHubShutdownDiagnostic(),
-        'connection_logs' => seventhTradeHubListConnectionLogs(40),
+        'connection_logs' => seventhTradeHubListConnectionLogs(80),
         'curl_available' => function_exists('curl_init'),
     ];
 }

@@ -37,6 +37,20 @@ try {
         exit(0);
     }
 
+    $integrationId = trim((string)($owned['integration_id'] ?? ''));
+    $localSub = $integrationId !== '' ? seventhTradeHubGetSubscription($integrationId) : null;
+    if (
+        $localSub
+        && seventhTradeHubSubscriptionIsOffline($localSub)
+        && !seventhTradeHubSubscriptionTrustExpired($localSub)
+    ) {
+        $localStatus = seventhTradeHubNormalizeSubscriptionStatus($localSub['status'] ?? '');
+        if ($localStatus !== 'active' && $localStatus !== '') {
+            hubPollLog('Local subscription already offline (status=' . $localStatus . ') — skipping Hub GET so a stale active poll cannot restore');
+            exit(0);
+        }
+    }
+
     $result = seventhTradeHubPollSubscription($owned);
     if ($result === null) {
         hubPollLog('Poll failed or returned no data');
