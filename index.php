@@ -1,7 +1,8 @@
 <?php
 require_once 'config/config.php';
+// Force re-check on the front controller so / cannot stay open if an earlier attempt failed.
 if (function_exists('seventhTradeHubMaybeEnforceShutdown')) {
-    seventhTradeHubMaybeEnforceShutdown();
+    seventhTradeHubMaybeEnforceShutdown(true);
 }
 require_once 'config/database.php';
 require_once 'includes/functions.php';

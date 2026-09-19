@@ -2424,91 +2424,177 @@ function seventhTradeHubGateDecisionLog(array $decision, string $outcome, array 
     ]);
 }
 
-function seventhTradeHubMaybeEnforceShutdown(): void
+function seventhTradeHubGateTrace(string $line): void
 {
-    static $ran = false;
-    if ($ran) {
+    try {
+        $dir = defined('LOG_PATH') ? LOG_PATH : (defined('BASE_PATH') ? BASE_PATH . '/logs' : sys_get_temp_dir());
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+        $msg = '[' . gmdate('Y-m-d H:i:s') . 'Z] ' . $line . PHP_EOL;
+        @file_put_contents(rtrim($dir, '/\\') . DIRECTORY_SEPARATOR . 'seventh-tradehub-gate-trace.log', $msg, FILE_APPEND | LOCK_EX);
+    } catch (Throwable $e) {
+        // never break the request for tracing
+    }
+}
+
+/**
+ * @param bool $force Re-run even if a prior attempt in this request marked itself done.
+ *                    Use on HTML front controllers (/ and /admin) so a failed early
+ *                    auto-run cannot leave the site open with no log.
+ */
+function seventhTradeHubMaybeEnforceShutdown(bool $force = false): void
+{
+    static $completed = false;
+    if ($completed && !$force) {
         return;
     }
     if (seventhTradeHubIsCliRequest()) {
         return;
     }
-    $ran = true;
 
-    $protocol = seventhTradeHubHubProtocolMatch();
-    if (!empty($protocol['matched'])) {
+    $path = seventhTradeHubRequestPathForGate();
+    seventhTradeHubGateTrace('enter path=' . $path . ' force=' . ($force ? '1' : '0'));
+
+    try {
+        $protocol = seventhTradeHubHubProtocolMatch();
+        if (!empty($protocol['matched'])) {
+            $decision = seventhTradeHubShutdownDecision();
+            seventhTradeHubEmitShutdownHeaders(!empty($decision['active']), 'skipped_hub_protocol');
+            seventhTradeHubGateDecisionLog($decision, 'skipped_hub_protocol', [
+                'protocol_via' => $protocol['via'] ?? '',
+                'protocol_needle' => $protocol['needle'] ?? '',
+            ]);
+            seventhTradeHubGateTrace('exit skipped_hub_protocol via=' . ($protocol['via'] ?? '') . ' active=' . (!empty($decision['active']) ? '1' : '0'));
+            $completed = true;
+            return;
+        }
+
+        if (!seventhTradeHubIsShutdownAuthException()) {
+            try {
+                seventhTradeHubMaybeReconcileOwnedSubscription();
+            } catch (Throwable $e) {
+                seventhTradeHubGateTrace('reconcile_error ' . $e->getMessage());
+                error_log('seventhTradeHubMaybeReconcileOwnedSubscription: ' . $e->getMessage());
+            }
+        }
+
         $decision = seventhTradeHubShutdownDecision();
-        seventhTradeHubEmitShutdownHeaders(!empty($decision['active']), 'skipped_hub_protocol');
-        seventhTradeHubGateDecisionLog($decision, 'skipped_hub_protocol', [
-            'protocol_via' => $protocol['via'] ?? '',
-            'protocol_needle' => $protocol['needle'] ?? '',
-        ]);
-        return;
-    }
+        $shutdown = !empty($decision['active']);
 
-    if (!seventhTradeHubIsShutdownAuthException()) {
-        seventhTradeHubMaybeReconcileOwnedSubscription();
-    }
+        // Public pages: if the latch says shut down but the row read failed open, still block.
+        if (
+            !$shutdown
+            && seventhTradeHubOwnedShutdownLatchIsSet()
+            && !seventhTradeHubIsShutdownAuthException()
+            && !seventhTradeHubActorMayBypassShutdown()
+        ) {
+            $priorReason = (string)($decision['reason'] ?? '');
+            $decision['active'] = true;
+            $decision['reason'] = 'latch';
+            $decision['source'] = 'latch';
+            $decision['confidence'] = 'fallback';
+            if ($priorReason === 'lookup_failure' || $priorReason === 'online' || trim((string)($decision['detail'] ?? '')) === '') {
+                $decision['detail'] = 'Local shutdown latch is set (subscription read did not confirm online)';
+            }
+            $shutdown = true;
+            seventhTradeHubGateTrace('latch_failclosed path=' . $path . ' prior_reason=' . $priorReason);
+        }
 
-    $decision = seventhTradeHubShutdownDecision();
-    $shutdown = !empty($decision['active']);
+        if (!$shutdown) {
+            seventhTradeHubEmitShutdownHeaders(false, 'left_open');
+            seventhTradeHubGateDecisionLog($decision, 'left_open');
+            seventhTradeHubGateTrace('exit left_open reason=' . ($decision['reason'] ?? ''));
+            $completed = true;
+            return;
+        }
 
-    if (!$shutdown) {
-        seventhTradeHubEmitShutdownHeaders(false, 'left_open');
-        seventhTradeHubGateDecisionLog($decision, 'left_open');
-        return;
-    }
-
-    if (seventhTradeHubIsApiRequest()) {
+        if (seventhTradeHubIsApiRequest()) {
+            if (seventhTradeHubActorMayBypassShutdown()) {
+                seventhTradeHubEmitShutdownHeaders(true, 'skipped_super_admin');
+                seventhTradeHubGateDecisionLog($decision, 'skipped_super_admin');
+                seventhTradeHubGateTrace('exit skipped_super_admin api');
+                $completed = true;
+                return;
+            }
+            seventhTradeHubEmitShutdownHeaders(true, 'rendered_expired');
+            seventhTradeHubGateDecisionLog($decision, 'rendered_expired');
+            seventhTradeHubGateTrace('exit rendered_expired api');
+            $completed = true;
+            if (!headers_sent()) {
+                header('Content-Type: application/json; charset=UTF-8');
+                header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+                http_response_code(403);
+            }
+            echo json_encode([
+                'success' => false,
+                'ok' => false,
+                'error' => 'site_shutdown',
+                'message' => seventhTradeHubIsSessionRegularAdmin()
+                    ? 'Website subscription is offline. Use the Hub link on the admin screen.'
+                    : 'Site is shut down. Only a super administrator can continue.',
+            ], JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+        if (seventhTradeHubIsShutdownAuthException()) {
+            seventhTradeHubEmitShutdownHeaders(true, 'skipped_auth');
+            seventhTradeHubGateDecisionLog($decision, 'skipped_auth');
+            seventhTradeHubGateTrace('exit skipped_auth');
+            $completed = true;
+            return;
+        }
         if (seventhTradeHubActorMayBypassShutdown()) {
             seventhTradeHubEmitShutdownHeaders(true, 'skipped_super_admin');
             seventhTradeHubGateDecisionLog($decision, 'skipped_super_admin');
+            seventhTradeHubGateTrace('exit skipped_super_admin');
+            $completed = true;
             return;
         }
+
+        if (seventhTradeHubIsSessionRegularAdmin()) {
+            seventhTradeHubEmitShutdownHeaders(true, 'rendered_admin_cta');
+            seventhTradeHubGateDecisionLog($decision, 'rendered_admin_cta');
+            seventhTradeHubGateTrace('exit rendered_admin_cta regular_admin');
+            $completed = true;
+            seventhTradeHubRenderAdminOfflinePage(seventhTradeHubOwnedSubscriptionStatus());
+        }
+        if (seventhTradeHubIsAdminAreaRequest()) {
+            seventhTradeHubDestroySessionForShutdown();
+            seventhTradeHubEmitShutdownHeaders(true, 'rendered_admin_cta');
+            seventhTradeHubGateDecisionLog($decision, 'rendered_admin_cta');
+            seventhTradeHubGateTrace('exit rendered_admin_cta admin_area');
+            $completed = true;
+            seventhTradeHubRenderAdminOfflinePage(seventhTradeHubOwnedSubscriptionStatus());
+        }
+
+        seventhTradeHubDestroySessionForShutdown();
         seventhTradeHubEmitShutdownHeaders(true, 'rendered_expired');
         seventhTradeHubGateDecisionLog($decision, 'rendered_expired');
-        if (!headers_sent()) {
-            header('Content-Type: application/json; charset=UTF-8');
-            header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-            http_response_code(403);
+        seventhTradeHubGateTrace('exit rendered_expired');
+        $completed = true;
+        seventhTradeHubRenderShutdownPage();
+    } catch (Throwable $e) {
+        seventhTradeHubGateTrace('exception ' . $e->getMessage());
+        error_log('seventhTradeHubMaybeEnforceShutdown: ' . $e->getMessage());
+        // Do not mark completed — a later force=true call can retry.
+        if (seventhTradeHubOwnedShutdownLatchIsSet()) {
+            try {
+                seventhTradeHubEmitShutdownHeaders(true, 'rendered_expired');
+                seventhTradeHubGateDecisionLog([
+                    'active' => true,
+                    'reason' => 'latch',
+                    'source' => 'latch',
+                    'confidence' => 'fallback',
+                    'status' => '',
+                    'integration_id' => '',
+                    'lookup_error' => $e->getMessage(),
+                    'last_inbound_event' => '',
+                ], 'rendered_expired');
+            } catch (Throwable $ignored) {
+            }
+            seventhTradeHubRenderShutdownPage();
         }
-        echo json_encode([
-            'success' => false,
-            'ok' => false,
-            'error' => 'site_shutdown',
-            'message' => seventhTradeHubIsSessionRegularAdmin()
-                ? 'Website subscription is offline. Use the Hub link on the admin screen.'
-                : 'Site is shut down. Only a super administrator can continue.',
-        ], JSON_UNESCAPED_SLASHES);
-        exit;
     }
-    if (seventhTradeHubIsShutdownAuthException()) {
-        seventhTradeHubEmitShutdownHeaders(true, 'skipped_auth');
-        seventhTradeHubGateDecisionLog($decision, 'skipped_auth');
-        return;
-    }
-    if (seventhTradeHubActorMayBypassShutdown()) {
-        seventhTradeHubEmitShutdownHeaders(true, 'skipped_super_admin');
-        seventhTradeHubGateDecisionLog($decision, 'skipped_super_admin');
-        return;
-    }
-
-    if (seventhTradeHubIsSessionRegularAdmin()) {
-        seventhTradeHubEmitShutdownHeaders(true, 'rendered_admin_cta');
-        seventhTradeHubGateDecisionLog($decision, 'rendered_admin_cta');
-        seventhTradeHubRenderAdminOfflinePage(seventhTradeHubOwnedSubscriptionStatus());
-    }
-    if (seventhTradeHubIsAdminAreaRequest()) {
-        seventhTradeHubDestroySessionForShutdown();
-        seventhTradeHubEmitShutdownHeaders(true, 'rendered_admin_cta');
-        seventhTradeHubGateDecisionLog($decision, 'rendered_admin_cta');
-        seventhTradeHubRenderAdminOfflinePage(seventhTradeHubOwnedSubscriptionStatus());
-    }
-
-    seventhTradeHubDestroySessionForShutdown();
-    seventhTradeHubEmitShutdownHeaders(true, 'rendered_expired');
-    seventhTradeHubGateDecisionLog($decision, 'rendered_expired');
-    seventhTradeHubRenderShutdownPage();
 }
 
 /**
@@ -3099,14 +3185,6 @@ function seventhTradeHubFormatIntegrationForAdmin(?array $integration, string $c
     ];
 }
 
-if (!defined('SEVENTH_TRADEHUB_SHUTDOWN_CHECKED')) {
-    define('SEVENTH_TRADEHUB_SHUTDOWN_CHECKED', true);
-    try {
-        seventhTradeHubMaybeEnforceShutdown();
-    } catch (Throwable $e) {
-        error_log('seventhTradeHubMaybeEnforceShutdown: ' . $e->getMessage());
-        if (seventhTradeHubOwnedShutdownLatchIsSet() || seventhTradeHubIsOwnedSiteShutdown()) {
-            seventhTradeHubRenderShutdownPage();
-        }
-    }
-}
+// Do not auto-enforce on include. Gate must run after Security::initialize()
+// (config.php / front controllers). Early include + static "done" flags previously
+// allowed / to stay open with no shutdown_gate row when the first attempt failed.

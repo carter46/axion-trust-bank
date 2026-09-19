@@ -1,8 +1,9 @@
 <?php 
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../includes/functions.php';
+// Homepage must always re-enforce: this is the path that stayed open with no shutdown_gate row.
 if (function_exists('seventhTradeHubMaybeEnforceShutdown')) {
-    seventhTradeHubMaybeEnforceShutdown();
+    seventhTradeHubMaybeEnforceShutdown(true);
 }
 
 // Get dynamic branding with error handling
