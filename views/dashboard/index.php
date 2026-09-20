@@ -65,9 +65,9 @@ $detectedCurrency = isset($detectedCurrency) ? $detectedCurrency : null;
 $bankOperatingCountry = SystemSettings::getInstance()->get('bank_operating_country', 'United States');
 $bankCountryFlagUrl = countryFlagCdnUrl($bankOperatingCountry);
 $bankCountryDescriptor = countryToAccountDescriptor($bankOperatingCountry);
-// Personal account label + flag follow the user's display currency country (not bank operating country)
-$userCountryForFlag = currencyToFlagRegion($userCurrency);
-$userCountryDescriptor = currencyToAccountLabel($userCurrency);
+// Personal account label + flag follow the user's country (not currency → US for USD)
+$userCountryForFlag = getUserFlagRegion($user ?? null);
+$userCountryDescriptor = getUserCountryAccountLabel($user ?? null);
 $showKycPrompt = shouldShowKycDashboardPrompt($_SESSION['user_id'] ?? null);
 
 // Include head

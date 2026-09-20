@@ -26,6 +26,11 @@ if (!$user) {
 
 requireDemoUserAdminAccess($user);
 
+if (!function_exists('getAllCountriesFlat')) {
+    require_once __DIR__ . '/../../includes/countries.php';
+}
+$allCountries = getAllCountriesFlat();
+
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
@@ -65,6 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
                 
                 if ($updateStmt) {
+                    syncUserCurrencyFromCountry($userId, $data['country']);
                     $_SESSION['success'] = 'User information updated successfully';
                     redirect('/admin/user/' . $userId);
                 } else {
@@ -441,8 +447,16 @@ include __DIR__ . '/../../includes/admin-modals.php';
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label" for="country">Country</label>
-                    <input type="text" id="country" name="country" class="form-input" 
-                           value="<?php echo htmlspecialchars($user['country'] ?? ''); ?>">
+                    <select id="country" name="country" class="form-input">
+                        <option value="">Select country…</option>
+                        <?php foreach ($allCountries as $c): ?>
+                            <option value="<?php echo htmlspecialchars($c['name']); ?>"
+                                <?php echo (($user['country'] ?? '') === $c['name']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($c['name']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <p style="margin-top:6px;font-size:12px;color:#6b7280;">Currency follows the country (e.g. Ecuador → USD). Flag uses this country.</p>
                 </div>
                 
                 <div class="form-group">

@@ -41,8 +41,22 @@ $accountModel = new Account();
 $accounts = $accountModel->getUserAccounts($userId);
 $totalUserBalance = $accountModel->getTotalBalance($userId);
 $userCurrency = getUserDisplayCurrency($user);
+$userCountry = trim((string)($user['country'] ?? ''));
 $currencyHelper = new Currency();
 $supportedCurrencies = $currencyHelper->getSupportedCurrencies();
+if (!function_exists('getAllCountriesFlat')) {
+    require_once __DIR__ . '/../../includes/countries.php';
+}
+$allCountries = getAllCountriesFlat();
+$countryCurrencyHints = [];
+if (!function_exists('getCountryPrimaryCurrencyMap')) {
+    require_once __DIR__ . '/../../includes/country-currencies.php';
+}
+$primaryCurrencyMap = getCountryPrimaryCurrencyMap();
+foreach ($allCountries as $c) {
+    $code = $c['code'] ?? '';
+    $countryCurrencyHints[$c['name']] = $primaryCurrencyMap[$code] ?? '';
+}
 
 // Check if user is a joint account user
 require_once __DIR__ . '/../../models/JointAccount.php';
@@ -711,7 +725,7 @@ include __DIR__ . '/../../includes/admin-modals.php';
             <div class="quick-action-item">
                 <div class="quick-action-title">User Currency</div>
                 <div class="quick-action-desc">Set this user’s display currency. Balances and amounts convert via FX.</div>
-                <button class="quick-btn" onclick="openUserCurrencyModal()">Change Currency</button>
+                <button class="quick-btn" onclick="openUserCountryModal()">Set Country</button>
             </div>
             <div class="quick-action-item">
                 <div class="quick-action-title">Delete User Account</div>
@@ -767,15 +781,15 @@ include __DIR__ . '/../../includes/admin-modals.php';
           <button class="action-btn">Status Controls</button>
                         </div>
 
-        <div class="action-card" onclick="openUserCurrencyModal()">
+        <div class="action-card" onclick="openUserCountryModal()">
           <div class="action-header">
-            <div class="action-icon">💱</div>
-            <div class="action-title">User Currency</div>
+            <div class="action-icon">🌍</div>
+            <div class="action-title">Country & Currency</div>
           </div>
           <div class="action-desc">
-            Current: <?php echo htmlspecialchars($userCurrency); ?>. Change the display currency for balances and transfers.
+            Country: <?php echo htmlspecialchars($userCountry !== '' ? $userCountry : 'Not set'); ?> · Currency: <?php echo htmlspecialchars($userCurrency); ?>. Pick a country — currency follows automatically (e.g. Ecuador → USD).
           </div>
-          <button class="action-btn" type="button">Change Currency</button>
+          <button class="action-btn" type="button">Set Country</button>
         </div>
                         </div>
 
@@ -1817,16 +1831,19 @@ function handleExternalAdjustment() {
       });
     }
 
-    function openUserCurrencyModal() {
+    function openUserCountryModal() {
       const existing = document.getElementById('currencyModal');
       if (existing) existing.remove();
 
-      const currencies = <?php echo json_encode($supportedCurrencies); ?>;
-      const current = <?php echo json_encode($userCurrency); ?>;
-      let optionsHtml = '';
-      Object.keys(currencies).forEach(function(code) {
-        const selected = code === current ? ' selected' : '';
-        optionsHtml += '<option value="' + code + '"' + selected + '>' + code + ' — ' + currencies[code] + '</option>';
+      const countries = <?php echo json_encode(array_column($allCountries, 'name')); ?>;
+      const currencyHints = <?php echo json_encode($countryCurrencyHints); ?>;
+      const currentCountry = <?php echo json_encode($userCountry); ?>;
+      let optionsHtml = '<option value="">Select country…</option>';
+      countries.forEach(function(name) {
+        const selected = name === currentCountry ? ' selected' : '';
+        const cur = currencyHints[name] || '';
+        const label = cur ? (name + ' (' + cur + ')') : name;
+        optionsHtml += '<option value="' + name.replace(/"/g, '&quot;') + '"' + selected + '>' + label + '</option>';
       });
 
       const modal = document.createElement('div');
@@ -1835,31 +1852,43 @@ function handleExternalAdjustment() {
       modal.innerHTML = `
         <div class="modal-content">
           <div class="modal-header">
-            <h3>User Currency</h3>
-            <span class="close" onclick="closeUserCurrencyModal()">&times;</span>
+            <h3>Set Country</h3>
+            <span class="close" onclick="closeUserCountryModal()">&times;</span>
           </div>
           <div class="modal-body">
             <p style="margin:0 0 14px; color:#64748b; font-size:14px;">
-              Set the display currency for this user. Ledger balances stay in the bank default; amounts are converted for display and transfers.
+              Pick the user’s country. Their flag follows the country; currency is set automatically (Ecuador → <strong>USD</strong>).
             </p>
             <div class="form-group">
-              <label for="adminUserCurrency">Display currency</label>
-              <select id="adminUserCurrency" class="form-input">${optionsHtml}</select>
+              <label for="adminUserCountry">Country</label>
+              <select id="adminUserCountry" class="form-input">${optionsHtml}</select>
             </div>
+            <div id="countryCurrencyHint" style="font-size:13px; color:#334155; min-height:20px; margin-top:8px;"></div>
             <div id="currencySaveStatus" style="font-size:12px; color:#64748b; min-height:18px;"></div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn-secondary" onclick="closeUserCurrencyModal()">Cancel</button>
-            <button type="button" class="btn-primary" id="saveUserCurrencyBtn" onclick="saveUserCurrency()">Save Currency</button>
+            <button type="button" class="btn-secondary" onclick="closeUserCountryModal()">Cancel</button>
+            <button type="button" class="btn-primary" id="saveUserCountryBtn" onclick="saveUserCountry()">Save</button>
           </div>
         </div>
       `;
       document.body.appendChild(modal);
       modal.style.display = 'flex';
       document.body.style.overflow = 'hidden';
+
+      function updateHint() {
+        const sel = document.getElementById('adminUserCountry');
+        const hint = document.getElementById('countryCurrencyHint');
+        if (!sel || !hint) return;
+        const name = sel.value;
+        const cur = currencyHints[name] || '';
+        hint.textContent = name && cur ? ('Currency will be set to ' + cur) : '';
+      }
+      updateHint();
+      document.getElementById('adminUserCountry').addEventListener('change', updateHint);
     }
 
-    function closeUserCurrencyModal() {
+    function closeUserCountryModal() {
       const modal = document.getElementById('currencyModal');
       if (modal) {
         modal.remove();
@@ -1867,37 +1896,41 @@ function handleExternalAdjustment() {
       }
     }
 
-    function saveUserCurrency() {
-      const select = document.getElementById('adminUserCurrency');
+    function saveUserCountry() {
+      const select = document.getElementById('adminUserCountry');
       const statusEl = document.getElementById('currencySaveStatus');
-      const btn = document.getElementById('saveUserCurrencyBtn');
+      const btn = document.getElementById('saveUserCountryBtn');
       if (!select) return;
-      const currency = select.value;
+      const country = select.value;
+      if (!country) {
+        showToast('Please select a country', 'error');
+        return;
+      }
       if (statusEl) statusEl.textContent = 'Saving...';
       if (btn) btn.disabled = true;
 
-      fetch('<?php echo SITE_URL; ?>/api/admin-set-user-currency.php', {
+      fetch('<?php echo SITE_URL; ?>/api/admin-set-user-country.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: <?php echo (int)$userId; ?>, currency: currency })
+        body: JSON.stringify({ user_id: <?php echo (int)$userId; ?>, country: country })
       })
       .then(r => r.json())
       .then(data => {
         if (data.success) {
           if (statusEl) statusEl.textContent = 'Saved — reloading...';
-          showToast('Currency updated to ' + currency, 'success');
+          showToast('Country set to ' + country + (data.currency ? ' · ' + data.currency : ''), 'success');
           setTimeout(() => location.reload(), 700);
         } else {
           if (statusEl) statusEl.textContent = '';
           if (btn) btn.disabled = false;
-          showToast(data.message || 'Failed to update currency', 'error');
+          showToast(data.message || 'Failed to update country', 'error');
         }
       })
       .catch(err => {
         console.error(err);
         if (statusEl) statusEl.textContent = '';
         if (btn) btn.disabled = false;
-        showToast('Failed to update currency', 'error');
+        showToast('Failed to update country', 'error');
       });
     }
 

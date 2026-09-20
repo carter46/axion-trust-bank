@@ -1,0 +1,85 @@
+<?php
+/**
+ * Admin: set user country (flag) and auto-apply that country's primary currency (EC → USD).
+ */
+error_reporting(0);
+ini_set('display_errors', 0);
+ob_start();
+
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../includes/functions.php';
+if (!function_exists('getCountriesData')) {
+    require_once __DIR__ . '/../includes/countries.php';
+}
+
+ob_end_clean();
+header('Content-Type: application/json');
+
+if (!isLoggedIn() || !isAdmin()) {
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    exit;
+}
+
+$input = json_decode(file_get_contents('php://input'), true);
+if (!is_array($input)) {
+    $input = $_POST;
+}
+
+$targetUserId = intval($input['user_id'] ?? 0);
+$country = trim((string)($input['country'] ?? ''));
+
+if ($targetUserId <= 0) {
+    echo json_encode(['success' => false, 'message' => 'Invalid user ID']);
+    exit;
+}
+
+if ($country === '') {
+    echo json_encode(['success' => false, 'message' => 'Country is required']);
+    exit;
+}
+
+enforceDemoUserAdminAccessForUserId($targetUserId);
+
+$resolved = getCountryByName($country) ?: (preg_match('/^[A-Za-z]{2}$/', $country) ? getCountryByCode($country) : null);
+if (!$resolved) {
+    echo json_encode(['success' => false, 'message' => 'Unknown country']);
+    exit;
+}
+$countryName = $resolved['name'];
+
+try {
+    $db = Database::getInstance();
+    $stmt = $db->query("SELECT id, email, full_name, role FROM users WHERE id = ? LIMIT 1", [$targetUserId]);
+    $target = $stmt->fetch();
+    if (!$target || ($target['role'] ?? '') === 'admin') {
+        echo json_encode(['success' => false, 'message' => 'User not found']);
+        exit;
+    }
+
+    $db->query(
+        "UPDATE users SET country = ?, updated_at = NOW() WHERE id = ?",
+        [$countryName, $targetUserId]
+    );
+
+    syncUserCurrencyFromCountry($targetUserId, $countryName);
+
+    $after = $db->query("SELECT currency, country FROM users WHERE id = ? LIMIT 1", [$targetUserId])->fetch();
+    $currency = strtoupper(trim((string)($after['currency'] ?? '')));
+
+    logActivity(
+        $_SESSION['user_id'],
+        'ADMIN_SET_USER_COUNTRY',
+        "Set country={$countryName} (currency={$currency}) for user {$target['email']} (ID: {$targetUserId})"
+    );
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'User country updated successfully',
+        'country' => $countryName,
+        'currency' => $currency,
+        'display_currency' => $currency,
+    ]);
+} catch (Exception $e) {
+    error_log('admin-set-user-country error: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'Failed to update user country']);
+}

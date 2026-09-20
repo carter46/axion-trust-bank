@@ -23,6 +23,11 @@ if (!$user) {
     exit;
 }
 
+if (!function_exists('getAllCountriesFlat')) {
+    require_once __DIR__ . '/../../includes/countries.php';
+}
+$allCountries = getAllCountriesFlat();
+
 // Include head
 include __DIR__ . '/../../includes/head.php';
 include __DIR__ . '/../../includes/sidebar.php';
@@ -350,7 +355,15 @@ include __DIR__ . '/../../includes/sidebar.php';
                 
                 <div class="form-group">
                     <label for="country">Country *</label>
-                    <input type="text" class="form-control" id="country" name="country" value="<?php echo htmlspecialchars($user['country']); ?>" required>
+                    <select class="form-control" id="country" name="country" required>
+                        <option value="">Select country…</option>
+                        <?php foreach ($allCountries as $c): ?>
+                            <option value="<?php echo htmlspecialchars($c['name']); ?>"
+                                <?php echo (($user['country'] ?? '') === $c['name']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($c['name']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
                 
                 <div class="form-group">

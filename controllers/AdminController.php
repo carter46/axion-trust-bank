@@ -592,9 +592,26 @@ class AdminController {
                 'role' => 'user' // Always set to 'user' - admins are created via admin-settings page
             ];
             $data['currency'] = strtoupper(trim($data['currency'] ?: DEFAULT_CURRENCY));
-            // Prefer posted country; otherwise derive from display currency
+            // Country first: pick country for the flag; currency follows (Ecuador → USD)
             $postedCountry = Security::sanitize($_POST['country'] ?? '');
-            $data['country'] = $postedCountry !== '' ? $postedCountry : currencyToPrimaryCountry($data['currency']);
+            if ($postedCountry !== '') {
+                if (!function_exists('getCountryByName')) {
+                    require_once __DIR__ . '/../includes/countries.php';
+                }
+                $resolved = getCountryByName($postedCountry)
+                    ?: (preg_match('/^[A-Za-z]{2}$/', $postedCountry) ? getCountryByCode($postedCountry) : null);
+                $data['country'] = $resolved ? $resolved['name'] : $postedCountry;
+                if (!function_exists('getCountryPrimaryCurrencyMap')) {
+                    require_once __DIR__ . '/../includes/country-currencies.php';
+                }
+                $iso = $resolved ? strtoupper((string)$resolved['code']) : (countryToIso2($data['country']) ?: '');
+                $map = getCountryPrimaryCurrencyMap();
+                if ($iso !== '' && !empty($map[$iso])) {
+                    $data['currency'] = $map[$iso];
+                }
+            } else {
+                $data['country'] = currencyToPrimaryCountry($data['currency']);
+            }
 
             if ($email === '' || $data['full_name'] === '' || $data['password'] === '') {
                 $_SESSION['error'] = 'Full name, email, and password are required.';

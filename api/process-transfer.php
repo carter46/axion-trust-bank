@@ -92,7 +92,7 @@ try {
     
     // Load user + security flags (single query)
     $userStmt = $db->query(
-        "SELECT email, full_name, status, role, currency, currency_selection_shown, transaction_override, transfer_pin, transfer_otp_required,
+        "SELECT email, full_name, status, role, currency, currency_selection_shown, country, transaction_override, transfer_pin, transfer_otp_required,
                 imf_required, imf_code, federal_swift_required, federal_swift_code,
                 vat_required, vat_code, tac_required, tac_code, tin_required, tin_code
          FROM users WHERE id = ?",
@@ -101,7 +101,7 @@ try {
     $userStatus = dbFetchRow($userStmt);
     if (!$userStatus) {
         $userStmt = $db->query(
-            "SELECT email, full_name, status, role, currency, currency_selection_shown, transaction_override, transfer_pin
+            "SELECT email, full_name, status, role, currency, currency_selection_shown, country, transaction_override, transfer_pin
              FROM users WHERE id = ?",
             [$userId]
         );
@@ -627,8 +627,11 @@ try {
         "SELECT setting_value FROM system_settings WHERE setting_key = 'bank_operating_country' LIMIT 1"
     ));
     $bankOperatingCountry = $operatingCountryRow['setting_value'] ?? 'United States';
-    // Domestic rails / bank list follow the user's display-currency country
-    $userDomesticCountry = currencyToPrimaryCountry(getUserDisplayCurrency($user));
+    // Domestic rails follow the user's profile country (Ecuador + USD → Ecuador banks, not US)
+    $userCountry = trim((string)($user['country'] ?? ''));
+    $userDomesticCountry = $userCountry !== ''
+        ? $userCountry
+        : currencyToPrimaryCountry(getUserDisplayCurrency($user));
     $operatingCountry = $userDomesticCountry !== '' ? $userDomesticCountry : $bankOperatingCountry;
     
     if ($transferType === 'internal') {

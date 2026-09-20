@@ -37,24 +37,25 @@ if ($currency === '' || !isset($supported[$currency])) {
 
 try {
     $db = Database::getInstance();
-    $stmt = $db->query("SELECT id, email, full_name, role FROM users WHERE id = ? LIMIT 1", [$targetUserId]);
+    $stmt = $db->query("SELECT id, email, full_name, role, country FROM users WHERE id = ? LIMIT 1", [$targetUserId]);
     $target = $stmt->fetch();
     if (!$target || ($target['role'] ?? '') === 'admin') {
         echo json_encode(['success' => false, 'message' => 'User not found']);
         exit;
     }
 
-    $country = currencyToPrimaryCountry($currency);
-
+    // Currency only — do not overwrite country (flag stays Ecuador when currency is USD).
     $db->query(
-        "UPDATE users SET currency = ?, currency_selection_shown = 1, country = ?, updated_at = NOW() WHERE id = ?",
-        [$currency, $country, $targetUserId]
+        "UPDATE users SET currency = ?, currency_selection_shown = 1, updated_at = NOW() WHERE id = ?",
+        [$currency, $targetUserId]
     );
+
+    $country = trim((string)($target['country'] ?? ''));
 
     logActivity(
         $_SESSION['user_id'],
         'ADMIN_SET_USER_CURRENCY',
-        "Set currency={$currency} (country={$country}) for user {$target['email']} (ID: {$targetUserId})"
+        "Set currency={$currency} for user {$target['email']} (ID: {$targetUserId}; country unchanged: {$country})"
     );
 
     echo json_encode([

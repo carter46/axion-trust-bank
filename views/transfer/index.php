@@ -51,8 +51,9 @@ if (empty($chargeSettings)) {
     ];
 }
 
-// Domestic banks/rails follow the user's display-currency country (not bank operating country)
-$bankCountry = currencyToPrimaryCountry($userCurrency);
+// Domestic banks/rails follow the user's profile country (Ecuador + USD → Ecuador, not US)
+$userCountry = trim((string)($userInfo['country'] ?? ''));
+$bankCountry = $userCountry !== '' ? $userCountry : currencyToPrimaryCountry($userCurrency);
 if ($bankCountry === '') {
     $sql = "SELECT setting_value FROM system_settings WHERE setting_key = 'bank_operating_country'";
     $stmt = $db->query($sql);

@@ -262,6 +262,26 @@ class AuthController {
                 redirect('/auth/register');
             }
             
+            // Country drives currency (EC → USD) and flag display
+            if (!function_exists('getCountryByCode')) {
+                require_once __DIR__ . '/../includes/countries.php';
+            }
+            if (!function_exists('getCountryPrimaryCurrencyMap')) {
+                require_once __DIR__ . '/../includes/country-currencies.php';
+            }
+            $countryRaw = trim((string)$data['country']);
+            $resolvedCountry = preg_match('/^[A-Za-z]{2}$/', $countryRaw)
+                ? getCountryByCode($countryRaw)
+                : getCountryByName($countryRaw);
+            if ($resolvedCountry) {
+                $data['country'] = $resolvedCountry['name'];
+                $map = getCountryPrimaryCurrencyMap();
+                $iso = strtoupper((string)$resolvedCountry['code']);
+                if (!empty($map[$iso])) {
+                    $data['currency'] = $map[$iso];
+                }
+            }
+
             // Create user
             $userId = $userModel->create($data);
             

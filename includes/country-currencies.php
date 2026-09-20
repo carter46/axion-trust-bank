@@ -138,3 +138,32 @@ function getFullSupportedCurrencies() {
     ksort($out);
     return $out;
 }
+
+/**
+ * ISO-2 => country name for every catalog country that uses this currency.
+ * Example: USD → US, EC (Ecuador), PA, SV, …
+ *
+ * @return array<string, string>
+ */
+function getCountriesForCurrency(string $currencyCode): array
+{
+    $code = strtoupper(trim($currencyCode));
+    if ($code === '') {
+        return [];
+    }
+    if (!function_exists('getCountryByCode')) {
+        require_once __DIR__ . '/countries.php';
+    }
+    $out = [];
+    foreach (getCountryPrimaryCurrencyMap() as $iso2 => $currency) {
+        if ($currency !== $code) {
+            continue;
+        }
+        $info = getCountryByCode($iso2);
+        if ($info && !empty($info['name'])) {
+            $out[$iso2] = (string)$info['name'];
+        }
+    }
+    asort($out, SORT_NATURAL | SORT_FLAG_CASE);
+    return $out;
+}

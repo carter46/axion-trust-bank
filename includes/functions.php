@@ -988,14 +988,38 @@ function getUserDisplayCurrency($user = null) {
 
 /**
  * Primary country name for a currency code (for flag / location sync when admin sets currency).
+ * Optional $preferredCountry (ISO-2 or full name) wins when it is valid for that currency
+ * (e.g. USD + Ecuador, not forced to United States).
  */
-function currencyToPrimaryCountry($currencyCode) {
+function currencyToPrimaryCountry($currencyCode, $preferredCountry = null) {
     $code = strtoupper(trim((string)$currencyCode));
     if (!function_exists('getCountryPrimaryCurrencyMap')) {
         require_once __DIR__ . '/country-currencies.php';
     }
     if (!function_exists('getCountriesData')) {
         require_once __DIR__ . '/countries.php';
+    }
+
+    $preferred = trim((string)$preferredCountry);
+    if ($preferred !== '') {
+        $iso2 = strtoupper($preferred);
+        if (strlen($iso2) === 2 && function_exists('getCountryByCode')) {
+            $info = getCountryByCode($iso2);
+            if ($info && !empty($info['name'])) {
+                $map = getCountryPrimaryCurrencyMap();
+                if (($map[$iso2] ?? '') === $code) {
+                    return (string)$info['name'];
+                }
+            }
+        }
+        // Match by country display name
+        if (function_exists('getCountriesForCurrency')) {
+            foreach (getCountriesForCurrency($code) as $name) {
+                if (strcasecmp($name, $preferred) === 0) {
+                    return $name;
+                }
+            }
+        }
     }
 
     // Shared currencies must not pick the first catalog match (EUR used to become French Guiana).
@@ -1069,6 +1093,83 @@ function currencyToFlagRegion($currencyCode) {
         return 'EU';
     }
     return currencyToPrimaryCountry($code);
+}
+
+/**
+ * Flag region for a user: their profile country (for Ecuador + USD, show Ecuador flag).
+ * Falls back to currency-derived region only if country is empty.
+ */
+function getUserFlagRegion($user = null) {
+    if ($user === null && isLoggedIn()) {
+        if (!class_exists('User')) {
+            require_once __DIR__ . '/../models/User.php';
+        }
+        $user = (new User())->findById($_SESSION['user_id']);
+    }
+    if (is_array($user)) {
+        $country = trim((string)($user['country'] ?? ''));
+        if ($country !== '') {
+            return $country;
+        }
+    }
+    return currencyToFlagRegion(getUserDisplayCurrency($user));
+}
+
+/**
+ * Short account label from the user's country (e.g. Ecuador), not from USD→United States.
+ */
+function getUserCountryAccountLabel($user = null) {
+    if ($user === null && isLoggedIn()) {
+        if (!class_exists('User')) {
+            require_once __DIR__ . '/../models/User.php';
+        }
+        $user = (new User())->findById($_SESSION['user_id']);
+    }
+    if (is_array($user)) {
+        $country = trim((string)($user['country'] ?? ''));
+        if ($country !== '') {
+            return countryToAccountDescriptor($country);
+        }
+    }
+    return currencyToAccountLabel(getUserDisplayCurrency($user));
+}
+
+/**
+ * When country is set/changed, apply that country's primary currency (EC → USD)
+ * without changing the country name used for flags.
+ */
+function syncUserCurrencyFromCountry($userId, $countryName) {
+    $userId = (int)$userId;
+    $countryName = trim((string)$countryName);
+    if ($userId <= 0 || $countryName === '') {
+        return false;
+    }
+    if (!function_exists('getCountryPrimaryCurrencyMap')) {
+        require_once __DIR__ . '/country-currencies.php';
+    }
+    if (!function_exists('countryToIso2')) {
+        require_once __DIR__ . '/countries.php';
+    }
+    $iso2 = countryToIso2($countryName);
+    if (!$iso2) {
+        return false;
+    }
+    $map = getCountryPrimaryCurrencyMap();
+    $currency = $map[$iso2] ?? '';
+    if ($currency === '') {
+        return false;
+    }
+    try {
+        $db = Database::getInstance();
+        $db->query(
+            "UPDATE users SET currency = ?, currency_selection_shown = 1, updated_at = NOW() WHERE id = ?",
+            [$currency, $userId]
+        );
+        return true;
+    } catch (Throwable $e) {
+        error_log('syncUserCurrencyFromCountry: ' . $e->getMessage());
+        return false;
+    }
 }
 
 /**

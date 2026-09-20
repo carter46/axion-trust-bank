@@ -2,6 +2,10 @@
 $pageTitle = 'Create User - Admin - SecureBank';
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../includes/functions.php';
+if (!function_exists('getAllCountriesFlat')) {
+    require_once __DIR__ . '/../../includes/countries.php';
+}
+$allCountries = getAllCountriesFlat();
 
 // Include head
 include __DIR__ . '/../../includes/head.php';
@@ -290,8 +294,16 @@ include __DIR__ . '/../../includes/admin-modals.php';
                     <label class="form-label">
                         Country <span class="required">*</span>
                     </label>
-                    <input type="text" name="country" class="form-control" 
-                           value="United States" required>
+                    <select name="country" class="form-control" required>
+                        <option value="">Select country…</option>
+                        <?php foreach ($allCountries as $c): ?>
+                            <option value="<?php echo htmlspecialchars($c['name']); ?>"
+                                <?php echo ($c['name'] === 'United States') ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($c['name']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <div class="help-text">Currency follows country (e.g. Ecuador → USD). Flag uses this country.</div>
                 </div>
             </div>
         </div>
@@ -351,7 +363,7 @@ include __DIR__ . '/../../includes/admin-modals.php';
 
             <div class="form-group">
                 <label class="form-label">
-                    Currency
+                    Currency (optional override)
                 </label>
                 <select name="currency" class="form-control">
                     <?php
@@ -366,7 +378,7 @@ include __DIR__ . '/../../includes/admin-modals.php';
                     }
                     ?>
                 </select>
-                <div class="help-text">Default currency for this user's account</div>
+                <div class="help-text">Usually set automatically from country. Only change if you need a different display currency.</div>
             </div>
 
             <div style="display: flex; align-items: center; gap: 10px; margin-top: 15px;">

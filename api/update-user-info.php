@@ -77,6 +77,8 @@ try {
         $userId
     ]);
 
+    syncUserCurrencyFromCountry($userId, $input['country']);
+
     if ($before) {
         $emailChanged = strtolower(trim((string)($before['email'] ?? ''))) !== strtolower(trim((string)$input['email']));
         if ($emailChanged) {

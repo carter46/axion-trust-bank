@@ -15,19 +15,18 @@ $currency = new Currency();
 $successMessage = '';
 $errorMessage = '';
 
-// Handle Update User Currency
+// Handle Update User Currency (currency only — country/flag stays as set on the user profile)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_user_currency'])) {
     $targetUserId = intval($_POST['user_id'] ?? 0);
     $newCurrency = Security::sanitize($_POST['currency'] ?? 'USD');
     
     if ($targetUserId > 0) {
-        $country = currencyToPrimaryCountry($newCurrency);
-        $sql = "UPDATE users SET currency = ?, currency_selection_shown = 1, country = ? WHERE id = ?";
-        $result = $db->query($sql, [$newCurrency, $country, $targetUserId]);
+        $sql = "UPDATE users SET currency = ?, currency_selection_shown = 1 WHERE id = ?";
+        $result = $db->query($sql, [$newCurrency, $targetUserId]);
         
         if ($result) {
             $successMessage = "User currency updated successfully!";
-            logActivity($userId, 'currency_updated', "Updated currency for user ID: $targetUserId to $newCurrency (country: $country)");
+            logActivity($userId, 'currency_updated', "Updated currency for user ID: $targetUserId to $newCurrency");
         } else {
             $errorMessage = "Failed to update user currency.";
         }
@@ -50,7 +49,7 @@ if (isset($_GET['refresh_rates'])) {
 }
 
 // Get all users
-$sql = "SELECT id, full_name, email, currency, status FROM users WHERE role != 'admin' ORDER BY full_name ASC";
+$sql = "SELECT id, full_name, email, currency, country, status FROM users WHERE role != 'admin' ORDER BY full_name ASC";
 $stmt = $db->query($sql);
 $users = $stmt->fetchAll();
 
@@ -394,7 +393,7 @@ include __DIR__ . '/../../includes/admin-sidebar.php';
                         <td><span class="currency-badge"><?php echo htmlspecialchars(getUserDisplayCurrency($user)); ?></span></td>
                         <td><?php echo ucfirst($user['status']); ?></td>
                         <td>
-                            <button class="btn-change" onclick="openCurrencyModal(<?php echo $user['id']; ?>, '<?php echo addslashes($user['full_name']); ?>', '<?php echo $user['currency']; ?>')">
+                            <button class="btn-change" onclick="openCurrencyModal(<?php echo (int)$user['id']; ?>, '<?php echo addslashes($user['full_name']); ?>', '<?php echo htmlspecialchars(getUserDisplayCurrency($user), ENT_QUOTES); ?>')">
                                 Change Currency
                             </button>
                         </td>
@@ -440,9 +439,10 @@ include __DIR__ . '/../../includes/admin-sidebar.php';
                 <label class="form-label" for="modal_currency">Select New Currency *</label>
                 <select class="form-select" id="modal_currency" name="currency" required>
                     <?php foreach ($supportedCurrencies as $code => $name): ?>
-                        <option value="<?php echo $code; ?>"><?php echo $code; ?> - <?php echo $name; ?></option>
+                        <option value="<?php echo $code; ?>"><?php echo $code; ?> - <?php echo htmlspecialchars($name); ?></option>
                     <?php endforeach; ?>
                 </select>
+                <p class="help-text" style="margin-top:6px;font-size:12px;color:#6b7280;">Does not change the user’s country flag. For Ecuador, set country to Ecuador on the user profile (currency becomes USD automatically).</p>
             </div>
             
             <button type="submit" name="update_user_currency" class="btn-submit">Update Currency</button>
@@ -451,13 +451,10 @@ include __DIR__ . '/../../includes/admin-sidebar.php';
 </div>
 
 <script>
-    let currentUserId = null;
-    
     function openCurrencyModal(userId, userName, currentCurrency) {
-        currentUserId = userId;
         document.getElementById('modal_user_id').value = userId;
         document.getElementById('modal_user_name').value = userName;
-        document.getElementById('modal_currency').value = currentCurrency;
+        document.getElementById('modal_currency').value = currentCurrency || 'USD';
         document.getElementById('currencyModal').classList.add('active');
     }
     
@@ -465,7 +462,6 @@ include __DIR__ . '/../../includes/admin-sidebar.php';
         document.getElementById('currencyModal').classList.remove('active');
     }
     
-    // Close modal when clicking outside
     document.getElementById('currencyModal').addEventListener('click', function(e) {
         if (e.target === this) {
             closeCurrencyModal();
