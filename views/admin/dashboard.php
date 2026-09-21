@@ -691,6 +691,7 @@ include __DIR__ . '/../../includes/admin-modals.php';
                 </div>
             </a>
 
+            <?php if (isSuperAdmin()): ?>
             <a href="<?php echo SITE_URL; ?>/admin/admin-settings" class="action-btn">
                 <div class="action-icon icon-security">
                     <i class="fas fa-shield-alt"></i>
@@ -700,6 +701,7 @@ include __DIR__ . '/../../includes/admin-modals.php';
                     <div class="action-desc">Manage admin accounts</div>
                 </div>
             </a>
+            <?php endif; ?>
 
             <a href="<?php echo SITE_URL; ?>/admin/email" class="action-btn">
                 <div class="action-icon icon-money">

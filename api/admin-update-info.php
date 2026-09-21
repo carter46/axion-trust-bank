@@ -17,6 +17,16 @@ try {
         echo json_encode(['success' => false, 'message' => 'Unauthorized - Not logged in as admin']);
         exit;
     }
+
+    require_once __DIR__ . '/../config/config.php';
+    require_once __DIR__ . '/../includes/functions.php';
+
+    if (!isSuperAdmin()) {
+        ob_end_clean();
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Super administrator access required']);
+        exit;
+    }
     
     // Get input
     $rawInput = file_get_contents('php://input');
@@ -52,9 +62,7 @@ try {
     }
     
     // Load required files
-    require_once __DIR__ . '/../config/config.php';
     require_once __DIR__ . '/../models/User.php';
-    require_once __DIR__ . '/../includes/functions.php';
     
     // Get admin info
     $userModel = new User();

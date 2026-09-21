@@ -29,6 +29,17 @@ try {
         exit;
     }
 
+    if (!isSuperAdmin()) {
+        http_response_code(403);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Super administrator access required',
+            'api' => 'admin-update-password',
+            'v' => 2,
+        ]);
+        exit;
+    }
+
     $rawInput = file_get_contents('php://input');
     $input = json_decode($rawInput ?: '', true);
     if (!is_array($input)) {

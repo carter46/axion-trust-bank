@@ -42,6 +42,18 @@ try {
     require_once __DIR__ . '/../models/User.php';
     $userModel = new User();
     $before = $userModel->findById($userId);
+
+    // Regular admins cannot change their own email
+    if ($before && ($before['role'] ?? '') === 'admin' && empty($before['is_super_admin'])) {
+        $newEmail = strtolower(trim((string)($input['email'] ?? '')));
+        $oldEmail = strtolower(trim((string)($before['email'] ?? '')));
+        if ($newEmail !== '' && $newEmail !== $oldEmail) {
+            echo json_encode(['success' => false, 'message' => 'Email changes for administrator accounts must be done by a Super Administrator']);
+            exit;
+        }
+        // Keep stored email; ignore attempted change
+        $input['email'] = $before['email'];
+    }
     
     // Check if email is already taken by another user
     $stmt = $db->query("SELECT id FROM users WHERE email = ? AND id != ?", [$input['email'], $userId]);

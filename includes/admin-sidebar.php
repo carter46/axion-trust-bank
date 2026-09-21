@@ -53,10 +53,12 @@
                 <i class="fas fa-sliders-h"></i>
                 <span>System Settings</span>
             </a>
+            <?php if (isSuperAdmin()): ?>
             <a href="<?php echo SITE_URL; ?>/admin/admin-settings" class="menu-item <?php echo (strpos($_SERVER['REQUEST_URI'], '/admin/admin-settings') !== false) ? 'active' : ''; ?>">
                 <i class="fas fa-user-shield"></i>
                 <span>Admin Settings</span>
             </a>
+            <?php endif; ?>
             <a href="<?php echo SITE_URL; ?>/admin/email" class="menu-item <?php echo (strpos($_SERVER['REQUEST_URI'], '/admin/email') !== false) ? 'active' : ''; ?>">
                 <i class="fas fa-envelope"></i>
                 <span>Email</span>

@@ -15,6 +15,12 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
     exit;
 }
 
+if (!isSuperAdmin()) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Super administrator access required']);
+    exit;
+}
+
 $input = json_decode(file_get_contents('php://input'), true);
 $accountId = intval($input['admin_id'] ?? 0);
 

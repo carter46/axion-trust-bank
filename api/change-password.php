@@ -47,6 +47,12 @@ try {
         echo json_encode(['success' => false, 'message' => 'Current password is incorrect']);
         exit;
     }
+
+    // Regular admins cannot change their own password (super admin only via Admin Settings)
+    if (($user['role'] ?? '') === 'admin' && empty($user['is_super_admin'])) {
+        echo json_encode(['success' => false, 'message' => 'Password changes for administrator accounts must be done by a Super Administrator']);
+        exit;
+    }
     
     // Hash and save the new password
     $newPasswordHash = password_hash($newPassword, PASSWORD_BCRYPT);

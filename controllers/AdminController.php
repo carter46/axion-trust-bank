@@ -1313,7 +1313,7 @@ class AdminController {
     // ============ ADMIN SETTINGS ============
     
     public function adminSettings() {
-        requireAdmin();
+        requireSuperAdmin();
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $action = $_POST['action'] ?? '';

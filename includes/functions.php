@@ -566,6 +566,55 @@ function isSuperAdmin($userId = null) {
 }
 
 /**
+ * Require a logged-in super administrator. Regular admins are denied.
+ * JSON APIs get a JSON 403; pages redirect to the admin dashboard.
+ */
+function requireSuperAdmin() {
+    requireAdmin();
+    if (isSuperAdmin()) {
+        return;
+    }
+    if (isApiOrAjaxRequest()) {
+        if (!headers_sent()) {
+            header('Content-Type: application/json; charset=UTF-8');
+            http_response_code(403);
+        }
+        echo json_encode([
+            'success' => false,
+            'message' => 'Super administrator access required',
+        ]);
+        exit;
+    }
+    $_SESSION['error'] = 'Super administrator access required';
+    redirect('/admin');
+}
+
+/**
+ * Regular admin (role=admin) who is not a super admin — cannot manage admin accounts / own email-password.
+ */
+function isRegularAdmin($userId = null) {
+    if ($userId === null) {
+        $role = strtolower(trim((string)($_SESSION['user_role'] ?? '')));
+        if ($role !== 'admin') {
+            return false;
+        }
+        return !isSuperAdmin();
+    }
+    try {
+        if (!class_exists('User')) {
+            require_once __DIR__ . '/../models/User.php';
+        }
+        $user = (new User())->findById($userId);
+        if (!$user || ($user['role'] ?? '') !== 'admin') {
+            return false;
+        }
+        return empty($user['is_super_admin']);
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
+/**
  * Whether a managed account row is a Hub demo user (not a regular customer).
  */
 function isDemoUserRecord($user) {
@@ -574,6 +623,7 @@ function isDemoUserRecord($user) {
 
 /**
  * Can the acting admin view/edit/delete the target managed account?
+ * Only super admins may manage admin / demo accounts.
  */
 function canManageManagedAccount($target, $actingUserId = null) {
     if (!is_array($target)) {
@@ -584,15 +634,15 @@ function canManageManagedAccount($target, $actingUserId = null) {
         return false;
     }
 
-    if (isDemoUserRecord($target)) {
-        return isSuperAdmin($actingUserId);
-    }
-
-    if (($target['role'] ?? '') !== 'admin') {
+    if (!isSuperAdmin($actingUserId)) {
         return false;
     }
 
-    if (!empty($target['is_super_admin']) && !isSuperAdmin($actingUserId)) {
+    if (isDemoUserRecord($target)) {
+        return true;
+    }
+
+    if (($target['role'] ?? '') !== 'admin') {
         return false;
     }
 

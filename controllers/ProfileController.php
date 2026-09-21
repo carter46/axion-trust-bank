@@ -62,6 +62,11 @@ class ProfileController {
             
             $userModel = new User();
             $user = $userModel->findById($_SESSION['user_id']);
+
+            if (($user['role'] ?? '') === 'admin' && empty($user['is_super_admin'])) {
+                $_SESSION['error'] = 'Password changes for administrator accounts must be done by a Super Administrator';
+                redirect('/profile/security');
+            }
             
             if (!Security::verifyPassword($currentPassword, $user['password_hash'])) {
                 $_SESSION['error'] = 'Current password is incorrect';
