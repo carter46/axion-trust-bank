@@ -391,9 +391,10 @@ table td {
     padding: 6px;
     z-index: 10050;
     display: none;
+    margin: 0;
 }
 
-.user-actions-menu.open .user-actions-dropdown {
+.user-actions-dropdown.is-open {
     display: block;
 }
 
@@ -798,33 +799,37 @@ function deleteUser(userId, userName) {
     );
 }
 
+let activeUserActionsMenu = null;
+
 function closeAllUserActionsMenus() {
     document.querySelectorAll('.user-actions-menu.open').forEach(menu => {
         menu.classList.remove('open');
         const toggle = menu.querySelector('.user-actions-toggle');
-        const dropdown = menu.querySelector('.user-actions-dropdown');
         if (toggle) toggle.setAttribute('aria-expanded', 'false');
-        if (dropdown) {
-            dropdown.style.top = '';
-            dropdown.style.left = '';
-            dropdown.style.right = '';
-            dropdown.style.bottom = '';
-            dropdown.style.display = '';
-            dropdown.style.visibility = '';
-        }
     });
+
+    document.querySelectorAll('.user-actions-dropdown.is-open').forEach(dropdown => {
+        dropdown.classList.remove('is-open');
+        dropdown.style.top = '';
+        dropdown.style.left = '';
+        dropdown.style.right = '';
+        dropdown.style.bottom = '';
+        dropdown.style.display = '';
+        dropdown.style.visibility = '';
+        const home = dropdown._menuHome;
+        if (home && dropdown.parentNode !== home) {
+            home.appendChild(dropdown);
+        }
+        delete dropdown._menuHome;
+    });
+
+    activeUserActionsMenu = null;
 }
 
-function positionUserActionsDropdown(menu) {
-    const toggle = menu.querySelector('.user-actions-toggle');
-    const dropdown = menu.querySelector('.user-actions-dropdown');
-    if (!toggle || !dropdown) return;
-
-    // Make visible off-screen first so we can measure height
+function positionUserActionsDropdown(toggle, dropdown) {
     dropdown.style.visibility = 'hidden';
     dropdown.style.display = 'block';
-    dropdown.style.top = '0px';
-    dropdown.style.left = '0px';
+    dropdown.classList.add('is-open');
 
     const rect = toggle.getBoundingClientRect();
     const menuWidth = Math.max(dropdown.offsetWidth || 168, 168);
@@ -832,26 +837,23 @@ function positionUserActionsDropdown(menu) {
     const gap = 6;
     const pad = 8;
 
+    // Prefer below the button; flip above only when there isn't enough room below
     let top = rect.bottom + gap;
-    let left = rect.right - menuWidth;
-
-    const spaceBelow = window.innerHeight - rect.bottom - pad;
-    const spaceAbove = rect.top - pad;
-    if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
+    if (top + menuHeight > window.innerHeight - pad && rect.top - gap - menuHeight >= pad) {
         top = rect.top - menuHeight - gap;
     }
 
+    let left = rect.right - menuWidth;
     if (left < pad) left = pad;
     if (left + menuWidth > window.innerWidth - pad) {
         left = Math.max(pad, window.innerWidth - menuWidth - pad);
     }
-    if (top < pad) top = pad;
-    if (top + menuHeight > window.innerHeight - pad) {
-        top = Math.max(pad, window.innerHeight - menuHeight - pad);
-    }
 
-    dropdown.style.top = top + 'px';
-    dropdown.style.left = left + 'px';
+    // Keep fully on-screen without drifting far from the button
+    top = Math.min(Math.max(top, pad), Math.max(pad, window.innerHeight - menuHeight - pad));
+
+    dropdown.style.top = Math.round(top) + 'px';
+    dropdown.style.left = Math.round(left) + 'px';
     dropdown.style.right = 'auto';
     dropdown.style.bottom = 'auto';
     dropdown.style.visibility = '';
@@ -860,17 +862,24 @@ function positionUserActionsDropdown(menu) {
 function toggleUserActionsMenu(button) {
     const menu = button.closest('.user-actions-menu');
     if (!menu) return;
+    const dropdown = menu.querySelector('.user-actions-dropdown');
+    if (!dropdown) return;
+
     const willOpen = !menu.classList.contains('open');
     closeAllUserActionsMenus();
-    if (willOpen) {
-        menu.classList.add('open');
-        button.setAttribute('aria-expanded', 'true');
-        positionUserActionsDropdown(menu);
-    }
+
+    if (!willOpen) return;
+
+    menu.classList.add('open');
+    button.setAttribute('aria-expanded', 'true');
+    dropdown._menuHome = menu;
+    document.body.appendChild(dropdown);
+    activeUserActionsMenu = menu;
+    positionUserActionsDropdown(button, dropdown);
 }
 
 document.addEventListener('click', function(e) {
-    if (e.target.closest('.user-actions-menu')) return;
+    if (e.target.closest('.user-actions-menu') || e.target.closest('.user-actions-dropdown')) return;
     closeAllUserActionsMenus();
 });
 
@@ -881,9 +890,7 @@ document.addEventListener('keydown', function(e) {
 
 window.addEventListener('resize', closeAllUserActionsMenus);
 window.addEventListener('scroll', function() {
-    if (document.querySelector('.user-actions-menu.open')) {
-        closeAllUserActionsMenus();
-    }
+    if (activeUserActionsMenu) closeAllUserActionsMenus();
 }, true);
 
 function toggleUserDetails(button) {
