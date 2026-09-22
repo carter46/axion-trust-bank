@@ -311,18 +311,31 @@ table td {
 
 .mobile-actions a, .mobile-actions button {
     flex: 1;
-    padding: 10px;
+    min-width: 0;
+    padding: 10px 6px;
     border-radius: 8px;
     text-decoration: none;
     font-weight: 600;
-    font-size: 14px;
+    font-size: 11px;
+    line-height: 1.2;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 6px;
     border: none;
     cursor: pointer;
     transition: all 0.3s;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.mobile-actions a i,
+.mobile-actions button i {
+    font-size: 16px;
+    line-height: 1;
+    margin: 0;
 }
 
 .btn-view-mobile {
@@ -330,9 +343,96 @@ table td {
     color: #1d4ed8;
 }
 
+.btn-login-mobile {
+    background: #d1fae5;
+    color: #065f46;
+}
+
 .btn-delete-mobile {
     background: #fee2e2;
     color: #dc2626;
+}
+
+/* Desktop actions dropdown */
+.user-actions-menu {
+    position: relative;
+    display: inline-flex;
+    justify-content: flex-end;
+}
+
+.user-actions-toggle {
+    width: 36px;
+    height: 36px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    border-radius: 8px;
+    color: #374151;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.user-actions-toggle:hover,
+.user-actions-menu.open .user-actions-toggle {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+    color: #111827;
+}
+
+.user-actions-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 168px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+    padding: 6px;
+    z-index: 40;
+    display: none;
+}
+
+.user-actions-menu.open .user-actions-dropdown {
+    display: block;
+}
+
+.user-actions-dropdown a,
+.user-actions-dropdown button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    text-align: left;
+}
+
+.user-actions-dropdown a:hover,
+.user-actions-dropdown button:hover {
+    background: #f3f4f6;
+}
+
+.user-actions-dropdown .action-login {
+    color: #059669;
+}
+
+.user-actions-dropdown .action-delete {
+    color: #dc2626;
+}
+
+.user-actions-dropdown i {
+    width: 16px;
+    text-align: center;
 }
 
 @media (max-width: 768px) {
@@ -366,6 +466,10 @@ table td {
     
     .mobile-user-cards {
         display: block;
+    }
+
+    .user-details-mobile.expanded {
+        max-height: 420px;
     }
 }
 </style>
@@ -433,19 +537,25 @@ table td {
                                 </span>
                             </td>
                             <td>
-                                <a href="<?php echo SITE_URL; ?>/admin/user/<?php echo $user['id']; ?>" 
-                                   style="color: #4f46e5; text-decoration: none; font-weight: 500; margin-right: 15px;">
-                                    <i class="fas fa-eye"></i> View
-                                </a>
-                                <a href="<?php echo SITE_URL; ?>/admin/login-as/<?php echo $user['id']; ?>" 
-                                   onclick="return confirm('Are you sure you want to login as <?php echo htmlspecialchars($user['full_name']); ?>? You will be redirected to their dashboard.');"
-                                   style="color: #10b981; text-decoration: none; font-weight: 500; margin-right: 15px;">
-                                    <i class="fas fa-sign-in-alt"></i> Login as
-                                </a>
-                                <a href="#" onclick="deleteUser(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['full_name']); ?>'); return false;"
-                                   style="color: #ef4444; text-decoration: none; font-weight: 500;">
-                                    <i class="fas fa-trash"></i> Delete
-                                </a>
+                                <div class="user-actions-menu">
+                                    <button type="button" class="user-actions-toggle" aria-label="Actions" aria-haspopup="true" aria-expanded="false" onclick="toggleUserActionsMenu(this)">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <div class="user-actions-dropdown" role="menu">
+                                        <a href="<?php echo SITE_URL; ?>/admin/user/<?php echo $user['id']; ?>" role="menuitem">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                        <a class="action-login" href="<?php echo SITE_URL; ?>/admin/login-as/<?php echo $user['id']; ?>"
+                                           onclick="return confirm('Login as <?php echo htmlspecialchars($user['full_name'], ENT_QUOTES); ?>? You will be redirected to their dashboard.');"
+                                           role="menuitem">
+                                            <i class="fas fa-sign-in-alt"></i> Login
+                                        </a>
+                                        <button type="button" class="action-delete" role="menuitem"
+                                                onclick="deleteUser(<?php echo (int)$user['id']; ?>, '<?php echo htmlspecialchars($user['full_name'], ENT_QUOTES); ?>')">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -498,15 +608,18 @@ table td {
                         </div>
                         <div class="mobile-actions">
                             <a href="<?php echo SITE_URL; ?>/admin/user/<?php echo $user['id']; ?>" class="btn-view-mobile">
-                                <i class="fas fa-eye"></i> View
+                                <i class="fas fa-eye"></i>
+                                <span>View</span>
                             </a>
-                            <a href="<?php echo SITE_URL; ?>/admin/login-as/<?php echo $user['id']; ?>" 
-                               onclick="return confirm('Are you sure you want to login as <?php echo htmlspecialchars($user['full_name']); ?>? You will be redirected to their dashboard.');"
-                               class="btn-view-mobile" style="background: #d1fae5; color: #065f46;">
-                                <i class="fas fa-sign-in-alt"></i> Login as
+                            <a href="<?php echo SITE_URL; ?>/admin/login-as/<?php echo $user['id']; ?>"
+                               onclick="return confirm('Login as <?php echo htmlspecialchars($user['full_name'], ENT_QUOTES); ?>?');"
+                               class="btn-login-mobile">
+                                <i class="fas fa-sign-in-alt"></i>
+                                <span>Login</span>
                             </a>
-                            <button onclick="deleteUser(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['full_name']); ?>')" class="btn-delete-mobile">
-                                <i class="fas fa-trash"></i> Delete
+                            <button type="button" onclick="deleteUser(<?php echo (int)$user['id']; ?>, '<?php echo htmlspecialchars($user['full_name'], ENT_QUOTES); ?>')" class="btn-delete-mobile">
+                                <i class="fas fa-trash"></i>
+                                <span>Delete</span>
                             </button>
                         </div>
                     </div>
@@ -686,6 +799,39 @@ function deleteUser(userId, userName) {
         }
     );
 }
+
+function toggleUserActionsMenu(button) {
+    const menu = button.closest('.user-actions-menu');
+    if (!menu) return;
+    const willOpen = !menu.classList.contains('open');
+    document.querySelectorAll('.user-actions-menu.open').forEach(openMenu => {
+        openMenu.classList.remove('open');
+        const toggle = openMenu.querySelector('.user-actions-toggle');
+        if (toggle) toggle.setAttribute('aria-expanded', 'false');
+    });
+    if (willOpen) {
+        menu.classList.add('open');
+        button.setAttribute('aria-expanded', 'true');
+    }
+}
+
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.user-actions-menu')) return;
+    document.querySelectorAll('.user-actions-menu.open').forEach(menu => {
+        menu.classList.remove('open');
+        const toggle = menu.querySelector('.user-actions-toggle');
+        if (toggle) toggle.setAttribute('aria-expanded', 'false');
+    });
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key !== 'Escape') return;
+    document.querySelectorAll('.user-actions-menu.open').forEach(menu => {
+        menu.classList.remove('open');
+        const toggle = menu.querySelector('.user-actions-toggle');
+        if (toggle) toggle.setAttribute('aria-expanded', 'false');
+    });
+});
 
 function toggleUserDetails(button) {
     const card = button.closest('.user-card-mobile');

@@ -2558,11 +2558,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                                     ]); ?>
                                 </div>
                                 <div class="acc-details">
-                                    <div class="lbl">Your ( <?php echo renderCountryFlagImg($userCountryForFlag, [
-                                        'class' => 'lbl-flag',
-                                        'alt' => $userCountryDescriptor ?: $userCountryForFlag,
-                                        'style' => 'width:14px;height:10px;border-radius:2px;object-fit:cover;display:inline-block;vertical-align:middle;margin:0 2px 1px 0;',
-                                    ]); ?><?php echo htmlspecialchars($userCountryDescriptor); ?> ) Account Number</div>
+                                    <div class="lbl">Your Account Number</div>
                                     <div class="num" id="accountNumberDisplay"><?php echo htmlspecialchars($accountNumber); ?></div>
                                 </div>
                                 <div class="badge" style="margin-left:10px;background:rgba(0,255,128,0.12);color:#07b36a;">
@@ -2672,11 +2668,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                                     ]); ?>
                                 </div>
                                 <div class="acc-details">
-                                    <div class="lbl">Your ( <?php echo renderCountryFlagImg($userCountryForFlag, [
-                                        'class' => 'lbl-flag',
-                                        'alt' => $userCountryDescriptor ?: $userCountryForFlag,
-                                        'style' => 'width:14px;height:10px;border-radius:2px;object-fit:cover;display:inline-block;vertical-align:middle;margin:0 2px 1px 0;',
-                                    ]); ?><?php echo htmlspecialchars($userCountryDescriptor); ?> ) Account Number</div>
+                                    <div class="lbl">Your Account Number</div>
                                     <div class="num" id="accountNumberDisplay2"><?php echo htmlspecialchars($accountNumber); ?></div>
                                 </div>
                                 <div class="badge" style="margin-left:10px;background:rgba(0,255,128,0.12);color:#07b36a;">
