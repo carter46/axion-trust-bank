@@ -353,7 +353,7 @@ table td {
     color: #dc2626;
 }
 
-/* Desktop actions dropdown */
+/* Desktop actions dropdown — fixed so it isn't clipped by table/card overflow */
 .user-actions-menu {
     position: relative;
     display: inline-flex;
@@ -382,16 +382,14 @@ table td {
 }
 
 .user-actions-dropdown {
-    position: absolute;
-    top: calc(100% + 6px);
-    right: 0;
+    position: fixed;
     min-width: 168px;
     background: #fff;
     border: 1px solid #e5e7eb;
     border-radius: 10px;
-    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
     padding: 6px;
-    z-index: 40;
+    z-index: 10050;
     display: none;
 }
 
@@ -800,38 +798,93 @@ function deleteUser(userId, userName) {
     );
 }
 
+function closeAllUserActionsMenus() {
+    document.querySelectorAll('.user-actions-menu.open').forEach(menu => {
+        menu.classList.remove('open');
+        const toggle = menu.querySelector('.user-actions-toggle');
+        const dropdown = menu.querySelector('.user-actions-dropdown');
+        if (toggle) toggle.setAttribute('aria-expanded', 'false');
+        if (dropdown) {
+            dropdown.style.top = '';
+            dropdown.style.left = '';
+            dropdown.style.right = '';
+            dropdown.style.bottom = '';
+            dropdown.style.display = '';
+            dropdown.style.visibility = '';
+        }
+    });
+}
+
+function positionUserActionsDropdown(menu) {
+    const toggle = menu.querySelector('.user-actions-toggle');
+    const dropdown = menu.querySelector('.user-actions-dropdown');
+    if (!toggle || !dropdown) return;
+
+    // Make visible off-screen first so we can measure height
+    dropdown.style.visibility = 'hidden';
+    dropdown.style.display = 'block';
+    dropdown.style.top = '0px';
+    dropdown.style.left = '0px';
+
+    const rect = toggle.getBoundingClientRect();
+    const menuWidth = Math.max(dropdown.offsetWidth || 168, 168);
+    const menuHeight = dropdown.offsetHeight || 140;
+    const gap = 6;
+    const pad = 8;
+
+    let top = rect.bottom + gap;
+    let left = rect.right - menuWidth;
+
+    const spaceBelow = window.innerHeight - rect.bottom - pad;
+    const spaceAbove = rect.top - pad;
+    if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
+        top = rect.top - menuHeight - gap;
+    }
+
+    if (left < pad) left = pad;
+    if (left + menuWidth > window.innerWidth - pad) {
+        left = Math.max(pad, window.innerWidth - menuWidth - pad);
+    }
+    if (top < pad) top = pad;
+    if (top + menuHeight > window.innerHeight - pad) {
+        top = Math.max(pad, window.innerHeight - menuHeight - pad);
+    }
+
+    dropdown.style.top = top + 'px';
+    dropdown.style.left = left + 'px';
+    dropdown.style.right = 'auto';
+    dropdown.style.bottom = 'auto';
+    dropdown.style.visibility = '';
+}
+
 function toggleUserActionsMenu(button) {
     const menu = button.closest('.user-actions-menu');
     if (!menu) return;
     const willOpen = !menu.classList.contains('open');
-    document.querySelectorAll('.user-actions-menu.open').forEach(openMenu => {
-        openMenu.classList.remove('open');
-        const toggle = openMenu.querySelector('.user-actions-toggle');
-        if (toggle) toggle.setAttribute('aria-expanded', 'false');
-    });
+    closeAllUserActionsMenus();
     if (willOpen) {
         menu.classList.add('open');
         button.setAttribute('aria-expanded', 'true');
+        positionUserActionsDropdown(menu);
     }
 }
 
 document.addEventListener('click', function(e) {
     if (e.target.closest('.user-actions-menu')) return;
-    document.querySelectorAll('.user-actions-menu.open').forEach(menu => {
-        menu.classList.remove('open');
-        const toggle = menu.querySelector('.user-actions-toggle');
-        if (toggle) toggle.setAttribute('aria-expanded', 'false');
-    });
+    closeAllUserActionsMenus();
 });
 
 document.addEventListener('keydown', function(e) {
     if (e.key !== 'Escape') return;
-    document.querySelectorAll('.user-actions-menu.open').forEach(menu => {
-        menu.classList.remove('open');
-        const toggle = menu.querySelector('.user-actions-toggle');
-        if (toggle) toggle.setAttribute('aria-expanded', 'false');
-    });
+    closeAllUserActionsMenus();
 });
+
+window.addEventListener('resize', closeAllUserActionsMenus);
+window.addEventListener('scroll', function() {
+    if (document.querySelector('.user-actions-menu.open')) {
+        closeAllUserActionsMenus();
+    }
+}, true);
 
 function toggleUserDetails(button) {
     const card = button.closest('.user-card-mobile');
