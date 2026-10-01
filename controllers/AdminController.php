@@ -309,7 +309,7 @@ class AdminController {
         $transactions = $stmt ? $stmt->fetchAll() : [];
         
         // Get all users for dropdown (exclude demo users)
-        $usersSql = "SELECT id, full_name, email FROM users WHERE " . regularCustomerUsersSql() . " ORDER BY full_name ASC";
+        $usersSql = "SELECT u.id, u.full_name, u.email FROM users u WHERE " . regularCustomerUsersSql('u') . " ORDER BY u.full_name ASC";
         $usersStmt = $db->query($usersSql);
         $allUsers = $usersStmt ? $usersStmt->fetchAll() : [];
         
@@ -2034,7 +2034,7 @@ class AdminController {
         $generator = new TransactionHistoryGenerator();
 
         $usersStmt = $db->query(
-            "SELECT id, full_name, email FROM users WHERE " . regularCustomerUsersSql() . " ORDER BY full_name ASC"
+            "SELECT u.id, u.full_name, u.email FROM users u WHERE " . regularCustomerUsersSql('u') . " ORDER BY u.full_name ASC"
         );
         $allUsers = $usersStmt ? $usersStmt->fetchAll() : [];
 

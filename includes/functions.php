@@ -783,7 +783,7 @@ function provisionAllLegacyDemoUsers($adminId = null) {
 /**
  * SQL fragment: regular customers only (excludes admins and demo users).
  */
-function regularCustomerUsersSql($alias = 'u') {
+function regularCustomerUsersSql($alias = '') {
     $col = $alias !== '' ? $alias . '.' : '';
     return "{$col}role = 'user' AND COALESCE({$col}is_demo_user, 0) = 0";
 }
