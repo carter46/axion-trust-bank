@@ -650,6 +650,7 @@ function showEditTransactionModal(transaction, dateValue, timeValue) {
     const safeDescription = escapeHtml((transaction.description || '').replace(/"/g, '&quot;'));
     const safeStatus = escapeHtml(transaction.status || 'completed');
     const safeId = parseInt(transaction.id) || 0;
+    const safeTxnType = transaction.transaction_type === 'credit' ? 'credit' : 'debit';
     
     const modal = document.createElement('div');
     modal.id = 'editTransactionModal';
@@ -663,6 +664,15 @@ function showEditTransactionModal(transaction, dateValue, timeValue) {
             </div>
             <div class="modal-body">
                 <form id="editTransactionForm">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Transaction Type</label>
+                        <select id="editTransactionType"
+                                style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                            <option value="credit" ${safeTxnType === 'credit' ? 'selected' : ''}>Credit (money in)</option>
+                            <option value="debit" ${safeTxnType === 'debit' ? 'selected' : ''}>Debit (money out)</option>
+                        </select>
+                        <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">Changing the type updates the account balance.</div>
+                    </div>
                     <div style="margin-bottom: 15px;">
                         <label style="display: block; margin-bottom: 5px; font-weight: 600;">Amount *</label>
                         <input type="number" id="editAmount" value="${safeAmount}" step="0.01" required 
@@ -778,7 +788,8 @@ function saveTransactionEdit(transactionId) {
             amount: amount,
             status: status,
             description: description,
-            date: datetime
+            date: datetime,
+            transaction_type: document.getElementById('editTransactionType').value
         })
     })
     .then(response => {

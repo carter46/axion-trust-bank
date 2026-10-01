@@ -51,6 +51,14 @@ $newRecipientName = array_key_exists('recipient_name', $input) ? trim((string)$i
 $newRecipientAccount = array_key_exists('recipient_account', $input) ? trim((string)$input['recipient_account']) : null;
 $newRecipientBank = array_key_exists('recipient_bank', $input) ? trim((string)$input['recipient_bank']) : null;
 $transferScope = array_key_exists('transfer_scope', $input) ? trim((string)$input['transfer_scope']) : null;
+$newTransactionType = array_key_exists('transaction_type', $input)
+    ? strtolower(trim((string)$input['transaction_type']))
+    : '';
+
+if ($newTransactionType !== '' && !in_array($newTransactionType, ['credit', 'debit'], true)) {
+    echo json_encode(['success' => false, 'message' => 'Transaction type must be credit or debit']);
+    exit;
+}
 
 if ($transactionId <= 0) {
     echo json_encode(['success' => false, 'message' => 'Transaction ID required']);
@@ -105,8 +113,17 @@ try {
         $statusChanged = $newStatusDb !== '' && $newStatusDb !== $oldStatus;
         $formattedDate = null;
 
+        $oldType = (string)($transaction['transaction_type'] ?? 'debit');
+        $resolvedType = $newTransactionType !== '' ? $newTransactionType : $oldType;
+        $typeChanged = $resolvedType !== $oldType;
+
         $updateFields = ['amount = ?', 'description = ?'];
         $updateValues = [$newAmount, $newDescription];
+
+        if ($typeChanged) {
+            $updateFields[] = 'transaction_type = ?';
+            $updateValues[] = $resolvedType;
+        }
 
         if ($newStatusDb !== '') {
             $updateFields[] = 'status = ?';
@@ -213,7 +230,7 @@ try {
 
         $shouldSendFailedEmail = false;
         $refundAmount = 0.0;
-        $transactionType = (string)($transaction['transaction_type'] ?? 'debit');
+        $transactionType = $resolvedType;
         $transactionCategory = (string)($transaction['category'] ?? '');
         $currentStatusDb = (string)($updatedTransaction['status'] ?? $oldStatus);
         $resolvedFee = $newFee !== null ? $newFee : (float)($transaction['fee'] ?? 0);
@@ -226,6 +243,7 @@ try {
             if ($accountCheck) {
                 $oldTxnState = $transaction;
                 $newTxnState = array_merge($transaction, [
+                    'transaction_type' => $resolvedType,
                     'amount' => $newAmount,
                     'fee' => $resolvedFee,
                     'status' => $currentStatusDb,
@@ -282,6 +300,9 @@ try {
         $logMessage = "Edited transaction {$transactionRef} for user {$transaction['user_email']}. Amount changed from {$oldAmount} to {$newAmount}";
         if ($statusChanged) {
             $logMessage .= ". Status changed from {$oldStatus} to {$currentStatusDb}";
+        }
+        if ($typeChanged) {
+            $logMessage .= ". Type changed from {$oldType} to {$resolvedType}";
         }
         if ($formattedDate !== null) {
             $logMessage .= ". Date changed from {$transaction['created_at']} to {$formattedDate}";

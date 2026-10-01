@@ -377,6 +377,100 @@ include __DIR__ . '/../../includes/admin-modals.php';
     gap: 8px;
 }
 
+.cell-sub {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 4px;
+    line-height: 1.3;
+    white-space: nowrap;
+}
+
+.tx-description {
+    max-width: 240px;
+    word-wrap: break-word;
+    color: #374151;
+    font-size: 14px;
+}
+
+.tx-actions-cell {
+    width: 56px;
+    text-align: right;
+}
+
+.tx-actions-menu {
+    position: relative;
+    display: inline-flex;
+}
+
+.tx-actions-toggle {
+    width: 36px;
+    height: 36px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    border-radius: 8px;
+    color: #374151;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.tx-actions-toggle:hover,
+.tx-actions-menu.open .tx-actions-toggle {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+}
+
+.tx-actions-dropdown {
+    position: fixed;
+    min-width: 168px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+    padding: 6px;
+    z-index: 10050;
+    display: none;
+}
+
+.tx-actions-dropdown.is-open {
+    display: block;
+}
+
+.tx-actions-dropdown button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+}
+
+.tx-actions-dropdown button:hover {
+    background: #f3f4f6;
+}
+
+.tx-actions-dropdown i {
+    width: 16px;
+    text-align: center;
+}
+
+.tx-actions-dropdown .action-reverse {
+    color: #b45309;
+}
+
+.tx-actions-dropdown .action-delete {
+    color: #dc2626;
+}
+
 .action-btn {
     padding: 6px 12px;
     border: none;
@@ -956,11 +1050,9 @@ include __DIR__ . '/../../includes/admin-modals.php';
                         <th>Category</th>
                         <th>Type</th>
                         <th>Amount</th>
-                        <th>Account</th>
                         <th>Description</th>
                         <th>Status</th>
-                        <th>Date</th>
-                        <th>Actions</th>
+                        <th class="tx-actions-cell"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -986,19 +1078,16 @@ include __DIR__ . '/../../includes/admin-modals.php';
                                     <?php echo $transaction['transaction_type'] === 'credit' ? '+' : '-'; ?>
                                     <?php echo formatTransactionAmountForUser($transaction, $user, 'amount'); ?>
                                 </span>
+                                <div class="cell-sub">
+                                    <?php if ($transaction['account_number']): ?>
+                                        <?php echo htmlspecialchars($transaction['account_number']); ?> · <?php echo htmlspecialchars(ucfirst($transaction['account_type'])); ?>
+                                    <?php else: ?>
+                                        No account
+                                    <?php endif; ?>
+                                </div>
                             </td>
                             <td>
-                                <?php if ($transaction['account_number']): ?>
-                                    <div>
-                                        <div style="font-weight: 600;"><?php echo htmlspecialchars($transaction['account_number']); ?></div>
-                                        <div style="font-size: 12px; color: #6b7280;"><?php echo ucfirst($transaction['account_type']); ?></div>
-                                    </div>
-                                <?php else: ?>
-                                    <span style="color: #6b7280;">N/A</span>
-                                <?php endif; ?>
-                            </td>
-                            <td>
-                                <div style="max-width: 200px; word-wrap: break-word;">
+                                <div class="tx-description">
                                     <?php echo htmlspecialchars($transaction['description'] ?? 'N/A'); ?>
                                 </div>
                             </td>
@@ -1006,26 +1095,28 @@ include __DIR__ . '/../../includes/admin-modals.php';
                                 <span class="status-badge status-<?php echo htmlspecialchars($transaction['status'] ?? 'pending'); ?>">
                                     <?php echo htmlspecialchars(formatTransactionStatusLabel($transaction['status'] ?? 'pending')); ?>
                                 </span>
-                            </td>
-                            <td>
-                                <div>
-                                    <div style="font-weight: 600;"><?php echo date('M d, Y', strtotime($transaction['created_at'])); ?></div>
-                                    <div style="font-size: 12px; color: #6b7280;"><?php echo date('H:i A', strtotime($transaction['created_at'])); ?></div>
+                                <div class="cell-sub">
+                                    <?php echo date('M d, Y · g:i A', strtotime($transaction['created_at'])); ?>
                                 </div>
                             </td>
-                            <td>
-                                <div class="action-buttons">
-                                    <button onclick="editTransaction(<?php echo $transaction['id']; ?>)" class="action-btn btn-edit" title="Edit Transaction">
-                                        <i class="fas fa-edit"></i>
+                            <td class="tx-actions-cell">
+                                <div class="tx-actions-menu">
+                                    <button type="button" class="tx-actions-toggle" aria-label="Actions" aria-haspopup="true" aria-expanded="false" onclick="toggleTxActionsMenu(this)">
+                                        <i class="fas fa-ellipsis-v"></i>
                                     </button>
-                                    <?php if (isSuccessfulTransactionStatus($transaction['status'] ?? '')): ?>
-                                        <button onclick="reverseTransaction(<?php echo $transaction['id']; ?>)" class="action-btn btn-reverse" title="Reverse Transaction">
-                                            <i class="fas fa-undo"></i>
+                                    <div class="tx-actions-dropdown" role="menu">
+                                        <button type="button" role="menuitem" onclick="closeAllTxActionsMenus(); editTransaction(<?php echo (int)$transaction['id']; ?>)">
+                                            <i class="fas fa-edit"></i> Edit
                                         </button>
-                                    <?php endif; ?>
-                                    <button onclick="deleteTransaction(<?php echo $transaction['id']; ?>)" class="action-btn btn-delete" title="Delete Transaction">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                                        <?php if (isSuccessfulTransactionStatus($transaction['status'] ?? '')): ?>
+                                            <button type="button" role="menuitem" class="action-reverse" onclick="closeAllTxActionsMenus(); reverseTransaction(<?php echo (int)$transaction['id']; ?>)">
+                                                <i class="fas fa-undo"></i> Reverse
+                                            </button>
+                                        <?php endif; ?>
+                                        <button type="button" role="menuitem" class="action-delete" onclick="closeAllTxActionsMenus(); deleteTransaction(<?php echo (int)$transaction['id']; ?>)">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -1334,6 +1425,79 @@ function bulkDeleteTransactions() {
     );
 }
 
+let activeTxActionsMenu = null;
+
+function closeAllTxActionsMenus() {
+    document.querySelectorAll('.tx-actions-menu.open').forEach(menu => {
+        menu.classList.remove('open');
+        const toggle = menu.querySelector('.tx-actions-toggle');
+        if (toggle) toggle.setAttribute('aria-expanded', 'false');
+    });
+    document.querySelectorAll('.tx-actions-dropdown.is-open').forEach(dropdown => {
+        dropdown.classList.remove('is-open');
+        dropdown.style.top = '';
+        dropdown.style.left = '';
+        dropdown.style.visibility = '';
+        const home = dropdown._menuHome;
+        if (home && dropdown.parentNode !== home) {
+            home.appendChild(dropdown);
+        }
+        delete dropdown._menuHome;
+    });
+    activeTxActionsMenu = null;
+}
+
+function toggleTxActionsMenu(button) {
+    const menu = button.closest('.tx-actions-menu');
+    const dropdown = menu ? menu.querySelector('.tx-actions-dropdown') : null;
+    if (!menu || !dropdown) return;
+
+    const willOpen = !menu.classList.contains('open');
+    closeAllTxActionsMenus();
+    if (!willOpen) return;
+
+    menu.classList.add('open');
+    button.setAttribute('aria-expanded', 'true');
+    // Moved to <body> so card overflow/backdrop-filter can't clip or offset it
+    dropdown._menuHome = menu;
+    document.body.appendChild(dropdown);
+    activeTxActionsMenu = menu;
+
+    dropdown.style.visibility = 'hidden';
+    dropdown.classList.add('is-open');
+
+    const rect = button.getBoundingClientRect();
+    const menuWidth = Math.max(dropdown.offsetWidth || 168, 168);
+    const menuHeight = dropdown.offsetHeight || 120;
+    const gap = 6;
+    const pad = 8;
+
+    let top = rect.bottom + gap;
+    if (top + menuHeight > window.innerHeight - pad && rect.top - gap - menuHeight >= pad) {
+        top = rect.top - menuHeight - gap;
+    }
+    top = Math.min(Math.max(top, pad), Math.max(pad, window.innerHeight - menuHeight - pad));
+
+    let left = rect.right - menuWidth;
+    left = Math.min(Math.max(left, pad), Math.max(pad, window.innerWidth - menuWidth - pad));
+
+    dropdown.style.top = Math.round(top) + 'px';
+    dropdown.style.left = Math.round(left) + 'px';
+    dropdown.style.visibility = '';
+}
+
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.tx-actions-menu') || e.target.closest('.tx-actions-dropdown')) return;
+    closeAllTxActionsMenus();
+});
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeAllTxActionsMenus();
+});
+window.addEventListener('resize', closeAllTxActionsMenus);
+window.addEventListener('scroll', function() {
+    if (activeTxActionsMenu) closeAllTxActionsMenus();
+}, true);
+
 function editTransaction(transactionId) {
     // Fetch transaction details first
     fetch('<?php echo SITE_URL; ?>/api/admin-get-transaction.php?id=' + transactionId)
@@ -1423,8 +1587,12 @@ function showEditTransactionModal(transaction, dateValue, timeValue) {
                 <form id="editTransactionForm">
                     <div style="margin-bottom: 15px;">
                         <label style="display: block; margin-bottom: 5px; font-weight: 600;">Transaction Type</label>
-                        <input type="text" value="${safeTxnType}" readonly
-                               style="width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 5px; background: #f9fafb; text-transform: capitalize;">
+                        <select id="editTransactionType"
+                                style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                            <option value="credit" ${safeTxnType === 'credit' ? 'selected' : ''}>Credit (money in)</option>
+                            <option value="debit" ${safeTxnType === 'debit' ? 'selected' : ''}>Debit (money out)</option>
+                        </select>
+                        <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">Changing the type updates the account balance.</div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
                         <div>
@@ -1607,7 +1775,8 @@ function saveTransactionEdit(transactionId) {
         description: description,
         date: datetime,
         category: category,
-        expense_category: expenseCategory || null
+        expense_category: expenseCategory || null,
+        transaction_type: document.getElementById('editTransactionType').value
     };
 
     if (showTransfer) {
