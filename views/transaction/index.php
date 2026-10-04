@@ -1082,7 +1082,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                         // Get transactions after this date
                         $sqlTrans = "SELECT SUM(CASE WHEN transaction_type = 'credit' THEN amount ELSE -amount END) as change 
                                      FROM transactions 
-                                     WHERE account_id = ? AND DATE(created_at) > ? AND status = 'completed'";
+                                     WHERE account_id = ? AND DATE(created_at) > ? AND status IN ('completed', 'successful')";
                         $stmtTrans = $db->query($sqlTrans, [$primaryAccount['id'], $date]);
                         if ($stmtTrans) {
                             $transData = $stmtTrans->fetch();

@@ -1658,7 +1658,7 @@ function submitBalanceUpdate() {
         try {
             const data = JSON.parse(text);
             if (data.success) {
-                showToast('Balance updated successfully', 'success');
+                showToast(data.message || 'Balance updated successfully', 'success');
                 closeBalanceModal();
                 setTimeout(() => {
                     window.location.reload();
@@ -1680,12 +1680,4 @@ function submitBalanceUpdate() {
 
 // Initialize KYC reject reason visibility on load
 onKycStatusChange();
-
-// Close modal when clicking outside
-window.onclick = function(event) {
-    const modal = document.getElementById('balanceModal');
-    if (event.target === modal) {
-        closeBalanceModal();
-    }
-}
 </script>

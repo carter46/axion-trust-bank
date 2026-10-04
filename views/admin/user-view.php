@@ -995,6 +995,8 @@ include __DIR__ . '/../../includes/admin-modals.php';
     }
     
     function showBalanceAdjustmentModal() {
+      // Every field is looked up by id, so a leftover copy would capture all input.
+      document.querySelectorAll('#balanceModal').forEach(existing => existing.remove());
       const modal = document.createElement('div');
       modal.id = 'balanceModal';
       modal.className = 'modal';
@@ -1964,13 +1966,4 @@ function handleExternalAdjustment() {
       );
     }
 
-    // Close modal when clicking outside
-    window.onclick = function(event) {
-    const modals = document.querySelectorAll('.modal');
-    modals.forEach(modal => {
-      if (event.target == modal) {
-        modal.style.display = 'none';
-      }
-    });
-}
 </script>

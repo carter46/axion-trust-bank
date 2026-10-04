@@ -117,54 +117,61 @@ function handleInternalAdjustment($input) {
             exit;
         }
         
-        // Verify both accounts belong to the user and are active
-        $sql = "SELECT id, user_id, account_number, account_type, balance, currency FROM accounts WHERE id IN (?, ?) AND user_id = ? AND status = 'active'";
-        $stmt = $db->query($sql, [$fromAccountId, $toAccountId, $userId]);
-        $accounts = [];
-        while ($row = $stmt->fetch()) {
-            $accounts[$row['id']] = $row;
-        }
-        
-        if (!isset($accounts[$fromAccountId])) {
-            echo json_encode(['success' => false, 'message' => 'From Account not found or does not belong to user']);
-            exit;
-        }
-        
-        if (!isset($accounts[$toAccountId])) {
-            echo json_encode(['success' => false, 'message' => 'To Account not found or does not belong to user']);
-            exit;
-        }
-        
-        $fromAccount = $accounts[$fromAccountId];
-        $toAccount = $accounts[$toAccountId];
-
-        $amountCurrency = Security::sanitize($input['amount_currency'] ?? 'display');
-        $ledgerAmount = adminResolveLedgerAdjustmentAmount($amount, $user, $fromAccount, $amountCurrency);
-        if ($ledgerAmount <= 0) {
-            echo json_encode(['success' => false, 'message' => 'Amount must be greater than 0']);
-            exit;
-        }
-
-        // Check if from account has sufficient balance
-        if (floatval($fromAccount['balance']) < $ledgerAmount) {
-            echo json_encode(['success' => false, 'message' => 'Insufficient balance in source account']);
-            exit;
-        }
-        
-        // Start transaction
         $db->beginTransaction();
         
         try {
+            // Verify both accounts belong to the user and are active
+            $sql = "SELECT id, user_id, account_number, account_type, balance, currency FROM accounts WHERE id IN (?, ?) AND user_id = ? AND status = 'active' FOR UPDATE";
+            $stmt = $db->query($sql, [$fromAccountId, $toAccountId, $userId]);
+            $accounts = [];
+            while ($row = $stmt->fetch()) {
+                $accounts[$row['id']] = $row;
+            }
+            
+            if (!isset($accounts[$fromAccountId])) {
+                $db->rollback();
+                echo json_encode(['success' => false, 'message' => 'From Account not found or does not belong to user']);
+                exit;
+            }
+            
+            if (!isset($accounts[$toAccountId])) {
+                $db->rollback();
+                echo json_encode(['success' => false, 'message' => 'To Account not found or does not belong to user']);
+                exit;
+            }
+            
+            $fromAccount = $accounts[$fromAccountId];
+            $toAccount = $accounts[$toAccountId];
+
+            $amountCurrency = Security::sanitize($input['amount_currency'] ?? 'display');
+            $ledgerAmount = adminResolveLedgerAdjustmentAmount($amount, $user, $fromAccount, $amountCurrency);
+            $toLedgerAmount = getAccountStoredCurrency($toAccount) === getAccountStoredCurrency($fromAccount)
+                ? $ledgerAmount
+                : round(convertCurrencyAmount($ledgerAmount, getAccountStoredCurrency($fromAccount), getAccountStoredCurrency($toAccount)), 2);
+            if ($ledgerAmount <= 0 || $toLedgerAmount <= 0) {
+                $db->rollback();
+                echo json_encode(['success' => false, 'message' => 'Amount must be greater than 0']);
+                exit;
+            }
+
+            if (floatval($fromAccount['balance']) < $ledgerAmount) {
+                $db->rollback();
+                echo json_encode(['success' => false, 'message' => 'Insufficient balance in source account']);
+                exit;
+            }
+
             // Calculate new balances
             $fromBalanceBefore = floatval($fromAccount['balance']);
             $toBalanceBefore = floatval($toAccount['balance']);
-            $fromBalanceAfter = $fromBalanceBefore - $ledgerAmount;
-            $toBalanceAfter = $toBalanceBefore + $ledgerAmount;
+            $fromBalanceAfter = round($fromBalanceBefore - $ledgerAmount, 2);
+            $toBalanceAfter = round($toBalanceBefore + $toLedgerAmount, 2);
             
             // Update account balances
             $sql = "UPDATE accounts SET balance = ?, available_balance = ?, updated_at = NOW() WHERE id = ?";
-            $db->query($sql, [$fromBalanceAfter, $fromBalanceAfter, $fromAccountId]);
-            $db->query($sql, [$toBalanceAfter, $toBalanceAfter, $toAccountId]);
+            if ($db->query($sql, [$fromBalanceAfter, $fromBalanceAfter, $fromAccountId]) === false
+                || $db->query($sql, [$toBalanceAfter, $toBalanceAfter, $toAccountId]) === false) {
+                throw new Exception('Could not update account balances');
+            }
             
             // Create transaction references
             $transactionRef = 'ADM' . date('YmdHis') . rand(100, 999);
@@ -187,7 +194,7 @@ function handleInternalAdjustment($input) {
                 'admin_action' => true
             ]);
             
-            $db->query($sql, [
+            $debitInserted = $db->query($sql, [
                 $fromTransactionRef,   // 1. transaction_ref
                 $userId,               // 2. user_id
                 $fromAccountId,        // 3. account_id
@@ -226,14 +233,14 @@ function handleInternalAdjustment($input) {
                 'admin_action' => true
             ]);
             
-            $db->query($sql, [
+            $creditInserted = $db->query($sql, [
                 $toTransactionRef,     // 1. transaction_ref
                 $userId,               // 2. user_id
                 $toAccountId,          // 3. account_id
                 // 4. transaction_type = 'credit' (hardcoded)
                 // 5. category = 'transfer' (hardcoded)
                 $expenseCategory,      // 6. expense_category
-                $ledgerAmount,               // 7. amount
+                $toLedgerAmount,       // 7. amount
                 $toAccount['currency'], // 8. currency
                 $toBalanceBefore,      // 9. balance_before
                 $toBalanceAfter,       // 10. balance_after
@@ -248,6 +255,10 @@ function handleInternalAdjustment($input) {
                 $fullDateTime,         // 19. created_at
                 $fullDateTime          // 20. completed_at
             ]);
+
+            if ($debitInserted === false || $creditInserted === false) {
+                throw new Exception('Could not record the transfer transactions');
+            }
             
             // Log admin action
             $logDescription = "Internal transfer of {$amount} from account {$fromAccount['account_number']} to {$toAccount['account_number']} for user {$user['email']} (ID: {$userId})";
@@ -448,7 +459,7 @@ try {
     }
     
     // Verify the specified account belongs to the user
-    $sql = "SELECT id, user_id, account_number, balance, currency FROM accounts WHERE id = ? AND user_id = ? AND status = 'active'";
+    $sql = "SELECT id, user_id, account_number, balance, currency FROM accounts WHERE id = ? AND user_id = ? AND status = 'active' FOR UPDATE";
     $stmt = $db->query($sql, [$accountId, $userId]);
     $account = $stmt->fetch();
     
@@ -469,10 +480,10 @@ try {
     
     // Calculate new balance
     if ($direction === 'credit') {
-        $newBalance = $balanceBefore + $ledgerAmount;
+        $newBalance = round($balanceBefore + $ledgerAmount, 2);
         $balanceChange = $ledgerAmount;
     } else {
-        $newBalance = $balanceBefore - $ledgerAmount;
+        $newBalance = round($balanceBefore - $ledgerAmount, 2);
         $balanceChange = -$ledgerAmount;
     }
     
@@ -488,7 +499,13 @@ try {
     
     if ($statusAffectsBalance) {
         $sql = "UPDATE accounts SET balance = ?, available_balance = ?, updated_at = NOW() WHERE id = ?";
-        $db->query($sql, [$newBalance, $newBalance, $account['id']]);
+        $balanceUpdated = $db->query($sql, [$newBalance, $newBalance, $account['id']]);
+        if ($balanceUpdated === false) {
+            $db->rollback();
+            error_log("admin-adjust-balance: balance UPDATE failed for account {$account['id']}");
+            echo json_encode(['success' => false, 'message' => 'Could not update the account balance. No transaction was recorded.']);
+            exit;
+        }
     }
     
     // Create transaction record
@@ -710,13 +727,32 @@ try {
         $createdTransaction = $fallbackStmt->fetch();
     }
     
+    $savedAccount = $db->fetchRow('SELECT balance FROM accounts WHERE id = ?', [$accountIdForInsert]);
+    $savedBalance = $savedAccount ? (float)$savedAccount['balance'] : null;
+    $expectedBalance = $statusAffectsBalance ? $newBalance : $balanceBefore;
+    if ($savedBalance === null || abs($savedBalance - $expectedBalance) > 0.009) {
+        error_log("admin-adjust-balance: account {$accountIdForInsert} balance is " . var_export($savedBalance, true) . ", expected {$expectedBalance} after {$transactionRef}");
+    }
+
+    $displayBalance = $savedBalance !== null
+        ? formatAccountBalance($savedBalance, $account, getUserDisplayCurrency($user))
+        : null;
+    if (!$statusAffectsBalance) {
+        $message = 'Transaction recorded as ' . formatTransactionStatusLabel($status) . '. The balance was not changed.';
+    } else {
+        $message = 'Balance ' . ($direction === 'credit' ? 'credited' : 'debited') . ' successfully.'
+            . ($displayBalance !== null ? ' New balance: ' . $displayBalance : '');
+    }
+
     echo json_encode([
         'success' => true,
-        'message' => 'Transaction created successfully',
+        'message' => $message,
         'transaction_ref' => $transactionRef,
         'transaction_id' => $createdTransaction['id'] ?? null,
-        'new_balance' => $newBalance,
-        'balance_change' => $balanceChange
+        'balance_affected' => $statusAffectsBalance,
+        'new_balance' => $savedBalance ?? $newBalance,
+        'new_balance_formatted' => $displayBalance,
+        'balance_change' => $statusAffectsBalance ? $balanceChange : 0
     ]);
     
 } catch (Exception $e) {

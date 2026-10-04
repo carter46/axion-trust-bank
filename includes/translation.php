@@ -7,8 +7,11 @@
  * 
  * Note:
  * - Public/marketing pages keep their own `.gtranslate_wrapper` (do not change those layouts).
- * - App pages (logged-in) mount the widget ONLY inside `#settingsGTranslateMount` on
+ * - App pages (logged-in) and admin pages mount the widget ONLY inside `#settingsGTranslateMount` on
  *   `/profile/settings`, and keep it hidden elsewhere to prevent floating / duplicates.
+ * - GTranslate keeps the chosen language in localStorage `__GT_TRANSLATE_LANGS` (per origin).
+ *   The `site_lang` cookie mirrors it on the parent domain so the choice survives across
+ *   subdomains (www / app / root); it is the source of truth and re-seeds localStorage on load.
  */
 
 // Prevent duplicate widget/script injection when multiple layouts include this file.
@@ -108,15 +111,106 @@ window.gtranslateSettings = {
     "switcher_open_direction": "down"
 };
 
-// Ensure GTranslate handles multiple language switches properly
-document.addEventListener('DOMContentLoaded', function() {
-    const STORAGE_KEY = 'gt_selected_lang';
-    const COOKIE_KEY = 'googtrans';
+// Must run before dwf.js loads: it reads `__GT_TRANSLATE_LANGS` once at startup to pick the page language.
+(function() {
+    var GT_STORAGE_KEY = '__GT_TRANSLATE_LANGS';
+    var LANG_COOKIE = 'site_lang';
+    var DEFAULT_LANG = window.gtranslateSettings.default_language;
+    var ALLOWED = window.gtranslateSettings.languages;
 
-    // App pages render the sidebar wrapper (.dashboard-container). On those pages we must
-    // NOT create a floating widget; the only allowed widget there is the settings mount.
+    function isAllowed(lang) {
+        return typeof lang === 'string' && ALLOWED.indexOf(lang) !== -1;
+    }
+
+    function readCookie(name) {
+        var match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+        return match ? decodeURIComponent(match[1]) : '';
+    }
+
+    function cookieDomains() {
+        var host = location.hostname;
+        if (!host || /^[\d.]+$/.test(host) || host.indexOf('.') === -1) {
+            return [];
+        }
+        var parts = host.split('.');
+        var domains = [];
+        for (var i = parts.length - 2; i >= 0; i--) {
+            domains.push(parts.slice(i).join('.'));
+        }
+        return domains;
+    }
+
+    function expireCookie(name) {
+        document.cookie = name + '=; path=/; max-age=0';
+        cookieDomains().forEach(function(domain) {
+            document.cookie = name + '=; path=/; max-age=0; domain=.' + domain;
+        });
+    }
+
+    // Shortest parent domain the browser accepts (public suffixes like co.uk are rejected).
+    function writeLangCookie(lang) {
+        var attrs = '; path=/; max-age=' + (365 * 24 * 60 * 60) + '; SameSite=Lax';
+        document.cookie = LANG_COOKIE + '=; path=/; max-age=0';
+        var domains = cookieDomains();
+        for (var i = 0; i < domains.length; i++) {
+            document.cookie = LANG_COOKIE + '=' + lang + attrs + '; domain=.' + domains[i];
+            if (readCookie(LANG_COOKIE) === lang) {
+                return;
+            }
+        }
+        document.cookie = LANG_COOKIE + '=' + lang + attrs;
+    }
+
+    function readStoredLang() {
+        try {
+            var stored = JSON.parse(localStorage.getItem(GT_STORAGE_KEY));
+            if (stored && isAllowed(stored.tgtLang)) {
+                return stored.tgtLang;
+            }
+        } catch (e) {}
+        return DEFAULT_LANG;
+    }
+
+    function writeStoredLang(lang) {
+        try {
+            if (lang === DEFAULT_LANG) {
+                localStorage.removeItem(GT_STORAGE_KEY);
+            } else {
+                localStorage.setItem(GT_STORAGE_KEY, JSON.stringify({ srcLang: DEFAULT_LANG, tgtLang: lang }));
+            }
+        } catch (e) {}
+    }
+
+    // Leftovers from the old Google-Translate-cookie integration; they re-applied stale languages.
+    try { localStorage.removeItem('gt_selected_lang'); } catch (e) {}
+    expireCookie('googtrans');
+
+    var cookieLang = readCookie(LANG_COOKIE);
+    if (isAllowed(cookieLang)) {
+        writeStoredLang(cookieLang);
+    } else {
+        writeLangCookie(readStoredLang());
+    }
+
+    window.__siteLangRemember = function(lang) {
+        if (isAllowed(lang)) {
+            writeLangCookie(lang);
+        }
+    };
+})();
+
+(function(init) {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})(function() {
+    // App pages render the sidebar wrapper (.dashboard-container); admin pages mark the body.
+    // On those pages we must NOT create a floating widget; the only allowed widget there is
+    // the settings mount. Translation still applies from the saved language.
     function isAppPage() {
-        return !!document.querySelector('.dashboard-container');
+        return !!document.querySelector('.dashboard-container') || document.body.classList.contains('admin-page');
     }
 
     function removeStrayFloats() {
@@ -132,172 +226,48 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function ensureWrapperExists() {
-        const settingsMount = document.getElementById('settingsGTranslateMount');
-        if (settingsMount) {
-            return settingsMount;
-        }
-
-        // On app pages with no settings mount, do not create any widget (avoid float).
-        if (isAppPage()) {
-            return null;
-        }
-
-        // Marketing/public + auth pages: ensure the floating wrapper exists.
-        let wrapper = document.querySelector('.gtranslate_wrapper');
-        if (!wrapper) {
-            wrapper = document.createElement('div');
-            wrapper.className = 'gtranslate_wrapper';
-            document.body.appendChild(wrapper);
-        }
-        return wrapper;
-    }
-
-    function setCookie(name, value, days) {
-        const maxAge = days * 24 * 60 * 60;
-        document.cookie = `${name}=${value};path=/;max-age=${maxAge}`;
-    }
-
-    function getCookie(name) {
-        const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.$?*|{}()[\]\\/+^]/g, '\\$&') + '=([^;]*)'));
-        return match ? decodeURIComponent(match[1]) : '';
-    }
-
-    function persistLanguage(langCode) {
-        if (!langCode || langCode === 'en') {
-            localStorage.setItem(STORAGE_KEY, 'en');
-            setCookie(COOKIE_KEY, '/en/en', 365);
-            return;
-        }
-        localStorage.setItem(STORAGE_KEY, langCode);
-        setCookie(COOKIE_KEY, `/en/${langCode}`, 365);
-    }
-
-    function getPreferredLanguage() {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-            return stored;
-        }
-
-        const cookieValue = getCookie(COOKIE_KEY);
-        if (cookieValue && cookieValue.indexOf('/en/') === 0) {
-            return cookieValue.replace('/en/', '') || 'en';
-        }
-        return 'en';
-    }
-
-    function applySavedLanguage(langCode) {
-        if (!langCode || langCode === 'en' || typeof window.doGTranslate !== 'function') {
-            return;
-        }
-        try {
-            window.doGTranslate(`en|${langCode}`);
-        } catch (error) {
-            console.error('[GTranslate] Failed to apply saved language:', error);
-        }
-    }
-
-    const ensuredWrapper = ensureWrapperExists();
-    // App pages without a settings mount: strip any stray floating widget GTranslate adds,
-    // but still allow translation to apply via the saved-language cookie below.
-    if (isAppPage() && !document.getElementById('settingsGTranslateMount')) {
+    const hideWidget = isAppPage() && !document.getElementById('settingsGTranslateMount');
+    if (hideWidget) {
         removeStrayFloats();
-        setTimeout(removeStrayFloats, 400);
-        setTimeout(removeStrayFloats, 1500);
+    } else if (!isAppPage() && !document.querySelector('.gtranslate_wrapper')) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'gtranslate_wrapper';
+        document.body.appendChild(wrapper);
     }
 
-    // Wait for GTranslate to load
-    function waitForGTranslate(callback, maxAttempts = 50) {
-        let attempts = 0;
-        const checkInterval = setInterval(function() {
-            attempts++;
-            if (window.gtranslate || window.doGTranslate) {
-                clearInterval(checkInterval);
-                if (callback) callback();
-            } else if (attempts >= maxAttempts) {
-                clearInterval(checkInterval);
-                console.warn('[GTranslate] Widget did not load within expected time');
-            }
-        }, 100);
-    }
-    
-    // Ensure widget is properly initialized
-    waitForGTranslate(function() {
-        const preferredLanguage = getPreferredLanguage();
-
-        // Force widget refresh only when a visible wrapper exists
-        if (window.gtranslate && typeof window.gtranslate.install === 'function') {
-            try {
-                const wrapper = document.querySelector('.gtranslate_wrapper');
-                const onAppPage = isAppPage();
-                const isSettingsMount = wrapper && wrapper.id === 'settingsGTranslateMount';
-                if (wrapper && (!onAppPage || isSettingsMount)) {
-                    if (!wrapper.querySelector('select')) {
-                        window.gtranslate.install();
-                    }
-                }
-            } catch(e) {
-                console.log('[GTranslate] Reinstall check:', e);
-            }
+    // The switcher calls the global doGTranslate at click time, so wrapping it after dwf.js
+    // loads captures every language change.
+    function wrapDoGTranslate() {
+        if (typeof window.doGTranslate !== 'function' || window.doGTranslate.__siteLangWrapped) {
+            return;
         }
-
-        // Apply previously selected language across pages.
-        applySavedLanguage(preferredLanguage);
-        
-        // Monitor for language changes and ensure widget stays functional
-        let lastLanguage = preferredLanguage || 'en';
-        
-        // Check for language changes periodically
-        setInterval(function() {
-            const cookieValue = getCookie(COOKIE_KEY);
-            let currentLanguage = 'en';
-            if (cookieValue && cookieValue.indexOf('/en/') === 0) {
-                currentLanguage = cookieValue.replace('/en/', '') || 'en';
-            } else {
-                currentLanguage = localStorage.getItem(STORAGE_KEY) || 'en';
-            }
-
-            if (currentLanguage !== lastLanguage) {
-                lastLanguage = currentLanguage;
-                persistLanguage(currentLanguage);
-                // Language changed, ensure widget is still responsive
-                const wrapper = document.querySelector('.gtranslate_wrapper');
-                if (wrapper) {
-                    const select = wrapper.querySelector('select');
-                    if (select && select.disabled) {
-                        select.disabled = false;
-                    }
-                }
-            }
-        }, 500);
-
-        // Save language whenever the switcher changes.
-        const wrapper = document.querySelector('.gtranslate_wrapper');
-        const select = wrapper ? wrapper.querySelector('select') : null;
-        if (select) {
-            select.addEventListener('change', function() {
-                persistLanguage(this.value || 'en');
-            });
-        }
-    });
-    
-    // Prevent conflicts with other scripts
-    if (window.doGTranslate) {
         const originalDoGTranslate = window.doGTranslate;
-        window.doGTranslate = function() {
+        const wrapped = function(langPair) {
+            const pair = langPair && langPair.value !== undefined ? langPair.value : langPair;
+            if (typeof pair === 'string' && pair.indexOf('|') !== -1) {
+                window.__siteLangRemember(pair.split('|')[1]);
+            }
             try {
                 return originalDoGTranslate.apply(this, arguments);
-            } catch(e) {
+            } catch (e) {
                 console.error('[GTranslate] Error during translation:', e);
-                // Try to reinitialize
-                if (window.gtranslate && typeof window.gtranslate.install === 'function') {
-                    setTimeout(function() {
-                        window.gtranslate.install();
-                    }, 1000);
-                }
             }
         };
+        wrapped.__siteLangWrapped = true;
+        window.doGTranslate = wrapped;
     }
+
+    // dwf.js fills existing wrappers only once, when it runs, so load it after the wrapper exists.
+    const script = document.createElement('script');
+    script.src = 'https://cdn.gtranslate.net/widgets/latest/dwf.js';
+    script.addEventListener('load', function() {
+        wrapDoGTranslate();
+        if (hideWidget) {
+            removeStrayFloats();
+            setTimeout(removeStrayFloats, 400);
+            setTimeout(removeStrayFloats, 1500);
+        }
+    });
+    document.body.appendChild(script);
 });
 </script>
-<script src="https://cdn.gtranslate.net/widgets/latest/dwf.js" defer></script>

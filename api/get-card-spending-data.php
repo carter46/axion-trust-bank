@@ -37,7 +37,7 @@ try {
                 FROM card_transactions 
                 WHERE card_id = ? 
                 AND transaction_type = 'debit'
-                AND status = 'completed'
+                AND status IN ('completed', 'successful')
                 AND expense_category IS NOT NULL
                 GROUP BY expense_category
                 ORDER BY total DESC";
@@ -90,7 +90,7 @@ try {
                     FROM card_transactions 
                     WHERE card_id = ? 
                     AND transaction_type = 'debit'
-                    AND status = 'completed'
+                    AND status IN ('completed', 'successful')
                     AND DATE(created_at) = ?";
             $stmt = $db->query($sql, [$cardId, $date]);
             $result = $stmt->fetch();
@@ -122,7 +122,7 @@ try {
                     FROM card_transactions 
                     WHERE card_id = ? 
                     AND transaction_type = 'debit'
-                    AND status = 'completed'
+                    AND status IN ('completed', 'successful')
                     AND YEAR(created_at) = YEAR(?) 
                     AND MONTH(created_at) = MONTH(?)";
             $stmt = $db->query($sql, [$cardId, $date, $date]);

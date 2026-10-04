@@ -481,6 +481,11 @@ function adjustAccountBalance(accountId, accountNumber, accountType) {
             }
             
             const userId = <?php echo $userId; ?>;
+            const signedAmount = parseFloat(amount);
+            if (signedAmount === 0) {
+                showToast('Please enter a non-zero amount', 'error');
+                return;
+            }
             
             fetch('/api/admin-adjust-balance.php', {
                 method: 'POST',
@@ -490,7 +495,8 @@ function adjustAccountBalance(accountId, accountNumber, accountType) {
                 body: JSON.stringify({
                     user_id: userId,
                     account_id: accountId,
-                    amount: parseFloat(amount),
+                    transaction_type: signedAmount < 0 ? 'debit' : 'credit',
+                    amount: Math.abs(signedAmount),
                     amount_currency: 'display',
                     description: `Admin balance adjustment for ${accountType} account #${accountNumber}`
                 })
@@ -498,8 +504,8 @@ function adjustAccountBalance(accountId, accountNumber, accountType) {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showToast('Balance adjusted successfully', 'success');
-                    location.reload();
+                    showToast(data.message || 'Balance adjusted successfully', 'success');
+                    setTimeout(() => location.reload(), 1500);
                 } else {
                     showToast('Error: ' + data.message, 'error');
                 }

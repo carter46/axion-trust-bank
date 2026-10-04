@@ -114,7 +114,7 @@ try {
                   FROM transactions 
                   WHERE account_id = ?
                   AND transaction_type = 'credit'
-                  AND status = 'completed'
+                  AND status IN ('completed', 'successful')
                   AND DATE_FORMAT(created_at, '%Y-%m') = ?";
     $stmt = $db->query($incomeSql, [$accountId, $currentMonth]);
     if ($stmt === false) {
@@ -130,7 +130,7 @@ try {
                       FROM transactions 
                       WHERE account_id = ?
                       AND transaction_type = 'debit'
-                      AND status = 'completed'
+                      AND status IN ('completed', 'successful')
                       AND DATE_FORMAT(created_at, '%Y-%m') = ?";
     $stmt = $db->query($outgoingSql, [$accountId, $currentMonth]);
     if ($stmt === false) {
@@ -170,7 +170,7 @@ try {
     $volumeSql = "SELECT COALESCE(SUM(amount), 0) as total
                   FROM transactions 
                   WHERE account_id = ?
-                  AND status = 'completed'";
+                  AND status IN ('completed', 'successful')";
     $stmt = $db->query($volumeSql, [$accountId]);
     if ($stmt === false) {
         $transactionVolume = 0;

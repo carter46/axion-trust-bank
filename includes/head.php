@@ -1626,10 +1626,8 @@
     })();
     </script>
     <?php
-    // Enable translation on all non-admin pages that use this shared head.
-    if (!$isAdminRoute) {
-        include __DIR__ . '/translation.php';
-    }
+    // Admin pages apply the saved language too; translation.php hides the switcher there.
+    include __DIR__ . '/translation.php';
     ?>
     
 </head>
