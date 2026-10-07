@@ -22,7 +22,8 @@ class TransactionHistoryGenerator
         $stmt = $this->db->query(
             "SELECT * FROM transaction_templates WHERE slug = 'default_checking' AND is_active = 1 LIMIT 1"
         );
-        return $stmt ? $stmt->fetch() : null;
+        $row = $stmt ? $stmt->fetch() : false;
+        return $row ?: null;
     }
 
     public function loadTemplateItems(int $templateId): array
