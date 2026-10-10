@@ -264,13 +264,10 @@ if (!empty($userCards)) {
         max-width: 60%;
     }
 
-    .mastercard-logo {
-        /* Prevent huge logos on mobile / global img styles */
+    .card-network-mark {
         display: block;
         width: 50px;
         max-width: 50px;
-        height: auto;
-        object-fit: contain;
         flex-shrink: 0;
     }
 
@@ -914,11 +911,9 @@ if (!empty($userCards)) {
             font-size: 14px !important; /* Smaller logo text */
         }
         
-        .mastercard-logo {
-            width: 45px !important; /* Smaller logo */
+        .card-network-mark {
+            width: 45px !important;
             max-width: 45px !important;
-            height: auto !important;
-            object-fit: contain;
         }
         
         .chip {
@@ -1029,13 +1024,10 @@ if (!empty($userCards)) {
         max-width: 60%;
     }
 
-    .mastercard-logo {
-        /* Keep consistent sizing across duplicated blocks */
+    .card-network-mark {
         display: block;
         width: 45px;
         max-width: 45px;
-        height: auto;
-        object-fit: contain;
         flex-shrink: 0;
     }
 
@@ -1648,11 +1640,9 @@ if (!empty($userCards)) {
             font-size: 12px;
         }
 
-        .mastercard-logo {
+        .card-network-mark {
             width: 40px;
             max-width: 40px;
-            height: auto;
-            object-fit: contain;
         }
 
         .chip {
@@ -1759,22 +1749,28 @@ if (!empty($userCards)) {
         color: white;
     }
 
-    /* ===== Mastercard logo hard-fix (mobile + global overrides) =====
-       Some deployments include global img rules or later CSS that can blow up/position the
-       .mastercard-logo. This ensures it always stays a small, properly placed logo. */
-    .credit-card-container .card-top-section img.mastercard-logo {
+    /* ===== Contactless mark hard-fix (mobile + global overrides) =====
+       Keeps the contactless mark small and right-aligned in the card's top row. */
+    .credit-card-container .card-top-section .card-network-mark {
         width: 56px !important;
         max-width: 56px !important;
         height: 22px !important;
         max-height: 22px !important;
-        object-fit: contain !important;
-        object-position: right center !important;
         position: static !important;
         inset: auto !important;
         transform: none !important;
         margin: 0 !important;
-        display: block !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
         flex-shrink: 0 !important;
+        color: rgba(255, 255, 255, 0.9) !important;
+        font-size: 20px !important;
+        line-height: 1 !important;
+    }
+
+    .credit-card-container .card-top-section .card-network-mark i {
+        transform: rotate(90deg);
     }
 
     @media (max-width: 768px) {
@@ -1782,11 +1778,12 @@ if (!empty($userCards)) {
             height: 32px !important; /* Ensure there's room for the logo */
             align-items: flex-start !important;
         }
-        .credit-card-container .card-top-section img.mastercard-logo {
+        .credit-card-container .card-top-section .card-network-mark {
             width: 52px !important;
             max-width: 52px !important;
             height: 20px !important;
             max-height: 20px !important;
+            font-size: 18px !important;
         }
     }
 
@@ -1795,11 +1792,12 @@ if (!empty($userCards)) {
             height: 30px !important;
             align-items: flex-start !important;
         }
-        .credit-card-container .card-top-section img.mastercard-logo {
+        .credit-card-container .card-top-section .card-network-mark {
             width: 48px !important;
             max-width: 48px !important;
             height: 18px !important;
             max-height: 18px !important;
+            font-size: 16px !important;
         }
     }
 
@@ -2023,7 +2021,7 @@ if (!empty($userCards)) {
                         <div class="card-face front-face <?php echo !empty($userCards) ? $userCards[0]['card_type'] . '-card' : 'debit-card'; ?>">
                             <div class="card-top-section">
                                 <div class="site-logo"><?php echo htmlspecialchars(SITE_NAME); ?></div>
-                                <img class="mastercard-logo" src="<?php echo SITE_URL; ?>/uploads/images/Mastercard-logo.svg.webp" alt="Mastercard">
+                                <span class="card-network-mark" aria-hidden="true"><i class="fas fa-wifi"></i></span>
                             </div>
                             
                             <div class="card-middle-section">
@@ -2096,7 +2094,7 @@ if (!empty($userCards)) {
                     </div>
                     <div class="info-item">
                         <span>Card Type:</span>
-                        <span id="cardTypeText">MasterCard</span>
+                        <span id="cardTypeText"><?php echo !empty($userCards[0]['card_name']) ? htmlspecialchars($userCards[0]['card_name']) : 'Card'; ?></span>
                     </div>
                     <div class="info-item">
                         <span>Currency:</span>
@@ -2946,7 +2944,7 @@ if (!empty($userCards)) {
                     <div class="card-face front-face ${cardTypeClass}">
                         <div class="card-top-section">
                             <div class="site-logo"><?php echo htmlspecialchars($siteNameShort); ?></div>
-                            <img class="mastercard-logo" src="<?php echo SITE_URL; ?>/uploads/images/Mastercard-logo.svg.webp" alt="Card">
+                            <span class="card-network-mark" aria-hidden="true"><i class="fas fa-wifi"></i></span>
                         </div>
                         
                         <div class="card-middle-section">

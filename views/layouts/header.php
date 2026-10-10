@@ -614,12 +614,7 @@
             <?php else: ?>
             <ul class="nav-menu">
                 <li><a href="<?php echo SITE_URL; ?>/" class="nav-link">Home</a></li>
-                <li class="nav-item-dropdown">
-                    <a href="<?php echo SITE_URL; ?>/about" class="nav-link has-dropdown">About Us</a>
-                    <ul class="dropdown-menu">
-                        <li><a href="<?php echo SITE_URL; ?>/partnership" class="nav-link">Partnership</a></li>
-                    </ul>
-                </li>
+                <li><a href="<?php echo SITE_URL; ?>/about" class="nav-link">About Us</a></li>
                 <li class="nav-item-dropdown">
                     <a href="<?php echo SITE_URL; ?>/services" class="nav-link has-dropdown">Services</a>
                     <ul class="dropdown-menu">
@@ -700,21 +695,9 @@
                 <i class="fas fa-home"></i><span>Home</span>
             </a></li>
 
-            <li class="public-menu-group">
-                <div class="public-menu-row has-submenu">
-                    <a href="<?php echo SITE_URL; ?>/about" class="public-menu-item">
-                        <i class="fas fa-info-circle"></i><span>About Us</span>
-                    </a>
-                    <button type="button" class="public-submenu-toggle" aria-expanded="false" aria-controls="publicSubmenuAbout" aria-label="Toggle About Us submenu">
-                        <i class="fas fa-chevron-down"></i>
-                    </button>
-                </div>
-                <ul class="public-submenu" id="publicSubmenuAbout">
-                    <li><a href="<?php echo SITE_URL; ?>/partnership" class="public-menu-item">
-                        <i class="fas fa-handshake"></i><span>Partnership</span>
-                    </a></li>
-                </ul>
-            </li>
+            <li><a href="<?php echo SITE_URL; ?>/about" class="public-menu-item">
+                <i class="fas fa-info-circle"></i><span>About Us</span>
+            </a></li>
 
             <li class="public-menu-group">
                 <div class="public-menu-row has-submenu">

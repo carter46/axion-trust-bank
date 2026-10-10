@@ -56,8 +56,4 @@ class HomeController {
     public function investorPortal() {
         include __DIR__ . '/../views/home/investor-portal.php';
     }
-
-    public function partnership() {
-        include __DIR__ . '/../views/home/partnership.php';
-    }
 }

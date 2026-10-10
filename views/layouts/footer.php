@@ -45,14 +45,14 @@
                 <div>
                     <nav>
                         <p class="footer-links-heading">
-                            <span class="no-link">Partnership</span>
+                            <span class="no-link">Get Started</span>
                         </p>
                         <ul class="footer-nav">
-                            <li><a class="footer-link" href="<?php echo SITE_URL; ?>/partnership#visa">Visa</a></li>
-                            <li><a class="footer-link" href="<?php echo SITE_URL; ?>/partnership#mastercard">Mastercard</a></li>
-                            <li><a class="footer-link" href="<?php echo SITE_URL; ?>/partnership#american-express">American Express</a></li>
-                            <li><a class="footer-link" href="<?php echo SITE_URL; ?>/partnership#swift">SWIFT</a></li>
-                            <li><a class="footer-link" href="<?php echo SITE_URL; ?>/partnership" style="font-weight: 600; color: #359eb4;">Load More →</a></li>
+                            <li><a class="footer-link" href="<?php echo SITE_URL; ?>/auth/register">Open an Account</a></li>
+                            <li><a class="footer-link" href="<?php echo SITE_URL; ?>/auth/login">Login</a></li>
+                            <li><a class="footer-link" href="<?php echo SITE_URL; ?>/auth/forgot-password">Reset Password</a></li>
+                            <li><a class="footer-link" href="<?php echo SITE_URL; ?>/security">Security Tips</a></li>
+                            <li><a class="footer-link" href="<?php echo SITE_URL; ?>/help-center" style="font-weight: 600; color: #359eb4;">Get Help →</a></li>
                         </ul>
                     </nav>
                 </div>

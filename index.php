@@ -135,7 +135,6 @@ $controllerMap = [
     'admin' => 'AdminController',
     'investment' => 'InvestmentController',
     'investments' => 'HomeController',
-    'partnership' => 'HomeController',
     'about' => 'HomeController',
     'services' => 'HomeController',
     'contact' => 'HomeController',
@@ -157,11 +156,10 @@ try {
     
     // Special handling: If action is 'index' and controller maps to HomeController,
     // and the controller name matches a method in HomeController, use the controller name as action
-    // This handles routes like /partnership, /about, /help-center, etc.
+    // This handles routes like /about, /help-center, etc.
     if ($action === 'index' && $controllerClass === 'HomeController') {
         // Map of route names to method names (for kebab-case routes)
         $homeControllerMethodMap = [
-            'partnership' => 'partnership',
             'about' => 'about',
             'contact' => 'contact',
             'charity' => 'charity',

@@ -675,6 +675,43 @@ include __DIR__ . '/../layouts/header.php';
     opacity: unset;
 }
 
+.homepage-wrapper .customer-logos.trust-badge {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+    margin: 0;
+    text-align: center;
+}
+
+.homepage-wrapper .trust-badge i {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 3.5rem;
+    font-size: 2.8rem;
+    color: #359eb4;
+}
+
+.homepage-wrapper .trust-badge span {
+    font-size: 1.4rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: #232e3a;
+}
+
+.homepage-wrapper .trusted-innovators .trusted-innovators-content {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    max-width: 640px;
+}
+
+.homepage-wrapper .trusted-innovators-content i {
+    flex-shrink: 0;
+    font-size: clamp(3.2rem, 4vw, 4.8rem);
+    color: #359eb4;
+}
+
 /* ============================================ */
 /* ===== PRODUCT LANDING SECTION (Global finances, Unified solutions) - DESKTOP ===== */
 /* ============================================ */
@@ -2052,29 +2089,37 @@ include __DIR__ . '/../layouts/header.php';
             <p class="wid-75">From entrepreneurs to global corporations, our clients rely on <?php echo htmlspecialchars($siteInitials); ?> to simplify their international banking needs. We make it easy to send, receive, and manage funds securely across borders.</p>
         </div>
         <div class="section-customer-logos">
-            <figure class="customer-logos">
-                <img loading="lazy" alt="Visa Mastercard American Express" src="<?php echo SITE_URL . '/uploads/images/' . rawurlencode('discover-card-mastercard-american-express-visa-credit-card-mastercard.png'); ?>" class="no-brightness-opacity">
+            <figure class="customer-logos trust-badge">
+                <i class="fas fa-lock" aria-hidden="true"></i>
+                <span>Bank-grade Encryption</span>
             </figure>
-            <figure class="customer-logos">
-                <img loading="lazy" alt="SWIFT" src="<?php echo SITE_URL . '/uploads/images/' . rawurlencode('Swift-Logo.jpg'); ?>" class="no-brightness-opacity">
+            <figure class="customer-logos trust-badge">
+                <i class="fas fa-globe" aria-hidden="true"></i>
+                <span>190+ Countries</span>
             </figure>
-            <figure class="customer-logos">
-                <img loading="lazy" alt="Microsoft Azure" src="<?php echo SITE_URL . '/uploads/images/' . rawurlencode('microsoft_azure_logo_icon.png'); ?>" class="no-brightness-opacity">
+            <figure class="customer-logos trust-badge">
+                <i class="fas fa-bolt" aria-hidden="true"></i>
+                <span>Fast Transfers</span>
             </figure>
-            <figure class="customer-logos">
-                <img loading="lazy" alt="Amazon Web Services" src="<?php echo SITE_URL . '/uploads/images/' . rawurlencode('amazon-web-services-logo.png'); ?>" class="no-brightness-opacity">
+            <figure class="customer-logos trust-badge">
+                <i class="fas fa-coins" aria-hidden="true"></i>
+                <span>Multi-currency Accounts</span>
             </figure>
-            <figure class="customer-logos">
-                <img loading="lazy" alt="Stripe" src="<?php echo SITE_URL . '/uploads/images/' . rawurlencode('Stripe_Logo.png'); ?>" class="no-brightness-opacity">
+            <figure class="customer-logos trust-badge">
+                <i class="fas fa-credit-card" aria-hidden="true"></i>
+                <span>Debit &amp; Credit Cards</span>
             </figure>
-            <figure class="customer-logos">
-                <img loading="lazy" alt="PayPal" src="<?php echo SITE_URL . '/uploads/images/' . rawurlencode('Paypal-Logo.png'); ?>" class="no-brightness-opacity">
+            <figure class="customer-logos trust-badge">
+                <i class="fas fa-shield-alt" aria-hidden="true"></i>
+                <span>Fraud Monitoring</span>
             </figure>
-            <figure class="customer-logos">
-                <img loading="lazy" alt="Marriott International" src="<?php echo SITE_URL . '/uploads/images/' . rawurlencode('marriott-international-logo-png_seeklogo-484457.png'); ?>" class="no-brightness-opacity">
+            <figure class="customer-logos trust-badge">
+                <i class="fas fa-mobile-alt" aria-hidden="true"></i>
+                <span>Mobile Banking</span>
             </figure>
-            <figure class="customer-logos">
-                <img loading="lazy" alt="IBM" src="<?php echo SITE_URL . '/uploads/images/' . rawurlencode('IBM_logo.svg.png'); ?>" class="no-brightness-opacity">
+            <figure class="customer-logos trust-badge">
+                <i class="fas fa-headset" aria-hidden="true"></i>
+                <span>24/7 Support</span>
             </figure>
         </div>
     </div>
@@ -2371,39 +2416,43 @@ include __DIR__ . '/../layouts/header.php';
 <!-- Trusted Innovators Section -->
 <section class="section white-100">
     <div class="section-container-inside align-c">
-        <h2 class="section-heading mar-b-48">Trusted by innovators and industry leaders</h2>
+        <h2 class="section-heading mar-b-48">Built on secure, modern banking infrastructure</h2>
         <div class="tabs-light">
-            <label data-bs-toggle="tab" type="button" role="tab" class="active" id="tab-1" data-bs-target="#panel-1" aria-selected="true">Visa/Mastercard/Amex</label>
-            <label data-bs-toggle="tab" type="button" role="tab" class id="tab-2" data-bs-target="#panel-2" aria-selected="false">SWIFT</label>
-            <label data-bs-toggle="tab" type="button" role="tab" class id="tab-3" data-bs-target="#panel-3" aria-selected="false">Microsoft Azure</label>
-            <label data-bs-toggle="tab" type="button" role="tab" class id="tab-4" data-bs-target="#panel-4" aria-selected="false">AWS</label>
+            <label data-bs-toggle="tab" type="button" role="tab" class="active" id="tab-1" data-bs-target="#panel-1" aria-selected="true">Card Payments</label>
+            <label data-bs-toggle="tab" type="button" role="tab" class id="tab-2" data-bs-target="#panel-2" aria-selected="false">Global Transfers</label>
+            <label data-bs-toggle="tab" type="button" role="tab" class id="tab-3" data-bs-target="#panel-3" aria-selected="false">Cloud Security</label>
+            <label data-bs-toggle="tab" type="button" role="tab" class id="tab-4" data-bs-target="#panel-4" aria-selected="false">Always Available</label>
             
             <div role="tabpanel" class="tab-light show active" aria-labelledby="tab-1" id="panel-1">
                 <div class="trusted-innovators">
-                    <figure class="trusted-innovators-image">
-                        <img alt="Visa, Mastercard, American Express" loading="lazy" src="<?php echo SITE_URL . '/uploads/images/' . rawurlencode('discover-card-mastercard-american-express-visa-credit-card-mastercard.png'); ?>" style="max-height: 150px; width: auto; object-fit: contain;">
-                    </figure>
+                    <div class="trusted-innovators-content">
+                        <i class="fas fa-credit-card" aria-hidden="true"></i>
+                        <span>Spend in-store, online and abroad with debit and credit cards accepted at millions of merchants worldwide.</span>
+                    </div>
                 </div>
             </div>
             <div role="tabpanel" class="tab-light" aria-labelledby="tab-2" id="panel-2">
                 <div class="trusted-innovators">
-                    <figure class="trusted-innovators-image">
-                        <img alt="SWIFT" loading="lazy" src="<?php echo SITE_URL . '/uploads/images/' . rawurlencode('Swift-Logo.jpg'); ?>" style="max-height: 150px; width: auto; object-fit: contain;">
-                    </figure>
+                    <div class="trusted-innovators-content">
+                        <i class="fas fa-globe-americas" aria-hidden="true"></i>
+                        <span>Send and receive international wires across 190+ countries through secure interbank messaging networks.</span>
+                    </div>
                 </div>
             </div>
             <div role="tabpanel" class="tab-light" aria-labelledby="tab-3" id="panel-3">
                 <div class="trusted-innovators">
-                    <figure class="trusted-innovators-image">
-                        <img alt="Microsoft Azure" loading="lazy" src="<?php echo SITE_URL . '/uploads/images/' . rawurlencode('microsoft_azure_logo_icon.png'); ?>" style="max-height: 150px; width: auto; object-fit: contain;">
-                    </figure>
+                    <div class="trusted-innovators-content">
+                        <i class="fas fa-shield-alt" aria-hidden="true"></i>
+                        <span>Your data is encrypted at rest and in transit, hosted on resilient cloud infrastructure with continuous monitoring.</span>
+                    </div>
                 </div>
             </div>
             <div role="tabpanel" class="tab-light" aria-labelledby="tab-4" id="panel-4">
                 <div class="trusted-innovators">
-                    <figure class="trusted-innovators-image">
-                        <img alt="Amazon Web Services" loading="lazy" src="<?php echo SITE_URL . '/uploads/images/' . rawurlencode('amazon-web-services-logo.png'); ?>" style="max-height: 150px; width: auto; object-fit: contain;">
-                    </figure>
+                    <div class="trusted-innovators-content">
+                        <i class="fas fa-clock" aria-hidden="true"></i>
+                        <span>Bank any time with 24/7 account access, real-time notifications and round-the-clock customer support.</span>
+                    </div>
                 </div>
             </div>
         </div>
