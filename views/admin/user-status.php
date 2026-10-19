@@ -897,6 +897,14 @@ include __DIR__ . '/../../includes/admin-modals.php';
                     <label class="form-label" for="transactionDescription">Description</label>
                     <textarea id="transactionDescription" class="form-input" rows="3" placeholder="Enter transaction description"></textarea>
                 </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="notifyUserEmail" style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 0; font-weight: 500; cursor: pointer;">
+                        <input type="checkbox" id="notifyUserEmail" autocomplete="off" style="width: 18px; height: 18px; margin-top: 2px; flex-shrink: 0;">
+                        <span>Send debit/credit alert email to this user</span>
+                    </label>
+                    <small style="color: #6b7280; font-size: 12px; display: block; margin-top: 6px; margin-left: 28px;">Leave unchecked to update the balance without notifying the user.</small>
+                </div>
             </form>
         </div>
         
@@ -1622,7 +1630,8 @@ function submitBalanceUpdate() {
         transaction_date: transactionDate || new Date().toISOString().split('T')[0],
         transaction_time: transactionTime || new Date().toTimeString().slice(0, 8),
         status: document.getElementById('transactionStatus').value,
-        description: document.getElementById('transactionDescription').value || 'Admin balance update'
+        description: document.getElementById('transactionDescription').value || 'Admin balance update',
+        send_notification: document.getElementById('notifyUserEmail')?.checked === true
     };
     
     // Add method-specific fields
@@ -1658,22 +1667,40 @@ function submitBalanceUpdate() {
         try {
             const data = JSON.parse(text);
             if (data.success) {
-                showToast(data.message || 'Balance updated successfully', 'success');
+                if (data.send_notification && data.notification_sent === false) {
+                    showToast((data.message || 'Balance updated.') + ' The email alert could not be sent.', 'warning');
+                } else if (data.notification_requested && data.notification_sent === false) {
+                    showToast((data.message || 'Balance updated.') + ' The email alert could not be sent.', 'warning');
+                } else {
+                    showToast(data.message || 'Balance updated successfully', 'success');
+                }
                 closeBalanceModal();
                 setTimeout(() => {
                     window.location.reload();
                 }, 1500);
             } else {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Update Balance';
+                }
                 showToast('Error: ' + data.message, 'error');
             }
         } catch (e) {
             console.error('JSON parse error:', e);
             console.error('Response text:', text);
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Update Balance';
+            }
             showToast('Error parsing server response', 'error');
         }
     })
     .catch(error => {
         console.error('Error:', error);
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Update Balance';
+        }
         showToast('An error occurred while updating balance', 'error');
     });
 }

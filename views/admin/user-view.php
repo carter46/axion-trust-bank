@@ -597,6 +597,31 @@ include __DIR__ . '/../../includes/admin-modals.php';
     font-size: 14px;
 }
 
+.modal .checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-bottom: 0;
+}
+
+.modal .checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.modal .checkbox-help {
+    display: block;
+    margin-top: 6px;
+    margin-left: 28px;
+    color: #6b7280;
+    font-size: 12px;
+    font-weight: 400;
+}
+
 .modal .form-input {
     width: 100%;
     padding: 12px 16px;
@@ -1209,6 +1234,13 @@ include __DIR__ . '/../../includes/admin-modals.php';
                             <textarea id="internalDescription" class="form-input" placeholder="Enter transaction description" rows="3"></textarea>
                         </div>
         </div>
+                    <div class="form-group">
+                        <label class="checkbox-label" for="notifyUserEmail">
+                            <input type="checkbox" id="notifyUserEmail" autocomplete="off">
+                            <span>Send debit/credit alert email to this user</span>
+                        </label>
+                        <small class="checkbox-help">Leave unchecked to adjust the balance without notifying the user.</small>
+                    </div>
         </div>
     </div>
           <div class="modal-footer">
@@ -1521,6 +1553,26 @@ function updateToAccountOptions() {
       });
     }
     
+function isNotifyUserEmailChecked() {
+    const checkbox = document.getElementById('notifyUserEmail');
+    return !!(checkbox && checkbox.checked);
+}
+
+function setBalanceSubmitBusy(busy) {
+    const btn = document.querySelector('#balanceModal .modal-footer .btn-primary');
+    if (!btn) return;
+    btn.disabled = !!busy;
+    btn.textContent = busy ? 'Processing...' : 'Adjust Balance';
+}
+
+function showAdjustmentResult(data, notificationRequested) {
+    if (notificationRequested && data.notification_sent === false) {
+        showToast((data.message || 'Balance adjusted.') + ' The email alert could not be sent.', 'warning');
+        return;
+    }
+    showToast(data.message || 'Balance adjusted successfully', 'success');
+}
+
     function submitBalanceAdjustment() {
     clearBalanceModalAlert();
     const adjustmentMode = document.getElementById('adjustmentMode').value;
@@ -1577,9 +1629,11 @@ function handleInternalAdjustment() {
         expense_category: category,
         transaction_date: transactionDate,
         transaction_time: transactionTime,
-        description: description || `Internal transfer between accounts`
+        description: description || `Internal transfer between accounts`,
+        send_notification: isNotifyUserEmailChecked()
     };
     
+    setBalanceSubmitBusy(true);
     fetch('<?php echo SITE_URL; ?>/api/admin-adjust-balance.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1590,19 +1644,22 @@ function handleInternalAdjustment() {
         try {
             const data = JSON.parse(text);
             if (data.success) {
-                showToast(data.message || 'Internal transfer completed successfully', 'success');
+                showAdjustmentResult(data, transactionData.send_notification);
                 closeBalanceModal();
                 setTimeout(() => window.location.reload(), 1500);
             } else {
+                setBalanceSubmitBusy(false);
                 showBalanceModalAlert(data.message || 'Failed to process internal transfer', 'error');
             }
         } catch (e) {
             console.error('JSON parse error:', e);
+            setBalanceSubmitBusy(false);
             showBalanceModalAlert('Error parsing server response', 'error');
         }
     })
     .catch(error => {
         console.error('Error:', error);
+        setBalanceSubmitBusy(false);
         showBalanceModalAlert('An error occurred while processing internal transfer', 'error');
     });
 }
@@ -1691,9 +1748,11 @@ function handleExternalAdjustment() {
           recipient_name: recipientName,
           recipient_bank: recipientBank,
           expense_category: expenseCategory
-        })
+        }),
+        send_notification: isNotifyUserEmailChecked()
       };
       
+      setBalanceSubmitBusy(true);
       fetch('<?php echo SITE_URL; ?>/api/admin-adjust-balance.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1704,19 +1763,22 @@ function handleExternalAdjustment() {
         try {
           const data = JSON.parse(text);
           if (data.success) {
-            showToast(data.message, 'success');
+            showAdjustmentResult(data, transactionData.send_notification);
             closeBalanceModal();
                 setTimeout(() => window.location.reload(), 1500);
           } else {
+            setBalanceSubmitBusy(false);
             showBalanceModalAlert(data.message || 'Failed to adjust balance', 'error');
           }
         } catch (e) {
           console.error('JSON parse error:', e);
+          setBalanceSubmitBusy(false);
           showBalanceModalAlert('Error parsing server response', 'error');
         }
       })
     .catch(error => {
         console.error('Error:', error);
+        setBalanceSubmitBusy(false);
         showBalanceModalAlert('An error occurred while adjusting balance', 'error');
       });
     }

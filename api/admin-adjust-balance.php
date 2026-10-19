@@ -41,6 +41,86 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
     exit;
 }
 
+function adminInputWantsNotification($input) {
+    $value = $input['send_notification'] ?? false;
+    return $value === true || $value === 1 || $value === '1' || $value === 'true';
+}
+
+function adminAdjustmentStatusAllowsEmail($status) {
+    return !in_array(strtolower(trim((string)$status)), ['failed', 'reversed', 'cancelled'], true);
+}
+
+function sendAdminBalanceAdjustmentAlert($user, $direction, $amount, $amountCurrency, $balance, $balanceCurrency, $transactionRef, $dateTime, $counterparty) {
+    ob_start();
+    try {
+        $email = trim((string)($user['email'] ?? ''));
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            error_log('Admin adjustment email skipped: missing or invalid user email');
+            return false;
+        }
+
+        $direction = strtolower(trim((string)$direction));
+        if (!in_array($direction, ['debit', 'credit'], true)) {
+            error_log('Admin adjustment email skipped: invalid direction ' . $direction);
+            return false;
+        }
+
+        $emailTemplate = new EmailTemplate();
+        $displayCurrency = getUserDisplayCurrency($user);
+        $dt = DateTime::createFromFormat('Y-m-d H:i:s', (string)$dateTime);
+        if (!$dt) {
+            $dt = DateTime::createFromFormat('Y-m-d H:i', (string)$dateTime);
+        }
+        $formattedDate = htmlspecialchars($dt ? $dt->format('F j, Y g:i A') : date('F j, Y g:i A'), ENT_QUOTES, 'UTF-8');
+        $name = htmlspecialchars((string)($user['full_name'] ?? 'Customer'), ENT_QUOTES, 'UTF-8');
+        $party = trim((string)$counterparty);
+        if ($party === '') {
+            $party = $direction === 'debit' ? 'Recipient' : 'Sender';
+        }
+        $party = htmlspecialchars($party, ENT_QUOTES, 'UTF-8');
+        $transactionRef = htmlspecialchars((string)$transactionRef, ENT_QUOTES, 'UTF-8');
+
+        if ($direction === 'debit') {
+            $html = $emailTemplate->debitAlertEmail(
+                $name,
+                $amount,
+                $displayCurrency,
+                $party,
+                $balance,
+                $transactionRef,
+                $formattedDate,
+                $amountCurrency,
+                $balanceCurrency
+            );
+            return (bool) sendEmail($email, 'Transaction Alert - Debit', $html);
+        }
+
+        $html = $emailTemplate->creditAlertEmail(
+            $name,
+            $amount,
+            $displayCurrency,
+            $party,
+            $balance,
+            $transactionRef,
+            $formattedDate,
+            $amountCurrency,
+            $balanceCurrency
+        );
+        return (bool) sendEmail($email, 'Transaction Alert - Credit', $html);
+    } catch (Exception $e) {
+        error_log('Admin adjustment email error: ' . $e->getMessage());
+        return false;
+    } catch (Error $e) {
+        error_log('Admin adjustment email fatal: ' . $e->getMessage());
+        return false;
+    } finally {
+        $leaked = ob_get_clean();
+        if ($leaked !== false && $leaked !== '') {
+            error_log('Admin adjustment email unexpected output: ' . substr($leaked, 0, 200));
+        }
+    }
+}
+
 /**
  * Handle internal account-to-account transfer (between user's own accounts)
  * Creates two transactions: debit from source account, credit to destination account
@@ -269,13 +349,45 @@ function handleInternalAdjustment($input) {
             if (!$db->commit()) {
                 throw new Exception('Failed to commit transaction');
             }
+
+            $notificationRequested = adminInputWantsNotification($input);
+            $notificationSent = false;
+            if ($notificationRequested) {
+                $fromCurrency = getAccountStoredCurrency($fromAccount);
+                $toCurrency = getAccountStoredCurrency($toAccount);
+                $debitSent = sendAdminBalanceAdjustmentAlert(
+                    $user,
+                    'debit',
+                    $ledgerAmount,
+                    $fromCurrency,
+                    $fromBalanceAfter,
+                    $fromCurrency,
+                    $fromTransactionRef,
+                    $fullDateTime,
+                    trim(($toAccount['account_type'] ?? 'Account') . ' ' . ($toAccount['account_number'] ?? ''))
+                );
+                $creditSent = sendAdminBalanceAdjustmentAlert(
+                    $user,
+                    'credit',
+                    $toLedgerAmount,
+                    $toCurrency,
+                    $toBalanceAfter,
+                    $toCurrency,
+                    $toTransactionRef,
+                    $fullDateTime,
+                    trim(($fromAccount['account_type'] ?? 'Account') . ' ' . ($fromAccount['account_number'] ?? ''))
+                );
+                $notificationSent = $debitSent && $creditSent;
+            }
             
             echo json_encode([
                 'success' => true,
                 'message' => 'Internal transfer completed successfully',
                 'transaction_ref' => $transactionRef,
                 'from_balance' => $fromBalanceAfter,
-                'to_balance' => $toBalanceAfter
+                'to_balance' => $toBalanceAfter,
+                'notification_requested' => $notificationRequested,
+                'notification_sent' => $notificationSent
             ]);
             
         } catch (Exception $e) {
@@ -744,6 +856,30 @@ try {
             . ($displayBalance !== null ? ' New balance: ' . $displayBalance : '');
     }
 
+    $notificationRequested = adminInputWantsNotification($input);
+    $notificationSent = false;
+    if ($notificationRequested && adminAdjustmentStatusAllowsEmail($status)) {
+        $accountCurrency = getAccountStoredCurrency($account);
+        $counterparty = trim((string)($methodFields['recipient_name'] ?? ''));
+        if ($counterparty === '') {
+            $counterparty = trim((string)($methodFields['recipient_account'] ?? ''));
+        }
+        if ($counterparty === '') {
+            $counterparty = $description !== '' ? $description : 'Account adjustment';
+        }
+        $notificationSent = sendAdminBalanceAdjustmentAlert(
+            $user,
+            $direction,
+            $ledgerAmount,
+            $accountCurrency,
+            $savedBalance ?? $storedBalanceAfter,
+            $accountCurrency,
+            $transactionRef,
+            $fullDateTime,
+            $counterparty
+        );
+    }
+
     echo json_encode([
         'success' => true,
         'message' => $message,
@@ -752,7 +888,9 @@ try {
         'balance_affected' => $statusAffectsBalance,
         'new_balance' => $savedBalance ?? $newBalance,
         'new_balance_formatted' => $displayBalance,
-        'balance_change' => $statusAffectsBalance ? $balanceChange : 0
+        'balance_change' => $statusAffectsBalance ? $balanceChange : 0,
+        'notification_requested' => $notificationRequested,
+        'notification_sent' => $notificationSent
     ]);
     
 } catch (Exception $e) {
