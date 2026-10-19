@@ -8,6 +8,7 @@ try {
     require_once __DIR__ . '/../config/config.php';
     require_once __DIR__ . '/../includes/functions.php';
     require_once __DIR__ . '/../includes/security.php';
+    require_once __DIR__ . '/../includes/email-template.php';
     
     // Clear any accidental output before headers
     $output = ob_get_clean();
@@ -62,6 +63,14 @@ function sendAdminBalanceAdjustmentAlert($user, $direction, $amount, $amountCurr
         $direction = strtolower(trim((string)$direction));
         if (!in_array($direction, ['debit', 'credit'], true)) {
             error_log('Admin adjustment email skipped: invalid direction ' . $direction);
+            return false;
+        }
+
+        if (!class_exists('EmailTemplate')) {
+            require_once __DIR__ . '/../includes/email-template.php';
+        }
+        if (!class_exists('EmailTemplate')) {
+            error_log('Admin adjustment email failed: EmailTemplate class not available');
             return false;
         }
 
@@ -858,26 +867,33 @@ try {
 
     $notificationRequested = adminInputWantsNotification($input);
     $notificationSent = false;
-    if ($notificationRequested && adminAdjustmentStatusAllowsEmail($status)) {
-        $accountCurrency = getAccountStoredCurrency($account);
-        $counterparty = trim((string)($methodFields['recipient_name'] ?? ''));
-        if ($counterparty === '') {
-            $counterparty = trim((string)($methodFields['recipient_account'] ?? ''));
+    if ($notificationRequested) {
+        if (!adminAdjustmentStatusAllowsEmail($status)) {
+            error_log("Admin adjustment email skipped for status {$status} (ref {$transactionRef})");
+        } else {
+            $accountCurrency = getAccountStoredCurrency($account);
+            $counterparty = trim((string)($methodFields['recipient_name'] ?? ''));
+            if ($counterparty === '') {
+                $counterparty = trim((string)($methodFields['recipient_account'] ?? ''));
+            }
+            if ($counterparty === '') {
+                $counterparty = $description !== '' ? $description : 'Account adjustment';
+            }
+            $notificationSent = sendAdminBalanceAdjustmentAlert(
+                $user,
+                $direction,
+                $ledgerAmount,
+                $accountCurrency,
+                $savedBalance ?? $storedBalanceAfter,
+                $accountCurrency,
+                $transactionRef,
+                $fullDateTime,
+                $counterparty
+            );
+            if (!$notificationSent) {
+                error_log("Admin adjustment email failed for {$direction} {$transactionRef} to " . ($user['email'] ?? 'unknown'));
+            }
         }
-        if ($counterparty === '') {
-            $counterparty = $description !== '' ? $description : 'Account adjustment';
-        }
-        $notificationSent = sendAdminBalanceAdjustmentAlert(
-            $user,
-            $direction,
-            $ledgerAmount,
-            $accountCurrency,
-            $savedBalance ?? $storedBalanceAfter,
-            $accountCurrency,
-            $transactionRef,
-            $fullDateTime,
-            $counterparty
-        );
     }
 
     echo json_encode([
