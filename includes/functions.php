@@ -1816,7 +1816,7 @@ function decryptData($data) {
     return openssl_decrypt($encrypted_data, 'aes-256-cbc', $key, 0, $iv);
 }
 
-function sendEmail($to, $subject, $message, $isHTML = true, $replyTo = null, $plainTextOverride = null, $fromName = null) {
+function sendEmail($to, $subject, $message, $isHTML = true, $replyTo = null, $plainTextOverride = null, $fromName = null, $transactional = false) {
     try {
         // Load PHPMailer classes
         require_once __DIR__ . '/../PHPMailer/PHPMailer.php';
@@ -1865,14 +1865,17 @@ function sendEmail($to, $subject, $message, $isHTML = true, $replyTo = null, $pl
         
         $mail->Port       = SMTP_PORT;
         $mail->CharSet    = 'UTF-8';
-        
-        // Enable verbose debug output (disable in production)
-        // Uncomment the line below for debugging if emails aren't sending
-        // $mail->SMTPDebug = SMTP::DEBUG_SERVER;
+
+        // Help Message-ID / HELO align with the public site host
+        $siteHost = parse_url(SITE_URL, PHP_URL_HOST);
+        if (!empty($siteHost)) {
+            $mail->Hostname = $siteHost;
+        }
         
         // Recipients
         $fromNameToUse = $fromName ?? SMTP_FROM_NAME;
         $mail->setFrom(SMTP_FROM, $fromNameToUse);
+        $mail->Sender = SMTP_FROM; // envelope sender / Return-Path
         $mail->addAddress($to);
         
         // Reply-To
@@ -1906,16 +1909,23 @@ function sendEmail($to, $subject, $message, $isHTML = true, $replyTo = null, $pl
             $mail->Body = $message;
         }
         
-        // Additional headers for deliverability
         // IMPORTANT: Do NOT add a custom Message-ID header.
         // PHPMailer generates Message-ID automatically; adding another causes Gmail to reject
         // the email as "not RFC 5322 compliant" (multiple Message-ID headers).
-        $mail->addCustomHeader('List-Unsubscribe', '<' . SITE_URL . '/unsubscribe>, <mailto:' . SMTP_FROM . '?subject=Unsubscribe>');
-        $mail->addCustomHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click');
-        $mail->addCustomHeader('Precedence', 'bulk');
-        $mail->addCustomHeader('X-Priority', '3');
-        $mail->addCustomHeader('Importance', 'Normal');
-        $mail->addCustomHeader('Auto-Submitted', 'auto-generated');
+        if ($transactional) {
+            // Banking alerts should look transactional, not newsletter/bulk.
+            // Bulk/unsubscribe headers often push Gmail into spam/promotions.
+            $mail->addCustomHeader('X-Priority', '1');
+            $mail->addCustomHeader('Importance', 'High');
+            $mail->addCustomHeader('X-Auto-Response-Suppress', 'OOF, AutoReply');
+        } else {
+            $mail->addCustomHeader('List-Unsubscribe', '<' . SITE_URL . '/unsubscribe>, <mailto:' . SMTP_FROM . '?subject=Unsubscribe>');
+            $mail->addCustomHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click');
+            $mail->addCustomHeader('Precedence', 'bulk');
+            $mail->addCustomHeader('X-Priority', '3');
+            $mail->addCustomHeader('Importance', 'Normal');
+            $mail->addCustomHeader('Auto-Submitted', 'auto-generated');
+        }
         
         // Send email using SMTP (bypasses mail() limits)
         $result = $mail->send();
@@ -1924,6 +1934,8 @@ function sendEmail($to, $subject, $message, $isHTML = true, $replyTo = null, $pl
             error_log("Email error: Failed to send email to $to - " . $mail->ErrorInfo);
             return false;
         }
+
+        error_log('Email accepted by SMTP to ' . $to . ' from ' . SMTP_FROM . ' subject="' . $subject . '"' . ($transactional ? ' [transactional]' : ''));
         
         return true;
     } catch (\PHPMailer\PHPMailer\Exception $e) {

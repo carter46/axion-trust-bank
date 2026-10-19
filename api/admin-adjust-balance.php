@@ -122,8 +122,9 @@ function sendAdminBalanceAdjustmentAlert($user, $direction, $amount, $amountCurr
             return false;
         }
 
-        error_log("Admin adjustment email sending {$direction} to {$email} ref {$ref}");
-        $sent = (bool) sendEmail($email, $subject, $html, true);
+        error_log("Admin adjustment email sending {$direction} to {$email} ref {$ref} from " . SMTP_FROM);
+        // 8th arg true = transactional headers (same path as user transfer alerts)
+        $sent = (bool) sendEmail($email, $subject, $html, true, null, null, null, true);
         error_log('Admin adjustment email ' . ($sent ? 'SENT' : 'FAILED') . " {$direction} to {$email} ref {$ref}");
         return $sent;
     } catch (Exception $e) {

@@ -894,7 +894,7 @@ try {
                     $debitEmailAmountCurrency,
                     $senderAccountCurrency
                 );
-                sendEmail($senderUser['email'], 'Transaction Alert - Debit', $debitEmail);
+                sendEmail($senderUser['email'], 'Transaction Alert - Debit', $debitEmail, true, null, null, null, true);
             }
             
             // For internal transfers, send credit alert to recipient
@@ -924,7 +924,7 @@ try {
                             $recipientAccountCurrency,
                             $recipientAccountCurrency
                         );
-                        sendEmail($recipientUser['email'], 'Transaction Alert - Credit', $creditEmail);
+                        sendEmail($recipientUser['email'], 'Transaction Alert - Credit', $creditEmail, true, null, null, null, true);
                     }
                 }
             }
