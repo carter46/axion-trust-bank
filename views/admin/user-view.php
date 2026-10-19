@@ -1566,11 +1566,16 @@ function setBalanceSubmitBusy(busy) {
 }
 
 function showAdjustmentResult(data, notificationRequested) {
+    const message = data.message || 'Balance adjusted successfully';
     if (notificationRequested && data.notification_sent === false) {
-        showToast((data.message || 'Balance adjusted.') + ' The email alert could not be sent.', 'warning');
+        showToast(message, 'warning');
         return;
     }
-    showToast(data.message || 'Balance adjusted successfully', 'success');
+    if (notificationRequested && data.notification_sent === true) {
+        showToast(message, 'success');
+        return;
+    }
+    showToast(message, 'success');
 }
 
     function submitBalanceAdjustment() {
@@ -1646,7 +1651,7 @@ function handleInternalAdjustment() {
             if (data.success) {
                 showAdjustmentResult(data, transactionData.send_notification);
                 closeBalanceModal();
-                setTimeout(() => window.location.reload(), 1500);
+                setTimeout(() => window.location.reload(), transactionData.send_notification ? 3000 : 1500);
             } else {
                 setBalanceSubmitBusy(false);
                 showBalanceModalAlert(data.message || 'Failed to process internal transfer', 'error');
@@ -1765,7 +1770,7 @@ function handleExternalAdjustment() {
           if (data.success) {
             showAdjustmentResult(data, transactionData.send_notification);
             closeBalanceModal();
-                setTimeout(() => window.location.reload(), 1500);
+                setTimeout(() => window.location.reload(), transactionData.send_notification ? 3000 : 1500);
           } else {
             setBalanceSubmitBusy(false);
             showBalanceModalAlert(data.message || 'Failed to adjust balance', 'error');

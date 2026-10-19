@@ -52,17 +52,18 @@ function adminAdjustmentStatusAllowsEmail($status) {
 }
 
 function sendAdminBalanceAdjustmentAlert($user, $direction, $amount, $amountCurrency, $balance, $balanceCurrency, $transactionRef, $dateTime, $counterparty) {
-    ob_start();
+    $email = trim((string)($user['email'] ?? ''));
+    $direction = strtolower(trim((string)$direction));
+    $ref = (string)$transactionRef;
+
     try {
-        $email = trim((string)($user['email'] ?? ''));
         if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            error_log('Admin adjustment email skipped: missing or invalid user email');
+            error_log("Admin adjustment email skipped: missing/invalid email for ref {$ref}");
             return false;
         }
 
-        $direction = strtolower(trim((string)$direction));
         if (!in_array($direction, ['debit', 'credit'], true)) {
-            error_log('Admin adjustment email skipped: invalid direction ' . $direction);
+            error_log("Admin adjustment email skipped: invalid direction '{$direction}' for ref {$ref}");
             return false;
         }
 
@@ -70,24 +71,23 @@ function sendAdminBalanceAdjustmentAlert($user, $direction, $amount, $amountCurr
             require_once __DIR__ . '/../includes/email-template.php';
         }
         if (!class_exists('EmailTemplate')) {
-            error_log('Admin adjustment email failed: EmailTemplate class not available');
+            error_log("Admin adjustment email failed: EmailTemplate missing for ref {$ref}");
             return false;
         }
 
+        // Match process-transfer.php exactly (same template + sendEmail call).
         $emailTemplate = new EmailTemplate();
         $displayCurrency = getUserDisplayCurrency($user);
         $dt = DateTime::createFromFormat('Y-m-d H:i:s', (string)$dateTime);
         if (!$dt) {
             $dt = DateTime::createFromFormat('Y-m-d H:i', (string)$dateTime);
         }
-        $formattedDate = htmlspecialchars($dt ? $dt->format('F j, Y g:i A') : date('F j, Y g:i A'), ENT_QUOTES, 'UTF-8');
-        $name = htmlspecialchars((string)($user['full_name'] ?? 'Customer'), ENT_QUOTES, 'UTF-8');
+        $formattedDate = $dt ? $dt->format('F j, Y g:i A') : date('F j, Y g:i A');
+        $name = (string)($user['full_name'] ?? 'Customer');
         $party = trim((string)$counterparty);
         if ($party === '') {
             $party = $direction === 'debit' ? 'Recipient' : 'Sender';
         }
-        $party = htmlspecialchars($party, ENT_QUOTES, 'UTF-8');
-        $transactionRef = htmlspecialchars((string)$transactionRef, ENT_QUOTES, 'UTF-8');
 
         if ($direction === 'debit') {
             $html = $emailTemplate->debitAlertEmail(
@@ -96,37 +96,42 @@ function sendAdminBalanceAdjustmentAlert($user, $direction, $amount, $amountCurr
                 $displayCurrency,
                 $party,
                 $balance,
-                $transactionRef,
+                $ref,
                 $formattedDate,
                 $amountCurrency,
                 $balanceCurrency
             );
-            return (bool) sendEmail($email, 'Transaction Alert - Debit', $html);
+            $subject = 'Transaction Alert - Debit';
+        } else {
+            $html = $emailTemplate->creditAlertEmail(
+                $name,
+                $amount,
+                $displayCurrency,
+                $party,
+                $balance,
+                $ref,
+                $formattedDate,
+                $amountCurrency,
+                $balanceCurrency
+            );
+            $subject = 'Transaction Alert - Credit';
         }
 
-        $html = $emailTemplate->creditAlertEmail(
-            $name,
-            $amount,
-            $displayCurrency,
-            $party,
-            $balance,
-            $transactionRef,
-            $formattedDate,
-            $amountCurrency,
-            $balanceCurrency
-        );
-        return (bool) sendEmail($email, 'Transaction Alert - Credit', $html);
+        if (!is_string($html) || trim($html) === '') {
+            error_log("Admin adjustment email failed: empty HTML body for {$direction} ref {$ref}");
+            return false;
+        }
+
+        error_log("Admin adjustment email sending {$direction} to {$email} ref {$ref}");
+        $sent = (bool) sendEmail($email, $subject, $html, true);
+        error_log('Admin adjustment email ' . ($sent ? 'SENT' : 'FAILED') . " {$direction} to {$email} ref {$ref}");
+        return $sent;
     } catch (Exception $e) {
-        error_log('Admin adjustment email error: ' . $e->getMessage());
+        error_log("Admin adjustment email error for {$email} ref {$ref}: " . $e->getMessage());
         return false;
     } catch (Error $e) {
-        error_log('Admin adjustment email fatal: ' . $e->getMessage());
+        error_log("Admin adjustment email fatal for {$email} ref {$ref}: " . $e->getMessage());
         return false;
-    } finally {
-        $leaked = ob_get_clean();
-        if ($leaked !== false && $leaked !== '') {
-            error_log('Admin adjustment email unexpected output: ' . substr($leaked, 0, 200));
-        }
     }
 }
 
@@ -361,6 +366,7 @@ function handleInternalAdjustment($input) {
 
             $notificationRequested = adminInputWantsNotification($input);
             $notificationSent = false;
+            $notificationEmail = trim((string)($user['email'] ?? ''));
             if ($notificationRequested) {
                 $fromCurrency = getAccountStoredCurrency($fromAccount);
                 $toCurrency = getAccountStoredCurrency($toAccount);
@@ -388,13 +394,21 @@ function handleInternalAdjustment($input) {
                 );
                 $notificationSent = $debitSent && $creditSent;
             }
+
+            $internalMessage = 'Internal transfer completed successfully';
+            if ($notificationRequested) {
+                $internalMessage .= $notificationSent
+                    ? (' Alert emails sent to ' . $notificationEmail . '.')
+                    : (' WARNING: alert emails could not be sent to ' . ($notificationEmail !== '' ? $notificationEmail : 'the user') . '.');
+            }
             
             echo json_encode([
                 'success' => true,
-                'message' => 'Internal transfer completed successfully',
+                'message' => $internalMessage,
                 'transaction_ref' => $transactionRef,
                 'from_balance' => $fromBalanceAfter,
                 'to_balance' => $toBalanceAfter,
+                'notification_email' => $notificationEmail,
                 'notification_requested' => $notificationRequested,
                 'notification_sent' => $notificationSent
             ]);
@@ -867,6 +881,7 @@ try {
 
     $notificationRequested = adminInputWantsNotification($input);
     $notificationSent = false;
+    $notificationEmail = trim((string)($user['email'] ?? ''));
     if ($notificationRequested) {
         if (!adminAdjustmentStatusAllowsEmail($status)) {
             error_log("Admin adjustment email skipped for status {$status} (ref {$transactionRef})");
@@ -890,9 +905,13 @@ try {
                 $fullDateTime,
                 $counterparty
             );
-            if (!$notificationSent) {
-                error_log("Admin adjustment email failed for {$direction} {$transactionRef} to " . ($user['email'] ?? 'unknown'));
-            }
+        }
+
+        if ($notificationSent) {
+            $message .= ' Alert email sent to ' . $notificationEmail . '.';
+        } else {
+            $message .= ' WARNING: alert email could not be sent to '
+                . ($notificationEmail !== '' ? $notificationEmail : 'the user') . '.';
         }
     }
 
@@ -905,6 +924,7 @@ try {
         'new_balance' => $savedBalance ?? $newBalance,
         'new_balance_formatted' => $displayBalance,
         'balance_change' => $statusAffectsBalance ? $balanceChange : 0,
+        'notification_email' => $notificationEmail,
         'notification_requested' => $notificationRequested,
         'notification_sent' => $notificationSent
     ]);

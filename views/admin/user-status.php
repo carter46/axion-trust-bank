@@ -1667,17 +1667,12 @@ function submitBalanceUpdate() {
         try {
             const data = JSON.parse(text);
             if (data.success) {
-                if (data.send_notification && data.notification_sent === false) {
-                    showToast((data.message || 'Balance updated.') + ' The email alert could not be sent.', 'warning');
-                } else if (data.notification_requested && data.notification_sent === false) {
-                    showToast((data.message || 'Balance updated.') + ' The email alert could not be sent.', 'warning');
-                } else {
-                    showToast(data.message || 'Balance updated successfully', 'success');
-                }
+                const toastType = (data.notification_requested && data.notification_sent === false) ? 'warning' : 'success';
+                showToast(data.message || 'Balance updated successfully', toastType);
                 closeBalanceModal();
                 setTimeout(() => {
                     window.location.reload();
-                }, 1500);
+                }, 2500);
             } else {
                 if (submitBtn) {
                     submitBtn.disabled = false;
