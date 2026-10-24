@@ -996,7 +996,7 @@
             --inactive: #64748b;
             --active: #032B44;
             --nav-height: 64px;
-            --transfer-bump: 22px;
+            --transfer-bump: 30px;
         }
 
         .mobile-bottom-nav {
@@ -1073,13 +1073,13 @@
             color: var(--active);
         }
 
-        .nav-label {
-            font-family: inherit;
-            font-size: 9px;
-            font-weight: 500;
-            line-height: 1;
-            letter-spacing: 0.01em;
-            text-transform: none;
+        .mobile-bottom-nav .nav-label {
+            font-family: inherit !important;
+            font-size: 9px !important;
+            font-weight: 500 !important;
+            line-height: 1 !important;
+            letter-spacing: 0.01em !important;
+            text-transform: none !important;
         }
 
         .nav-spacer {
@@ -1098,17 +1098,17 @@
             background: transparent !important;
         }
 
-        /* Horizontal egg / oval lump — only the top half reads above the bar */
+        /* Wide horizontal half-egg lump — flatter and much wider than a circle */
         .nav-item.nav-transfer::before {
             content: '';
             position: absolute;
             top: calc(var(--transfer-bump) * -1);
             left: 50%;
             transform: translateX(-50%);
-            width: 88px;
-            height: 44px;
+            width: 124px;
+            height: 36px;
             background: var(--bar);
-            border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+            border-radius: 62px 62px 0 0;
             border: 1px solid rgba(0, 0, 0, 0.1);
             border-bottom: none;
             box-shadow: 0 -5px 14px rgba(0, 0, 0, 0.07);
@@ -1123,7 +1123,7 @@
             left: 50%;
             bottom: 0;
             transform: translateX(-50%);
-            width: 96px;
+            width: 130px;
             height: calc(var(--nav-height) - 2px);
             background: var(--bar);
             z-index: 0;
@@ -1135,7 +1135,7 @@
             z-index: 2;
             width: 44px;
             height: 44px;
-            margin-top: calc(var(--transfer-bump) * -1 + 2px);
+            margin-top: -34px;
             border-radius: 50%;
             background: #032B44;
             color: #fff;
@@ -1157,18 +1157,18 @@
         .nav-item.nav-transfer .nav-label {
             position: relative;
             z-index: 2;
-            color: inherit;
-            font-family: inherit;
-            font-size: 9px;
-            font-weight: 500;
-            line-height: 1;
-            letter-spacing: 0.01em;
-            text-transform: none;
+            color: inherit !important;
+            font-family: inherit !important;
+            font-size: 9px !important;
+            font-weight: 500 !important;
+            line-height: 1 !important;
+            letter-spacing: 0.01em !important;
+            text-transform: none !important;
         }
 
         .nav-item.nav-transfer.active,
         .nav-item.nav-transfer.active .nav-label {
-            color: var(--active);
+            color: var(--active) !important;
         }
 
         .nav-item.nav-transfer:active .fab-circle {
