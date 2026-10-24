@@ -1074,20 +1074,22 @@
         }
 
         .nav-label {
+            font-family: inherit;
             font-size: 9px;
             font-weight: 500;
             line-height: 1;
             letter-spacing: 0.01em;
+            text-transform: none;
         }
 
         .nav-spacer {
             display: none;
         }
 
-        /* Center Transfer: raised circle sitting in a bar “lump” */
+        /* Center Transfer: raised button sitting in a wide half-oval bar lump */
         .nav-item.nav-transfer {
             justify-content: flex-end;
-            gap: 4px;
+            gap: 3px;
             padding-top: 0;
             padding-bottom: 6px;
             overflow: visible;
@@ -1096,30 +1098,32 @@
             background: transparent !important;
         }
 
+        /* Horizontal egg / oval lump — only the top half reads above the bar */
         .nav-item.nav-transfer::before {
             content: '';
             position: absolute;
             top: calc(var(--transfer-bump) * -1);
             left: 50%;
             transform: translateX(-50%);
-            width: 58px;
-            height: 58px;
+            width: 88px;
+            height: 44px;
             background: var(--bar);
-            border-radius: 50%;
+            border-radius: 50% 50% 0 0 / 100% 100% 0 0;
             border: 1px solid rgba(0, 0, 0, 0.1);
-            box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.08);
+            border-bottom: none;
+            box-shadow: 0 -5px 14px rgba(0, 0, 0, 0.07);
             z-index: 0;
             pointer-events: none;
         }
 
-        /* Cover the lump’s bottom edge so it blends into the flat bar */
+        /* Cover the lump’s underside so it blends into the flat bar */
         .nav-item.nav-transfer::after {
             content: '';
             position: absolute;
             left: 50%;
             bottom: 0;
             transform: translateX(-50%);
-            width: 64px;
+            width: 96px;
             height: calc(var(--nav-height) - 2px);
             background: var(--bar);
             z-index: 0;
@@ -1129,9 +1133,9 @@
         .nav-item.nav-transfer .fab-circle {
             position: relative;
             z-index: 2;
-            width: 46px;
-            height: 46px;
-            margin-top: calc(var(--transfer-bump) * -1);
+            width: 44px;
+            height: 44px;
+            margin-top: calc(var(--transfer-bump) * -1 + 2px);
             border-radius: 50%;
             background: #032B44;
             color: #fff;
@@ -1154,6 +1158,12 @@
             position: relative;
             z-index: 2;
             color: inherit;
+            font-family: inherit;
+            font-size: 9px;
+            font-weight: 500;
+            line-height: 1;
+            letter-spacing: 0.01em;
+            text-transform: none;
         }
 
         .nav-item.nav-transfer.active,
