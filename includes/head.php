@@ -570,7 +570,7 @@
                 margin-left: 0 !important;
                 width: 100% !important;
                 max-width: 100% !important;
-                padding-bottom: calc(var(--nav-height, 64px) + var(--transfer-bump, 22px) + env(safe-area-inset-bottom, 0px) + 16px); /* Space for sticky bottom nav + raised transfer */
+                padding-bottom: calc(var(--nav-height, 64px) + var(--transfer-raise, 14px) + env(safe-area-inset-bottom, 0px) + 16px); /* Space for sticky bottom nav + raised transfer */
                 box-sizing: border-box;
             }
             
@@ -996,7 +996,10 @@
             --inactive: #64748b;
             --active: #032B44;
             --nav-height: 64px;
-            --transfer-bump: 28px;
+            --transfer-size: 44px;
+            --transfer-raise: 14px;
+            --transfer-oval-w: 72px;
+            --transfer-oval-h: 36px;
         }
 
         .mobile-bottom-nav {
@@ -1046,7 +1049,7 @@
             text-decoration: none;
             line-height: 1;
             -webkit-tap-highlight-color: transparent;
-            padding: 6px 2px calc(8px + env(safe-area-inset-bottom, 0px));
+            padding: 6px 2px 8px;
             border-radius: 0;
             transition: color 0.2s ease;
             width: auto;
@@ -1085,57 +1088,57 @@
             letter-spacing: 0 !important;
             text-transform: none !important;
             white-space: nowrap !important;
-            overflow: visible;
         }
 
         .nav-spacer {
             display: none;
         }
 
-        /* Center Transfer: raised button in a wide half-oval lump */
+        /*
+         * Transfer center item:
+         * - oval lump slightly wider than the button (horizontal half-egg)
+         * - button raised only a little so it sits inside that oval
+         * - label stays on the same baseline as the other items
+         */
         .mobile-bottom-nav .nav-item.nav-transfer {
             overflow: visible;
             z-index: 3;
             color: var(--inactive);
             background: transparent !important;
-            /* keep label on the same baseline as siblings; circle is absolutely raised */
-            padding-top: 6px;
         }
 
-        /* Wide horizontal half-egg lump */
         .mobile-bottom-nav .nav-item.nav-transfer::before {
             content: '';
             position: absolute;
             left: 50%;
-            bottom: calc(100% - 10px);
+            top: calc(var(--transfer-raise) * -1);
             transform: translateX(-50%);
-            width: 140px;
-            height: 40px;
+            width: var(--transfer-oval-w);
+            height: var(--transfer-oval-h);
             background: var(--bar);
-            border-radius: 70px 70px 0 0;
+            border-radius: 50% / 100% 100% 0 0;
             border: 1px solid rgba(0, 0, 0, 0.1);
             border-bottom: none;
-            box-shadow: 0 -5px 14px rgba(0, 0, 0, 0.07);
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
             z-index: 0;
             pointer-events: none;
         }
 
         .mobile-bottom-nav .nav-item.nav-transfer .fab-circle {
-            position: absolute;
-            left: 50%;
-            bottom: calc(100% - 8px);
-            transform: translateX(-50%);
+            position: relative;
             z-index: 2;
-            width: 46px;
-            height: 46px;
+            width: var(--transfer-size);
+            height: var(--transfer-size);
+            margin-top: calc(var(--transfer-raise) * -1);
+            margin-bottom: 0;
             border-radius: 50%;
             background: #032B44;
             color: #fff;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 12px rgba(3, 43, 68, 0.28);
-            margin: 0;
+            flex-shrink: 0;
+            box-shadow: 0 3px 10px rgba(3, 43, 68, 0.25);
         }
 
         .mobile-bottom-nav .nav-item.nav-transfer .fab-circle i {
@@ -1162,7 +1165,7 @@
         }
 
         .mobile-bottom-nav .nav-item.nav-transfer:active .fab-circle {
-            transform: translateX(-50%) scale(0.96);
+            transform: scale(0.96);
         }
 
         /* Overlay for mobile */
