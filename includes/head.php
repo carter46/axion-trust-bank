@@ -142,17 +142,32 @@
         }
 
         .sidebar-logo {
+            white-space: nowrap;
+            transition: opacity 0.3s ease;
+            opacity: 0;
+            width: 0;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            min-width: 0;
+        }
+
+        .sidebar-logo-text {
             font-size: 24px;
             font-weight: 700;
             background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            white-space: nowrap;
-            transition: opacity 0.3s ease;
-            opacity: 0;
-            width: 0;
-            overflow: hidden;
+        }
+
+        .sidebar-logo-img {
+            display: block;
+            max-height: 40px;
+            max-width: 160px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
         }
 
         .sidebar.expanded .sidebar-logo {

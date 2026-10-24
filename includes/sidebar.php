@@ -3,7 +3,29 @@
     <!-- Collapsible Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <div class="sidebar-logo"><?php echo getSiteName(); ?></div>
+            <?php
+            $sidebarSiteName = getSiteName();
+            $sidebarLogoUrl = function_exists('getSiteLogo') ? getSiteLogo() : '';
+            $showSidebarLogo = false;
+            if (!empty($sidebarLogoUrl) && strpos($sidebarLogoUrl, 'http') !== false && strpos($sidebarLogoUrl, 'logo.svg') === false) {
+                $cleanLogoUrl = strtok($sidebarLogoUrl, '?');
+                if (defined('BASE_PATH')) {
+                    $logoPath = str_replace(SITE_URL, BASE_PATH, $cleanLogoUrl);
+                    if ($logoPath && is_file($logoPath)) {
+                        $showSidebarLogo = true;
+                    }
+                } else {
+                    $showSidebarLogo = true;
+                }
+            }
+            ?>
+            <div class="sidebar-logo">
+                <?php if ($showSidebarLogo): ?>
+                    <img class="sidebar-logo-img" src="<?php echo htmlspecialchars($sidebarLogoUrl); ?>" alt="<?php echo htmlspecialchars($sidebarSiteName); ?>">
+                <?php else: ?>
+                    <span class="sidebar-logo-text"><?php echo htmlspecialchars($sidebarSiteName); ?></span>
+                <?php endif; ?>
+            </div>
             <button class="sidebar-toggle" onclick="toggleSidebar()">
                 <i class="fas fa-chevron-right"></i>
             </button>
