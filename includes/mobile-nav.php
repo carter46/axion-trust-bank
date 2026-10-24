@@ -2,25 +2,40 @@
     </div>
 </div>
 
-<!-- Mobile Bottom Navigation (Your Preferred Design) - HIDDEN ON DESKTOP AND ADMIN PAGES -->
+<!-- Mobile Bottom Navigation - HIDDEN ON DESKTOP AND ADMIN PAGES -->
 <?php 
 // Only show mobile nav for regular users, not admins
-if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin'): 
+if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin'):
+    $requestUri = $_SERVER['REQUEST_URI'] ?? '';
+    $isHomeActive = strpos($requestUri, '/dashboard') !== false;
+    $isCardActive = strpos($requestUri, '/card') !== false;
+    $isTransferActive = strpos($requestUri, '/transfer') !== false;
+    $isProfileActive = strpos($requestUri, '/profile') !== false;
 ?>
 <nav class="mobile-bottom-nav" role="navigation" aria-label="Primary">
-    <!-- 1. Home button -->
-    <a href="<?php echo SITE_URL; ?>/dashboard" class="nav-item <?php echo (strpos($_SERVER['REQUEST_URI'], '/dashboard') !== false) ? 'active' : ''; ?>" aria-label="Home">
+    <a href="<?php echo SITE_URL; ?>/dashboard" class="nav-item <?php echo $isHomeActive ? 'active' : ''; ?>" aria-label="Home">
         <i class="fas fa-home"></i>
+        <span class="nav-label">Home</span>
     </a>
 
-    <!-- 2. Transfer button -->
-    <button class="fab nav-item" aria-label="Transfer" onclick="location.href='<?php echo SITE_URL; ?>/transfer'">
-        <i class="fas fa-exchange-alt"></i>
-    </button>
+    <a href="<?php echo SITE_URL; ?>/card" class="nav-item <?php echo $isCardActive ? 'active' : ''; ?>" aria-label="Cards">
+        <i class="fas fa-credit-card"></i>
+        <span class="nav-label">Card</span>
+    </a>
 
-    <!-- 3. Menu/Toggle button (Last) -->
+    <a href="<?php echo SITE_URL; ?>/transfer" class="nav-item fab <?php echo $isTransferActive ? 'active' : ''; ?>" aria-label="Transfer">
+        <i class="fas fa-exchange-alt"></i>
+        <span class="nav-label">Transfer</span>
+    </a>
+
+    <a href="<?php echo SITE_URL; ?>/profile" class="nav-item <?php echo $isProfileActive ? 'active' : ''; ?>" aria-label="Profile">
+        <i class="fas fa-user"></i>
+        <span class="nav-label">Profile</span>
+    </a>
+
     <a href="#" class="nav-item" aria-label="Menu" onclick="event.preventDefault(); toggleMobileSidebar();">
         <i class="fas fa-bars"></i>
+        <span class="nav-label">Menu</span>
     </a>
 </nav>
 <?php endif; ?>
@@ -91,14 +106,6 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin'):
             overlay.classList.remove('active');
             document.body.style.overflow = '';
         }
-    });
-
-    // Set active state for mobile nav items
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.addEventListener('click', function() {
-            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-            this.classList.add('active');
-        });
     });
 </script>
 

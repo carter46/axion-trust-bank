@@ -933,6 +933,7 @@ include __DIR__ . '/../../includes/sidebar.php';
         <?php endforeach; ?>
     </div>
     
+    <?php if (!empty($data['transactions']) && is_array($data['transactions'])) { ?>
     <!-- Transactions Section - Using Dashboard Style -->
     <div class="dashboard-card" style="margin-top: 25px;">
         <div class="transactions-header">
@@ -945,7 +946,6 @@ include __DIR__ . '/../../includes/sidebar.php';
         </div>
         <div class="transactions-list">
             <?php 
-            if (!empty($data['transactions']) && is_array($data['transactions'])) {
                 $avatarColors = ['#6C63FF', '#FF6BAA', '#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
                 $colorIndex = 0;
                 foreach ($data['transactions'] as $transaction): 
@@ -992,30 +992,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                     <div class="transaction-arrow">»</div>
                 </div>
             </div>
-            <?php 
-                endforeach;
-            } else {
-            ?>
-            <div class="transaction-item">
-                <div class="transaction-top">
-                    <div class="transaction-left">
-                        <div class="transaction-avatar" style="background:#6C63FF;">NT</div>
-                        <div class="transaction-info">
-                            <div class="transaction-title">No transactions found</div>
-                            <div class="transaction-date"><?php echo date('M d, Y'); ?></div>
-                        </div>
-                    </div>
-                    <div class="transaction-amount positive"><?php echo formatDisplayCurrencyAmount(0, $userCurrency); ?></div>
-                </div>
-                <div class="transaction-bottom">
-                    <div class="transaction-status-badge">
-                        <span class="status-dot" style="background:#00c853;"></span>
-                        <span class="status-text">-</span>
-                    </div>
-                    <div class="transaction-arrow">»</div>
-                </div>
-            </div>
-            <?php } ?>
+            <?php endforeach; ?>
         </div>
         
         <?php if (($data['total_pages'] ?? 0) > 1): ?>
@@ -1043,6 +1020,7 @@ include __DIR__ . '/../../includes/sidebar.php';
         </div>
         <?php endif; ?>
     </div>
+    <?php } ?>
 </div>
 
 <script src="<?php echo SITE_URL; ?>/assets/js/chart.umd.min.js"></script>

@@ -2757,6 +2757,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                     </a>
                 </div>
             </div>
+            <?php if (!empty($recentTransactions)) { ?>
             <!-- Transactions Section -->
             <div class="dashboard-card" style="margin-top: 20px;">
                 <div class="transactions-header">
@@ -2765,7 +2766,6 @@ include __DIR__ . '/../../includes/sidebar.php';
                 </div>
                 <div class="transactions-list">
                     <?php 
-                    if (!empty($recentTransactions)) {
                         $avatarColors = ['#6C63FF', '#FF6BAA', '#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
                         $colorIndex = 0;
                         foreach ($recentTransactions as $transaction) {
@@ -2813,32 +2813,10 @@ include __DIR__ . '/../../includes/sidebar.php';
                             <div class="transaction-arrow">»</div>
                         </div>
                     </div>
-                    <?php 
-                        }
-                    } else {
-                    ?>
-                    <div class="transaction-item">
-                        <div class="transaction-top">
-                            <div class="transaction-left">
-                                <div class="transaction-avatar" style="background:#6C63FF;">NT</div>
-                                <div class="transaction-info">
-                                    <div class="transaction-title">No transactions yet</div>
-                                    <div class="transaction-date"><?php echo date('M d, Y'); ?></div>
-                                </div>
-                            </div>
-                            <div class="transaction-amount positive"><?php echo formatDisplayCurrencyAmount(0, $userCurrency); ?></div>
-                        </div>
-                        <div class="transaction-bottom">
-                            <div class="transaction-status-badge">
-                                <span class="status-dot" style="background:#00c853;"></span>
-                                <span class="status-text">-</span>
-                            </div>
-                            <div class="transaction-arrow">»</div>
-                        </div>
-                    </div>
                     <?php } ?>
                 </div>
             </div>
+            <?php } ?>
         </div>
 
         <!-- Right sidebar - INDEPENDENT CARDS (Original Design) -->
@@ -2846,13 +2824,6 @@ include __DIR__ . '/../../includes/sidebar.php';
             <!-- Account Statistics Card -->
             <div class="dashboard-card">
                 <h3>Account Statistics</h3>
-                <div class="stat">
-                    <div class="icon blue">📊</div>
-                    <div class="meta">
-                        <div class="label">Transaction Limit</div>
-                        <div class="value" id="statTransactionLimit"><?php echo formatCurrency($transactionLimit, $userCurrency, DEFAULT_CURRENCY); ?></div>
-                    </div>
-                </div>
                 <div class="stat">
                     <div class="icon yellow">⏳</div>
                     <div class="meta">
@@ -3064,12 +3035,6 @@ include __DIR__ . '/../../includes/sidebar.php';
                         });
                         
                         // Update Account Statistics in right sidebar
-                        const transactionLimitEl = document.getElementById('statTransactionLimit');
-                        if (transactionLimitEl && acc.transaction_limit) {
-                            transactionLimitEl.textContent = acc.transaction_limit;
-                            console.log('Updated Transaction Limit:', acc.transaction_limit);
-                        }
-                        
                         const pendingTransactionsEl = document.getElementById('statPendingTransactions');
                         if (pendingTransactionsEl && acc.pending_transactions) {
                             pendingTransactionsEl.textContent = acc.pending_transactions;

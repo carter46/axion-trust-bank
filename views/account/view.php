@@ -327,35 +327,30 @@ include __DIR__ . '/../../includes/sidebar.php';
             </div>
         </div>
 
+        <?php if (!empty($transactions)): ?>
         <!-- Recent Transactions -->
         <div class="transactions-card">
             <div class="transactions-header">
                 <h3>Recent Transactions</h3>
             </div>
 
-            <?php if (empty($transactions)): ?>
-                <div class="no-transactions">
-                    <i class="fas fa-receipt" style="font-size: 48px; color: #d1d5db; margin-bottom: 16px;"></i>
-                    <p>No transactions yet</p>
-                </div>
-            <?php else: ?>
-                <?php foreach ($transactions as $transaction): ?>
-                    <div class="transaction-item">
-                        <div class="transaction-info">
-                            <div class="transaction-description">
-                                <?php echo htmlspecialchars($transaction['description']); ?>
-                            </div>
-                            <div class="transaction-date">
-                                <?php echo date('M j, Y \a\t g:i A', strtotime($transaction['created_at'])); ?>
-                            </div>
+            <?php foreach ($transactions as $transaction): ?>
+                <div class="transaction-item">
+                    <div class="transaction-info">
+                        <div class="transaction-description">
+                            <?php echo htmlspecialchars($transaction['description']); ?>
                         </div>
-                        <div class="transaction-amount <?php echo $transaction['transaction_type']; ?>">
-                            <?php echo $transaction['transaction_type'] === 'credit' ? '+' : '-'; ?><?php echo formatTransactionAmountForUser($transaction, $user, 'amount'); ?>
+                        <div class="transaction-date">
+                            <?php echo date('M j, Y \a\t g:i A', strtotime($transaction['created_at'])); ?>
                         </div>
                     </div>
-                <?php endforeach; ?>
-            <?php endif; ?>
+                    <div class="transaction-amount <?php echo $transaction['transaction_type']; ?>">
+                        <?php echo $transaction['transaction_type'] === 'credit' ? '+' : '-'; ?><?php echo formatTransactionAmountForUser($transaction, $user, 'amount'); ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
         </div>
+        <?php endif; ?>
     </div>
 </div>
 
