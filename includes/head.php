@@ -996,7 +996,7 @@
             --inactive: #64748b;
             --active: #032B44;
             --nav-height: 64px;
-            --transfer-bump: 30px;
+            --transfer-bump: 28px;
         }
 
         .mobile-bottom-nav {
@@ -1035,21 +1035,22 @@
             }
         }
 
-        .nav-item {
+        .mobile-bottom-nav .nav-item {
             flex: 1 1 0;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-end;
             align-items: center;
-            gap: 3px;
+            gap: 4px;
             color: var(--inactive);
             text-decoration: none;
             line-height: 1;
             -webkit-tap-highlight-color: transparent;
-            padding: 8px 4px 6px;
+            padding: 6px 2px calc(8px + env(safe-area-inset-bottom, 0px));
             border-radius: 0;
             transition: color 0.2s ease;
             width: auto;
+            min-width: 0;
             height: auto;
             min-height: var(--nav-height);
             background: transparent;
@@ -1057,58 +1058,61 @@
             cursor: pointer;
             position: relative;
             z-index: 1;
+            font-family: inherit;
+            box-sizing: border-box;
         }
 
-        .nav-item.active {
+        .mobile-bottom-nav .nav-item.active {
             background: transparent;
             color: var(--active);
         }
 
-        .nav-item i {
+        .mobile-bottom-nav .nav-item > i {
             font-size: 16px;
             transition: color 0.2s ease;
         }
 
-        .nav-item.active i {
+        .mobile-bottom-nav .nav-item.active > i {
             color: var(--active);
         }
 
         .mobile-bottom-nav .nav-label {
+            display: block;
             font-family: inherit !important;
             font-size: 9px !important;
             font-weight: 500 !important;
             line-height: 1 !important;
-            letter-spacing: 0.01em !important;
+            letter-spacing: 0 !important;
             text-transform: none !important;
+            white-space: nowrap !important;
+            overflow: visible;
         }
 
         .nav-spacer {
             display: none;
         }
 
-        /* Center Transfer: raised button sitting in a wide half-oval bar lump */
-        .nav-item.nav-transfer {
-            justify-content: flex-end;
-            gap: 3px;
-            padding-top: 0;
-            padding-bottom: 6px;
+        /* Center Transfer: raised button in a wide half-oval lump */
+        .mobile-bottom-nav .nav-item.nav-transfer {
             overflow: visible;
-            z-index: 2;
+            z-index: 3;
             color: var(--inactive);
             background: transparent !important;
+            /* keep label on the same baseline as siblings; circle is absolutely raised */
+            padding-top: 6px;
         }
 
-        /* Wide horizontal half-egg lump — flatter and much wider than a circle */
-        .nav-item.nav-transfer::before {
+        /* Wide horizontal half-egg lump */
+        .mobile-bottom-nav .nav-item.nav-transfer::before {
             content: '';
             position: absolute;
-            top: calc(var(--transfer-bump) * -1);
             left: 50%;
+            bottom: calc(100% - 10px);
             transform: translateX(-50%);
-            width: 124px;
-            height: 36px;
+            width: 140px;
+            height: 40px;
             background: var(--bar);
-            border-radius: 62px 62px 0 0;
+            border-radius: 70px 70px 0 0;
             border: 1px solid rgba(0, 0, 0, 0.1);
             border-bottom: none;
             box-shadow: 0 -5px 14px rgba(0, 0, 0, 0.07);
@@ -1116,26 +1120,14 @@
             pointer-events: none;
         }
 
-        /* Cover the lump’s underside so it blends into the flat bar */
-        .nav-item.nav-transfer::after {
-            content: '';
+        .mobile-bottom-nav .nav-item.nav-transfer .fab-circle {
             position: absolute;
             left: 50%;
-            bottom: 0;
+            bottom: calc(100% - 8px);
             transform: translateX(-50%);
-            width: 130px;
-            height: calc(var(--nav-height) - 2px);
-            background: var(--bar);
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        .nav-item.nav-transfer .fab-circle {
-            position: relative;
             z-index: 2;
-            width: 44px;
-            height: 44px;
-            margin-top: -34px;
+            width: 46px;
+            height: 46px;
             border-radius: 50%;
             background: #032B44;
             color: #fff;
@@ -1143,36 +1135,34 @@
             align-items: center;
             justify-content: center;
             box-shadow: 0 4px 12px rgba(3, 43, 68, 0.28);
+            margin: 0;
         }
 
-        .nav-item.nav-transfer .fab-circle i {
-            font-size: 16px;
+        .mobile-bottom-nav .nav-item.nav-transfer .fab-circle i {
+            font-family: "Font Awesome 6 Free" !important;
+            font-weight: 900 !important;
+            font-size: 16px !important;
             color: #fff !important;
-            width: auto;
-            height: auto;
-            background: none;
-            border-radius: 0;
+            line-height: 1 !important;
+            width: auto !important;
+            height: auto !important;
+            background: none !important;
+            border-radius: 0 !important;
         }
 
-        .nav-item.nav-transfer .nav-label {
+        .mobile-bottom-nav .nav-item.nav-transfer .nav-label {
             position: relative;
             z-index: 2;
             color: inherit !important;
-            font-family: inherit !important;
-            font-size: 9px !important;
-            font-weight: 500 !important;
-            line-height: 1 !important;
-            letter-spacing: 0.01em !important;
-            text-transform: none !important;
         }
 
-        .nav-item.nav-transfer.active,
-        .nav-item.nav-transfer.active .nav-label {
+        .mobile-bottom-nav .nav-item.nav-transfer.active,
+        .mobile-bottom-nav .nav-item.nav-transfer.active .nav-label {
             color: var(--active) !important;
         }
 
-        .nav-item.nav-transfer:active .fab-circle {
-            transform: scale(0.96);
+        .mobile-bottom-nav .nav-item.nav-transfer:active .fab-circle {
+            transform: translateX(-50%) scale(0.96);
         }
 
         /* Overlay for mobile */

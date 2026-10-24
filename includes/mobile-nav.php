@@ -23,8 +23,8 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin'):
         <span class="nav-label">Card</span>
     </a>
 
-    <a href="<?php echo SITE_URL; ?>/transfer" class="nav-item fab nav-transfer <?php echo $isTransferActive ? 'active' : ''; ?>" aria-label="Transfer">
-        <span class="fab-circle"><i class="fas fa-exchange-alt"></i></span>
+    <a href="<?php echo SITE_URL; ?>/transfer" class="nav-item nav-transfer <?php echo $isTransferActive ? 'active' : ''; ?>" aria-label="Transfer">
+        <span class="fab-circle"><i class="fas fa-exchange-alt" aria-hidden="true"></i></span>
         <span class="nav-label">Transfer</span>
     </a>
 
