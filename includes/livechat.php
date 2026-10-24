@@ -8,7 +8,7 @@
  *
  * If that setting is empty, no widget is shown.
  *
- * Allowed pages: home, contact, help center, customer dashboard / transfer.
+ * Allowed pages: home, contact, help center, customer transfer (not dashboard).
  */
 
 // Simple page detection
@@ -23,9 +23,8 @@ if (in_array($currentRoute, $allowedPages, true)) {
     $showChat = true;
 }
 
-// Allow customer dashboard / transfer only (never admin)
+// Allow customer transfer only (never admin, never dashboard)
 if (!$showChat) {
-    $isDashboard = ($currentRoute === 'dashboard' || $requestUri === 'dashboard');
     $isTransfer = ($currentRoute === 'transfer' || $requestUri === 'transfer' || strpos($requestUri, 'transfer/') === 0);
     $isLoggedIn = function_exists('isLoggedIn')
         ? isLoggedIn()
@@ -33,7 +32,7 @@ if (!$showChat) {
     $role = $_SESSION['user_role'] ?? null;
     $isStaff = ($role === 'admin' || $role === 'support' || !empty($_SESSION['is_super_admin'] ?? 0));
 
-    if (($isDashboard || $isTransfer) && $isLoggedIn && !$isStaff) {
+    if ($isTransfer && $isLoggedIn && !$isStaff) {
         $showChat = true;
     }
 }

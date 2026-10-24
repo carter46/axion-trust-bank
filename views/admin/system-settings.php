@@ -246,7 +246,7 @@ $criticalSettings = [
     'live_chat_script' => [
         'value' => '',
         'type' => 'string',
-        'description' => 'Live chat widget script (paste full Tawk.to, Crisp, Smartsupp, etc. embed code). Shown on home, contact, help center, and customer dashboard/transfer pages.'
+        'description' => 'Live chat widget script (paste full Tawk.to, Crisp, Smartsupp, etc. embed code). Shown on home, contact, help center, and customer transfer pages (not dashboard).'
     ]
 ];
 

@@ -4155,9 +4155,6 @@ if (!empty($userAccounts)) {
 </div>
 
 <?php
-// Include live chat on customer dashboard only (includes/livechat.php handles gating)
-include __DIR__ . '/../../includes/livechat.php';
-
 // Include mobile navigation and closing tags
 include __DIR__ . '/../../includes/mobile-nav.php';
 ?>

@@ -570,7 +570,7 @@
                 margin-left: 0 !important;
                 width: 100% !important;
                 max-width: 100% !important;
-                padding-bottom: calc(var(--nav-height, 64px) + env(safe-area-inset-bottom, 0px) + 16px); /* Space for sticky bottom nav */
+                padding-bottom: calc(var(--nav-height, 64px) + var(--transfer-bump, 22px) + env(safe-area-inset-bottom, 0px) + 16px); /* Space for sticky bottom nav + raised transfer */
                 box-sizing: border-box;
             }
             
@@ -996,6 +996,7 @@
             --inactive: #64748b;
             --active: #032B44;
             --nav-height: 64px;
+            --transfer-bump: 22px;
         }
 
         .mobile-bottom-nav {
@@ -1017,6 +1018,7 @@
             gap: 0;
             z-index: 9999;
             box-sizing: border-box;
+            overflow: visible;
         }
 
         /* SHOW ONLY ON MOBILE */
@@ -1039,12 +1041,12 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
             color: var(--inactive);
             text-decoration: none;
             line-height: 1;
             -webkit-tap-highlight-color: transparent;
-            padding: 8px 4px;
+            padding: 8px 4px 6px;
             border-radius: 0;
             transition: color 0.2s ease;
             width: auto;
@@ -1053,6 +1055,8 @@
             background: transparent;
             border: none;
             cursor: pointer;
+            position: relative;
+            z-index: 1;
         }
 
         .nav-item.active {
@@ -1061,7 +1065,7 @@
         }
 
         .nav-item i {
-            font-size: 18px;
+            font-size: 16px;
             transition: color 0.2s ease;
         }
 
@@ -1070,7 +1074,7 @@
         }
 
         .nav-label {
-            font-size: 11px;
+            font-size: 9px;
             font-weight: 500;
             line-height: 1;
             letter-spacing: 0.01em;
@@ -1080,41 +1084,85 @@
             display: none;
         }
 
-        .fab {
+        /* Center Transfer: raised circle sitting in a bar “lump” */
+        .nav-item.nav-transfer {
+            justify-content: flex-end;
+            gap: 4px;
+            padding-top: 0;
+            padding-bottom: 6px;
+            overflow: visible;
+            z-index: 2;
             color: var(--inactive);
             background: transparent !important;
-            box-shadow: none;
         }
 
-        .fab i {
-            font-size: 18px;
-            color: inherit !important;
+        .nav-item.nav-transfer::before {
+            content: '';
+            position: absolute;
+            top: calc(var(--transfer-bump) * -1);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 58px;
+            height: 58px;
+            background: var(--bar);
+            border-radius: 50%;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.08);
+            z-index: 0;
+            pointer-events: none;
         }
 
-        .fab .nav-label {
-            color: inherit;
+        /* Cover the lump’s bottom edge so it blends into the flat bar */
+        .nav-item.nav-transfer::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            bottom: 0;
+            transform: translateX(-50%);
+            width: 64px;
+            height: calc(var(--nav-height) - 2px);
+            background: var(--bar);
+            z-index: 0;
+            pointer-events: none;
         }
 
-        /* Center Transfer stays visually emphasized */
-        .fab.nav-item i {
-            width: 40px;
-            height: 40px;
+        .nav-item.nav-transfer .fab-circle {
+            position: relative;
+            z-index: 2;
+            width: 46px;
+            height: 46px;
+            margin-top: calc(var(--transfer-bump) * -1);
             border-radius: 50%;
             background: #032B44;
-            color: #fff !important;
+            color: #fff;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
+            box-shadow: 0 4px 12px rgba(3, 43, 68, 0.28);
         }
 
-        .fab.nav-item.active,
-        .fab.nav-item.active .nav-label {
+        .nav-item.nav-transfer .fab-circle i {
+            font-size: 16px;
+            color: #fff !important;
+            width: auto;
+            height: auto;
+            background: none;
+            border-radius: 0;
+        }
+
+        .nav-item.nav-transfer .nav-label {
+            position: relative;
+            z-index: 2;
+            color: inherit;
+        }
+
+        .nav-item.nav-transfer.active,
+        .nav-item.nav-transfer.active .nav-label {
             color: var(--active);
         }
 
-        .fab:active {
-            opacity: 0.9;
+        .nav-item.nav-transfer:active .fab-circle {
+            transform: scale(0.96);
         }
 
         /* Overlay for mobile */
