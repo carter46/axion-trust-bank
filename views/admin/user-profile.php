@@ -271,7 +271,7 @@ include __DIR__ . '/../../includes/admin-sidebar.php';
             <div class="info-item">
                 <span class="info-label">Account Status</span>
                 <span class="status-badge status-<?php echo $user['status']; ?>">
-                    <?php echo ucfirst($user['status']); ?>
+                    <?php echo ($user['status'] ?? '') === 'unsecure_network' ? 'Unsecure Network' : ucfirst($user['status']); ?>
                 </span>
             </div>
             

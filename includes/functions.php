@@ -281,6 +281,37 @@ function restrictedAccountMessage() {
     return 'Your account has been suspended or deactivated, Please contact the support for more details';
 }
 
+function isUnsecureNetworkStatus($status) {
+    return strtolower(trim((string)$status)) === 'unsecure_network';
+}
+
+function unsecureNetworkLoginMessage() {
+    return 'Your network is currently unsecured, and the system is unable to sign you in. Please change your network or location and try again.';
+}
+
+/**
+ * End a customer session that is marked unsecure network.
+ * Page requests go to login with that message only (no "session expired" banner).
+ * API requests get JSON and are signed out.
+ */
+function denyUnsecureNetworkAccess() {
+    $message = unsecureNetworkLoginMessage();
+    if (function_exists('isApiOrAjaxRequest') && isApiOrAjaxRequest()) {
+        destroyAuthSession($message);
+    }
+
+    $_SESSION = [];
+    if (isset($_COOKIE[session_name()])) {
+        setcookie(session_name(), '', time() - 42000, '/');
+    }
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_destroy();
+    }
+    session_start();
+    $_SESSION['error'] = $message;
+    redirect('/auth/login');
+}
+
 function isRestrictedStatus($status) {
     $status = strtolower(trim((string)$status));
     return in_array($status, ['suspended', 'blocked', 'hold', 'deactivated', 'inactive', 'restricted', 'closed'], true);
@@ -290,6 +321,9 @@ function isRestrictedStatus($status) {
  * Why a transfer is blocked (user or source account status). Empty string = OK to proceed.
  */
 function getTransferBlockedReason($userStatus, $accountStatus) {
+    if (isUnsecureNetworkStatus($userStatus ?? '')) {
+        return unsecureNetworkLoginMessage();
+    }
     if (isRestrictedStatus($userStatus ?? '')) {
         return restrictedAccountMessage();
     }
@@ -444,9 +478,14 @@ function requireLogin() {
             redirect('/auth/login');
         }
         
+        // Unsecure Network blocks the customer's own session. Admin Login As can still view the account.
+        $status = $user['status'] ?? 'active';
+        if (isUnsecureNetworkStatus($status) && empty($_SESSION['admin_impersonating'])) {
+            denyUnsecureNetworkAccess();
+        }
+
         // If user is restricted (suspended/blocked/etc.) they may still log in,
         // but financial actions will be blocked by dedicated guards.
-        $status = $user['status'] ?? 'active';
         if (isRestrictedStatus($status)) {
             $_SESSION['restricted_status'] = $status;
         } else {

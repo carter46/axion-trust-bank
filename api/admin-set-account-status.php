@@ -43,8 +43,8 @@ if (!$userId) {
 
 enforceDemoUserAdminAccessForUserId($userId);
 
-if (!in_array($status, ['active', 'pending', 'suspended', 'blocked', 'hold'])) {
-    echo json_encode(['success' => false, 'message' => 'Invalid status. Must be: active, pending, suspended, blocked, or hold']);
+if (!in_array($status, ['active', 'pending', 'suspended', 'blocked', 'hold', 'unsecure_network'])) {
+    echo json_encode(['success' => false, 'message' => 'Invalid status. Must be: active, pending, suspended, blocked, hold, or unsecure_network']);
     exit;
 }
 
@@ -64,8 +64,15 @@ try {
     // Update user status
     $sql = "UPDATE users SET status = ?, updated_at = NOW() WHERE id = ?";
     $result = $db->query($sql, [$status, $userId]);
-    
+
+    $saved = null;
     if ($result) {
+        $check = $db->query("SELECT status FROM users WHERE id = ?", [$userId]);
+        $savedRow = $check ? $check->fetch() : null;
+        $saved = $savedRow['status'] ?? null;
+    }
+
+    if ($result && $saved === $status) {
         // Log admin action
         $adminId = $_SESSION['user_id'];
         $logDescription = "Changed user status from '{$user['status']}' to '{$status}'" . ($reason ? " - Reason: $reason" : "");
@@ -79,7 +86,10 @@ try {
             'new_status' => $status
         ]);
     } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to update user status']);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Failed to update user status. Open any admin page once so the database update can run, then try again.',
+        ]);
     }
     
 } catch (Exception $e) {

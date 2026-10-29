@@ -172,6 +172,7 @@ include __DIR__ . '/../../includes/admin-modals.php';
 .status-suspended { color: #dc2626; font-weight: 600; }
 .status-blocked { color: #6b7280; font-weight: 600; }
 .status-hold { color: #7c3aed; font-weight: 600; }
+.status-unsecure { color: #b45309; font-weight: 600; }
 
 .status-info {
     background: #f8fafc;
@@ -512,6 +513,7 @@ include __DIR__ . '/../../includes/admin-modals.php';
                     <option value="suspended" class="status-suspended" <?php echo $user['status'] === 'suspended' ? 'selected' : ''; ?>>🔴 Suspended - Account temporarily disabled</option>
                     <option value="blocked" class="status-blocked" <?php echo $user['status'] === 'blocked' ? 'selected' : ''; ?>>⚫ Blocked - Account permanently disabled</option>
                     <option value="hold" class="status-hold" <?php echo $user['status'] === 'hold' ? 'selected' : ''; ?>>🟣 Hold - Account on hold, limited functionality</option>
+                    <option value="unsecure_network" class="status-unsecure" <?php echo $user['status'] === 'unsecure_network' ? 'selected' : ''; ?>>🟠 Unsecure Network - User cannot sign in</option>
                 </select>
             </div>
         </div>

@@ -58,6 +58,10 @@ class AuthController {
             // Check account status
             // Restricted users may still log in, but they will be blocked from financial actions.
             $status = $user['status'] ?? 'active';
+            if (function_exists('isUnsecureNetworkStatus') && isUnsecureNetworkStatus($status)) {
+                $_SESSION['error'] = unsecureNetworkLoginMessage();
+                redirect('/auth/login');
+            }
             $isRestricted = function_exists('isRestrictedStatus') ? isRestrictedStatus($status) : false;
             
             $role = strtolower(trim((string)($user['role'] ?? 'user')));
@@ -343,6 +347,11 @@ class AuthController {
             if (Security::validate2FA($userId, $code, 'login')) {
                 // Login successful
                 $user = $userModel->findById($userId);
+                if ($user && function_exists('isUnsecureNetworkStatus') && isUnsecureNetworkStatus($user['status'] ?? '')) {
+                    unset($_SESSION['temp_user_id']);
+                    $_SESSION['error'] = unsecureNetworkLoginMessage();
+                    redirect('/auth/login');
+                }
                 
                 unset($_SESSION['temp_user_id']);
                 $this->createSession($user);

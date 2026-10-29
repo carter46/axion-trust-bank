@@ -1636,6 +1636,9 @@ include __DIR__ . '/../../includes/sidebar.php';
 
         function getTransferBlockedReasonJS(userStat, accountStat) {
             const us = (userStat || '').toLowerCase().trim();
+            if (us === 'unsecure_network') {
+                return 'Your network is currently unsecured, and the system is unable to sign you in. Please change your network or location and try again.';
+            }
             if (RESTRICTED_USER_STATUSES.includes(us)) {
                 return 'Your account has been suspended or deactivated, Please contact the support for more details';
             }

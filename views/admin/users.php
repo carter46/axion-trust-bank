@@ -532,7 +532,7 @@ table td {
                                     elseif ($user['status'] === 'pending') echo 'background: #fef3c7; color: #92400e;';
                                     else echo 'background: #e5e7eb; color: #1f2937;';
                                     ?>">
-                                    <?php echo ucfirst($user['status']); ?>
+                                    <?php echo $user['status'] === 'unsecure_network' ? 'Unsecure Network' : ucfirst($user['status']); ?>
                                 </span>
                             </td>
                             <td>
@@ -602,7 +602,7 @@ table td {
                                 elseif ($user['status'] === 'pending') echo 'background: #fef3c7; color: #92400e;';
                                 else echo 'background: #e5e7eb; color: #1f2937;';
                                 ?>">
-                                <?php echo ucfirst($user['status']); ?>
+                                <?php echo $user['status'] === 'unsecure_network' ? 'Unsecure Network' : ucfirst($user['status']); ?>
                             </span>
                         </div>
                         <div class="mobile-actions">
