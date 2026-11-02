@@ -17,7 +17,7 @@ $primaryAccountCurrency = $primaryAccount ? getAccountStoredCurrency($primaryAcc
 $userStoredCurrency = getUserStoredCurrency($user);
 $currentMonth = (int)date('n'); // Current month (1-12) for the expense filter
 
-// Get greeting based on time
+// Server-side fallback only — the live greeting is set in JS from the user's local clock
 $hour = (int)date('H');
 if ($hour < 12) {
     $greeting = 'Good Morning';
@@ -2520,7 +2520,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 </div>
                             <?php endif; ?>
                             <div>
-                                <div class="greet"><?php echo $greeting; ?></div>
+                                <div class="greet" data-greeting><?php echo $greeting; ?></div>
                                 <div class="name"><?php echo htmlspecialchars($userDisplayName); ?></div>
                             </div>
                         </div>
@@ -2630,7 +2630,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 </div>
                             <?php endif; ?>
                             <div>
-                                <div class="greet"><?php echo $greeting; ?></div>
+                                <div class="greet" data-greeting><?php echo $greeting; ?></div>
                                 <div class="name"><?php echo htmlspecialchars($userDisplayName); ?></div>
                             </div>
                         </div>
@@ -2919,10 +2919,11 @@ include __DIR__ . '/../../includes/sidebar.php';
 </div>
 
 <script>
-    // Update clock function
+    // Update clock + greeting from the user's local time (not server timezone)
     function updateClock() {
         const now = new Date();
-        const hours = String(now.getHours()).padStart(2, '0');
+        const hour = now.getHours();
+        const hours = String(hour).padStart(2, '0');
         const minutes = String(now.getMinutes()).padStart(2, '0');
         const seconds = String(now.getSeconds()).padStart(2, '0');
         const timeString = `${hours}:${minutes}:${seconds}`;
@@ -2931,6 +2932,7 @@ include __DIR__ . '/../../includes/sidebar.php';
         const day = String(now.getDate()).padStart(2, '0');
         const year = now.getFullYear();
         const dateString = `${month}/${day}/${year}`;
+        const greeting = hour < 12 ? 'Good Morning' : (hour < 17 ? 'Good Afternoon' : 'Good Evening');
         
         const clock1 = document.getElementById('clock');
         const date1 = document.getElementById('date');
@@ -2941,6 +2943,12 @@ include __DIR__ . '/../../includes/sidebar.php';
         if (date1) date1.textContent = dateString;
         if (clock2) clock2.textContent = timeString;
         if (date2) date2.textContent = dateString;
+
+        document.querySelectorAll('[data-greeting]').forEach(el => {
+            if (el.textContent !== greeting) {
+                el.textContent = greeting;
+            }
+        });
     }
     
     // Update account selector - Full dynamic update
