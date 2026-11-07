@@ -9,6 +9,7 @@ $isOverview = (strpos($currentPage, '/profile') !== false && strpos($currentPage
 $isSecurity = (strpos($currentPage, '/profile/security') !== false || strpos($currentPage, '/profile/change-password') !== false || strpos($currentPage, '/profile/two-factor') !== false);
 $isKYC = (strpos($currentPage, '/profile/kyc') !== false);
 $isUserInfo = (strpos($currentPage, '/profile/edit') !== false || strpos($currentPage, '/profile/info') !== false);
+$kycEnabled = SystemSettings::getInstance()->isKYCRequired();
 ?>
 
 <style>
@@ -143,10 +144,12 @@ $isUserInfo = (strpos($currentPage, '/profile/edit') !== false || strpos($curren
             <i class="fas fa-shield-alt"></i>
             <span>Security</span>
         </a>
+        <?php if ($kycEnabled): ?>
         <a href="<?php echo SITE_URL; ?>/profile/kyc" class="profile-tab <?php echo $isKYC ? 'active' : ''; ?>">
             <i class="fas fa-id-card"></i>
             <span>KYC Verification</span>
         </a>
+        <?php endif; ?>
         <a href="<?php echo SITE_URL; ?>/profile/edit" class="profile-tab <?php echo $isUserInfo ? 'active' : ''; ?>">
             <i class="fas fa-user-edit"></i>
             <span>User Information</span>

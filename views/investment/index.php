@@ -41,10 +41,11 @@ foreach ($products as $product) {
     }
 }
 
-// Check KYC status
+// Check KYC status (skip when Require KYC is disabled)
 $userModel = new User();
 $user = $userModel->findById($_SESSION['user_id']);
-$kycVerified = ($user['kyc_status'] ?? '') === 'verified';
+$kycRequired = SystemSettings::getInstance()->isKYCRequired();
+$kycVerified = !$kycRequired || (($user['kyc_status'] ?? '') === 'verified');
 $userCurrency = getUserDisplayCurrency($user);
 
 // Get active crypto wallets configured by admin (not investment products)

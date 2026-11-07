@@ -27,10 +27,12 @@ class InvestmentController {
             }
         }
         
-        // Check KYC status
+        // Check KYC status (treat as verified when Require KYC is off)
         $userModel = new User();
         $user = $userModel->findById($_SESSION['user_id']);
-        $kycVerified = ($user['kyc_status'] ?? '') === 'verified';
+        require_once __DIR__ . '/../includes/system-settings.php';
+        $kycVerified = !SystemSettings::getInstance()->isKYCRequired()
+            || (($user['kyc_status'] ?? '') === 'verified');
         
         $productModel = new InvestmentProduct();
         
@@ -76,10 +78,12 @@ class InvestmentController {
     public function view($id) {
         requireLogin();
         
-        // Check KYC status
+        // Check KYC status (treat as verified when Require KYC is off)
         $userModel = new User();
         $user = $userModel->findById($_SESSION['user_id']);
-        $kycVerified = ($user['kyc_status'] ?? '') === 'verified';
+        require_once __DIR__ . '/../includes/system-settings.php';
+        $kycVerified = !SystemSettings::getInstance()->isKYCRequired()
+            || (($user['kyc_status'] ?? '') === 'verified');
         
         $productModel = new InvestmentProduct();
         
@@ -156,11 +160,12 @@ class InvestmentController {
             redirect('/investment');
         }
         
-        // Check KYC
+        // Check KYC (only when Require KYC is enabled)
         $userModel = new User();
         $user = $userModel->findById($_SESSION['user_id']);
         
-        if (($user['kyc_status'] ?? '') !== 'verified') {
+        require_once __DIR__ . '/../includes/system-settings.php';
+        if (SystemSettings::getInstance()->isKYCRequired() && ($user['kyc_status'] ?? '') !== 'verified') {
             $_SESSION['error'] = 'Please complete KYC verification before investing';
             redirect('/profile/kyc');
         }

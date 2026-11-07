@@ -3968,6 +3968,7 @@ if (!empty($userAccounts)) {
             <div class="onboarding-checklist">
                 <?php if (isset($needsOnboarding) && $needsOnboarding): ?>
                     
+                    <?php if (SystemSettings::getInstance()->isKYCRequired()): ?>
                     <!-- KYC Verification -->
                     <div class="checklist-item <?php echo ($currentUser['kyc_status'] === 'verified') ? 'completed' : ''; ?>">
                         <div class="checklist-icon">
@@ -3981,12 +3982,13 @@ if (!empty($userAccounts)) {
                             <h4>Submit KYC Verification</h4>
                             <p>Verify your identity to unlock all features</p>
                             <?php if ($currentUser['kyc_status'] !== 'verified'): ?>
-                                <a href="<?php echo SITE_URL; ?>/profile#kyc" class="checklist-action">Submit Documents</a>
+                                <a href="<?php echo SITE_URL; ?>/profile/kyc" class="checklist-action">Submit Documents</a>
                             <?php else: ?>
                                 <span class="status-badge success">Verified</span>
                             <?php endif; ?>
                         </div>
                     </div>
+                    <?php endif; ?>
                     
                     <!-- Transfer PIN -->
                     <div class="checklist-item <?php echo (!empty($currentUser['transfer_pin'])) ? 'completed' : ''; ?>">

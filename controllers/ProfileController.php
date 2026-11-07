@@ -184,6 +184,13 @@ class ProfileController {
     
     public function kyc() {
         requireLogin();
+
+        // Hide / block KYC when Require KYC is disabled in system settings
+        require_once __DIR__ . '/../includes/system-settings.php';
+        if (!SystemSettings::getInstance()->isKYCRequired()) {
+            redirect('/dashboard');
+        }
+
         require_once __DIR__ . '/../includes/kyc-config.php';
         
         $userModel = new User();

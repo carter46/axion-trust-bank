@@ -352,6 +352,9 @@ function shouldShowKycDashboardPrompt($userId) {
         return false;
     }
     try {
+        if (!SystemSettings::getInstance()->isKYCRequired()) {
+            return false;
+        }
         $db = Database::getInstance();
         $stmt = $db->query(
             "SELECT kyc_status, kyc_prompt_dismissed FROM users WHERE id = ?",

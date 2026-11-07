@@ -336,6 +336,7 @@ include __DIR__ . '/../../includes/sidebar.php';
             </div>
         </a>
         
+        <?php if (SystemSettings::getInstance()->isKYCRequired()): ?>
         <!-- KYC Verification -->
         <a href="<?php echo SITE_URL; ?>/profile/kyc" class="profile-menu-item">
             <div class="menu-item-left">
@@ -351,6 +352,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                 <i class="fas fa-chevron-right"></i>
             </div>
         </a>
+        <?php endif; ?>
         
         <!-- Notifications -->
         <a href="<?php echo SITE_URL; ?>/profile/notifications" class="profile-menu-item">
